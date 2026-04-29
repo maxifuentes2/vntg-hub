@@ -1,12 +1,11 @@
-// db.js
 const mysql = require('mysql2');
+require('dotenv').config();
 
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',      // El usuario por defecto
-    password: 'vntghub2026', // La que pusiste en el instalador
-    database: 'vntg_hub'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
-// Usamos promesas para que sea más moderno y fácil de usar
 module.exports = pool.promise();
