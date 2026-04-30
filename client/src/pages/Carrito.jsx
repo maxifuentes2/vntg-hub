@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+// 1. Importamos el hook para usar el carrito real
+import { useCart } from '../context/CartContext';
 
 export default function Carrito() {
-    // MOCK DATA: Dejamos el arreglo vacío para simular que no hay productos
-    const productosEnCarrito = [];
+    // 2. Traemos los datos y funciones desde el contexto
+    const { cart, removeFromCart, updateQuantity } = useCart();
 
-    const subtotal = productosEnCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
-    const envio = 15;
+    // 3. Los cálculos ahora usan 'cart' en lugar de una lista vacía
+    const subtotal = cart.reduce((acc, p) => acc + (p.price * p.cantidad), 0);
+    const envio = cart.length > 0 ? 1500 : 0; // Ejemplo: 1500 de envío si hay algo
     const total = subtotal + envio;
 
     return (
@@ -18,37 +21,52 @@ export default function Carrito() {
                     Tu Carrito
                 </h1>
 
-                {productosEnCarrito.length > 0 ? (
+                {/* 4. Cambiamos la condición para usar 'cart' */}
+                {cart.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         
                         {/* LISTA DE PRODUCTOS */}
                         <div className="lg:col-span-2 space-y-4">
-                            {productosEnCarrito.map((producto) => (
+                            {cart.map((producto) => (
                                 <div key={producto.id} className="bg-white dark:bg-neutral-900 p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-neutral-800 flex flex-col md:flex-row items-center gap-6">
                                     
-                                    {/* Imagen simulada */}
-                                    <div className={`w-24 h-24 md:w-32 md:h-32 rounded-xl shrink-0 ${producto.color}`}></div>
+                                    {/* Imagen: Usamos 'images' que viene de tu API */}
+                                    <img 
+                                        src={producto.images} 
+                                        alt={producto.title} 
+                                        className="w-24 h-24 md:w-32 md:h-32 rounded-xl shrink-0 object-cover bg-gray-100" 
+                                    />
 
-                                    {/* Información */}
+                                    {/* Información: Usamos 'title' y 'price' de tu API */}
                                     <div className="flex-grow text-center md:text-left">
-                                        <span className="text-xs font-bold text-brand-orange uppercase tracking-widest">{producto.categoria}</span>
-                                        <h3 className="text-lg md:text-xl font-black dark:text-white mt-1">{producto.nombre}</h3>
-                                        <p className="text-brand-blue dark:text-blue-400 font-bold mt-1">${producto.precio.toLocaleString()}</p>
+                                        <h3 className="text-lg md:text-xl font-black dark:text-white mt-1">{producto.title}</h3>
+                                        <p className="text-brand-blue dark:text-blue-400 font-bold mt-1">
+                                            ${Number(producto.price).toLocaleString('es-AR')}
+                                        </p>
                                     </div>
 
-                                    {/* Controles de Cantidad */}
+                                    {/* Controles de Cantidad conectados al contexto */}
                                     <div className="flex items-center gap-4 bg-gray-100 dark:bg-neutral-800 px-4 py-2 rounded-full">
-                                        <button className="text-gray-500 hover:text-brand-orange transition-colors">
+                                        <button 
+                                            onClick={() => updateQuantity(producto.id, -1)}
+                                            className="text-gray-500 hover:text-brand-orange transition-colors"
+                                        >
                                             <Minus size={18} />
                                         </button>
                                         <span className="font-bold dark:text-white w-4 text-center">{producto.cantidad}</span>
-                                        <button className="text-gray-500 hover:text-brand-orange transition-colors">
+                                        <button 
+                                            onClick={() => updateQuantity(producto.id, 1)}
+                                            className="text-gray-500 hover:text-brand-orange transition-colors"
+                                        >
                                             <Plus size={18} />
                                         </button>
                                     </div>
 
-                                    {/* Eliminar */}
-                                    <button className="text-gray-400 hover:text-red-500 transition-colors p-2">
+                                    {/* Eliminar conectado al contexto */}
+                                    <button 
+                                        onClick={() => removeFromCart(producto.id)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                                    >
                                         <Trash2 size={24} />
                                     </button>
                                 </div>
@@ -63,15 +81,15 @@ export default function Carrito() {
                                 <div className="space-y-4 mb-6">
                                     <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>Subtotal</span>
-                                        <span className="font-bold text-gray-900 dark:text-white">${subtotal.toLocaleString()}</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">${subtotal.toLocaleString('es-AR')}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>Envío estimado</span>
-                                        <span className="font-bold text-gray-900 dark:text-white">${envio.toLocaleString()}</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">${envio.toLocaleString('es-AR')}</span>
                                     </div>
                                     <div className="border-t border-gray-100 dark:border-neutral-800 pt-4 flex justify-between">
                                         <span className="text-lg font-bold dark:text-white">Total</span>
-                                        <span className="text-2xl font-black text-brand-orange">${total.toLocaleString()}</span>
+                                        <span className="text-2xl font-black text-brand-orange">${total.toLocaleString('es-AR')}</span>
                                     </div>
                                 </div>
 
