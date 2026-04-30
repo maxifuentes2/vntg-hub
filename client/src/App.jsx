@@ -17,14 +17,13 @@ function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-neutral-900 transition-colors duration-300">
-        
         <Navbar />
-
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Inicio />} />
             <Route path="/producto/:id" element={<DetalleProducto />} />
-            <Route path="/categorias/:categorySlug" element={<Categoria />} />
+            {/* RUTA MODIFICADA A ID PARA CONECTAR CON MYSQL */}
+            <Route path="/categorias/:id" element={<Categoria />} />
             <Route path="/carrito" element={<Carrito />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Registro />} />
@@ -35,9 +34,7 @@ function App() {
             <Route path="/privacidad" element={<Privacidad />} />
           </Routes>
         </main>
-
         <Footer />
-        
       </div>
     </Router>
   );
