@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { ShoppingCart } from 'lucide-react'; // Importamos el ícono para que quede más pro
+import { useCart } from '../context/CartContext'; // Importamos nuestro hook del carrito
 
 export default function Inicio() {
     const [productos, setProductos] = useState([]);
+    const { addToCart } = useCart(); // Obtenemos la función para agregar al carrito
 
     useEffect(() => {
         fetch('http://localhost:5000/api/products')
@@ -47,7 +50,13 @@ export default function Inicio() {
                                         ${Number(prod.price).toLocaleString('es-AR')}
                                     </span>
                                 </div>
-                                <button className="w-full mt-6 bg-brand-blue text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg">
+                                
+                                {/* BOTÓN ACTUALIZADO */}
+                                <button 
+                                    onClick={() => addToCart(prod)} // Al hacer clic, enviamos el objeto 'prod'
+                                    className="w-full mt-6 bg-brand-blue text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                                >
+                                    <ShoppingCart size={20} />
                                     Añadir al Carrito
                                 </button>
                             </div>
