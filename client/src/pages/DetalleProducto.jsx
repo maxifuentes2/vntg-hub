@@ -5,24 +5,21 @@ import { useCart } from '../context/CartContext';
 
 const DetalleProducto = () => {
     const { id } = useParams();
-    
-    // --- MINI CÓDIGO AGREGADO ---
     const { addToCart } = useCart();
-    // ----------------------------
 
     const [producto, setProducto] = useState(null);
     const [loading, setLoading] = useState(true);
     
-    // Estados para la galería y el sistema de zoom dinámico
     const [imgPrincipal, setImgPrincipal] = useState("");
     const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
     const [isZooming, setIsZooming] = useState(false);
 
     useEffect(() => {
-        // SIMULACIÓN DE BASE DE DATOS
+        // BASE DE DATOS LOCAL CORREGIDA
+        // Los IDs 3 y 4 corresponden a los que aparecen en tu imagen image_1d3760.jpg
         const dbSimulada = [
             {
-                id: 1,
+                id: 3, 
                 title: "Ecto-1 Cadillac Miller-Meteor Sentinel de 1959",
                 price: 50000,
                 description: "Increíble reproducción a escala del icónico vehículo de los Cazafantasmas. Pintura original y accesorios montados en el techo.",
@@ -42,7 +39,7 @@ const DetalleProducto = () => {
                 ]
             },
             {
-                id: 2,
+                id: 4, 
                 title: "1965 AC Shelby 427 Cobra",
                 price: 55000,
                 description: "La leyenda del automovilismo americano. Captura la agresividad del motor V8 y las curvas clásicas.",
@@ -63,11 +60,11 @@ const DetalleProducto = () => {
                 ]
             },
             {
-                id: 3,
+                id: 1, 
                 title: "Batman (1989) Batmobile - Edición Coleccionista",
                 price: 120000,
                 description: "La representación definitiva del caballero de la noche. Un modelo imponente con acabado negro mate satinado y detalles de armamento oculto.",
-                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile_gpiwne.webp", // Ajustar a tu link real
+                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile_gpiwne.webp",
                 ficha: { 
                     estado: "Nuevo / Sellado", 
                     escala: "1:18 Premium", 
@@ -76,6 +73,7 @@ const DetalleProducto = () => {
                     fabricante: "DC Collectibles" 
                 },
                 gallery: [
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile_gpiwne.webp",
                     "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile2_qirese.webp",
                     "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile3_ufgpph.webp",
                     "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile4_sc7mfs.webp",
@@ -83,11 +81,11 @@ const DetalleProducto = () => {
                 ]
             },
             {
-                id: 4,
+                id: 2, 
                 title: "Delorean Time Machine - Back to the Future",
                 price: 95000,
                 description: "Viaja en el tiempo con esta réplica exacta de 1985. Incluye el condensador de flujo detallado y apertura de puertas de ala de gaviota.",
-                images: "https://recursos-vntg.s3.amazonaws.com/delorean_bttf.webp", 
+                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506242/delorean1_ni8uvi.webp", 
                 ficha: { 
                     estado: "Nuevo / Sellado", 
                     escala: "1:18 Premium", 
@@ -95,29 +93,41 @@ const DetalleProducto = () => {
                     año: "1985 (Model RE)", 
                     fabricante: "Hot Wheels Elite" 
                 },
-                gallery: ["link_imagen_1", "link_imagen_2"]
+                gallery: [
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506242/delorean1_ni8uvi.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506242/delorean3_fipewq.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506242/delorean2_grbzcw.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506242/delorean4_nndemy.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506243/delorean5_vmrkuc.webp",
+                ]
             },
             {
-                id: 5,
+                id: 5, 
                 title: "Mercedes-Benz 300 SL Gullwing - Silver Edition",
                 price: 150000,
                 description: "El auto deportivo más icónico de la historia. Esta edición de coleccionista presenta interiores en cuero sintético y acabados cromados reales.",
-                images: "https://recursos-vntg.s3.amazonaws.com/mercedes_300sl.webp",
+                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506251/mercedes1_ouo6sd.webp",
                 ficha: { 
                     estado: "Nuevo / Sellado", 
                     escala: "1:18 Collector", 
                     material: "Die-Cast / Cuero", 
                     año: "1954 Classic", 
-                    fabricante: "Minichamps" 
+                    fabricante: "Minichamps"
                 },
-                gallery: ["link_imagen_1", "link_imagen_2"]
+                gallery: [
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506251/mercedes1_ouo6sd.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506251/mercedes2_ltxccy.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506251/mercedes3_q0tdxv.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506251/mercedes4_h4sgza.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506252/mercedes5_ztosqm.webp",
+                ]
             },
             {
                 id: 6,
                 title: "Mach 5 - Speed Racer (Meteor) Collector's Edition",
                 price: 85000,
                 description: "¡Go Speed Racer Go! Réplica del auto de carreras más famoso del anime con sus gadgets característicos y el domo transparente.",
-                images: "https://recursos-vntg.s3.amazonaws.com/mach5_speed.webp",
+                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506267/meteoro1_iul29s.webp",
                 ficha: { 
                     estado: "Nuevo / Sellado", 
                     escala: "1:18 High Detail", 
@@ -125,14 +135,20 @@ const DetalleProducto = () => {
                     año: "Serie Clásica", 
                     fabricante: "AutoArt" 
                 },
-                gallery: ["link_imagen_1", "link_imagen_2"]
+                gallery: [
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506267/meteoro1_iul29s.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506267/meteoro2_pyrgnw.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506268/meteoro3_fjeink.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506268/meteoro4_qkxsog.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506268/meteoro5_veqy2y.webp",
+                ]
             },
             {
                 id: 7,
                 title: "1967 Ford Mustang GT Fastback - Red Passion",
-                price: 110000,
+                price: 85000,
                 description: "Muscle car puro. Esta pieza captura la potencia americana con un motor detallado bajo el capó y pintura de alta resistencia.",
-                images: "https://recursos-vntg.s3.amazonaws.com/mustang_67.webp",
+                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506281/mustang_eotaku.webp",
                 ficha: { 
                     estado: "Nuevo / Sellado", 
                     escala: "1:18 Classic", 
@@ -140,22 +156,34 @@ const DetalleProducto = () => {
                     año: "1967", 
                     fabricante: "Shelby Collectibles" 
                 },
-                gallery: ["link_imagen_1", "link_imagen_2"]
+                gallery: [
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506281/mustang_eotaku.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506281/mustang2_yox3oo.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506282/mustang3_rvfpbt.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506282/mustang4_bxr3xx.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506282/mustang5_akh9fh.webp",
+                ]
             },
             {
                 id: 8,
-                title: "1994 Opel Corsa B 1.6 16V - Blue Sky",
-                price: 45000,
-                description: "Un clásico moderno de los años 90. Excelente nivel de detalle en faros y habitáculo, ideal para completar colecciones de autos de calle.",
-                images: "https://recursos-vntg.s3.amazonaws.com/opel_corsa_b.webp",
+                title: "Fiat Palio Fire 1.4 G3 - Edición Limitada",
+                price: 85000,
+                description: "Una pieza de culto para el coleccionista local. Réplica fiel del Fiat Palio Fire G3 con detalles de motor y maletero, presentado en su caja de exhibición original de edición limitada.",
+                images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777525854/palio1_mtc69b.webp",
                 ficha: { 
                     estado: "Nuevo / Sellado", 
-                    escala: "1:24 Detail", 
+                    escala: "1:18 Collector", 
                     material: "Die-cast Metal", 
-                    año: "1994", 
-                    fabricante: "Ixo Models" 
+                    año: "G3 Classic", 
+                    fabricante: "Fiat Official Model" 
                 },
-                gallery: ["link_imagen_1", "link_imagen_2"]
+                gallery: [
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777525854/palio1_mtc69b.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777525854/palio2_ax9a2t.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777525854/palio3_mb39r9.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777525854/palio4_jvtwgh.webp",
+                    "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777526058/palio6_b8idc5.webp",
+                ]
             }
         ];
 
@@ -167,7 +195,6 @@ const DetalleProducto = () => {
         setLoading(false);
     }, [id]);
 
-    // LÓGICA DEL ZOOM PANORÁMICO
     const handleMouseMove = (e) => {
         if (!isZooming) return;
         const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -177,16 +204,14 @@ const DetalleProducto = () => {
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-black text-white font-black italic uppercase tracking-widest">Catalogando Pieza...</div>;
-    if (!producto) return <div className="min-h-screen flex items-center justify-center bg-black text-white">PRODUCTO NO ENCONTRADO</div>;
+    if (!producto) return <div className="min-h-screen flex items-center justify-center bg-black text-white italic font-black">PRODUCTO NO ENCONTRADO</div>;
 
     return (
         <div className="max-w-[1440px] mx-auto px-4 py-8 select-none bg-white dark:bg-neutral-900 transition-colors">
-            {/* Botón Volver */}
             <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-400 hover:text-brand-orange mb-6 font-black text-[10px] uppercase tracking-[0.3em]">
                 <ChevronLeft size={18} /> Volver al catálogo
             </button>
 
-            {/* Cabecera */}
             <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b-2 dark:border-zinc-800 pb-8 mb-8">
                 <div className="max-w-2xl">
                     <span className="bg-red-600 text-white px-2 py-0.5 text-[9px] font-black italic rounded-sm mb-2 inline-block uppercase tracking-tighter">Original Series</span>
@@ -199,7 +224,6 @@ const DetalleProducto = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* 1. Galería de Miniaturas */}
                 <div className="lg:col-span-1 flex lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0">
                     {producto.gallery.map((img, i) => (
                         <button 
@@ -213,7 +237,6 @@ const DetalleProducto = () => {
                     ))}
                 </div>
 
-                {/* 2. Visualizador Principal con Zoom */}
                 <div className="lg:col-span-7 order-1 lg:order-2">
                     <div 
                         className="relative aspect-[16/10] rounded-xl overflow-hidden bg-zinc-900 border-2 dark:border-zinc-800 cursor-zoom-in group"
@@ -230,13 +253,11 @@ const DetalleProducto = () => {
                             className="w-full h-full object-cover transition-transform duration-200 ease-out" 
                             alt={producto.title} 
                         />
-                        
                         <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border dark:border-zinc-700 shadow-lg">
                             <span className="text-[10px] font-black text-brand-blue uppercase tracking-widest flex items-center gap-1.5">
                                 <Box size={10} /> {producto.ficha.estado}
                             </span>
                         </div>
-                        
                         {!isZooming && (
                             <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white/80 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                                 <Maximize2 size={14} /> Pasa el mouse para inspeccionar detalles
@@ -245,14 +266,11 @@ const DetalleProducto = () => {
                     </div>
                 </div>
 
-                {/* 3. Panel de Información */}
                 <div className="lg:col-span-4 order-3 space-y-6">
                     <div className="p-8 bg-zinc-100 dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm">
                         <h3 className="text-zinc-900 dark:text-white font-black italic mb-6 uppercase text-sm tracking-[0.2em] border-b-2 dark:border-zinc-700 pb-3">Detalle Técnico</h3>
-                        
                         <div className="space-y-6">
                             <p className="text-zinc-700 dark:text-zinc-200 text-base leading-relaxed font-medium italic">"{producto.description}"</p>
-                            
                             <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-6 border-t dark:border-zinc-800 text-sm">
                                 <div className="flex items-center gap-2.5 text-zinc-600 dark:text-zinc-400 font-semibold">
                                     <Scale size={16} className="text-brand-orange" /> Escala: <span className="text-zinc-900 dark:text-white font-black">{producto.ficha.escala}</span>
@@ -268,25 +286,17 @@ const DetalleProducto = () => {
                                 </div>
                             </div>
                         </div>
-
                         <div className="space-y-4 mt-10">
-                            <div className="flex items-center gap-4 text-zinc-500 font-bold text-[10px] uppercase">
-                                <ShieldCheck size={18} className="text-green-500" /> Garantía de Autenticidad VNTG
-                            </div>
-                            <div className="flex items-center gap-4 text-zinc-500 font-bold text-[10px] uppercase">
-                                <Truck size={18} className="text-brand-blue" /> Envío Asegurado Mendoza
-                            </div>
+                            <div className="flex items-center gap-4 text-zinc-500 font-bold text-[10px] uppercase"><ShieldCheck size={18} className="text-green-500" /> Garantía de Autenticidad VNTG</div>
+                            <div className="flex items-center gap-4 text-zinc-500 font-bold text-[10px] uppercase"><Truck size={18} className="text-brand-blue" /> Envío Asegurado Mendoza</div>
                         </div>
                     </div>
-
-                    {/* --- BOTÓN ACTUALIZADO CON ONCLICK --- */}
                     <button 
                         onClick={() => addToCart(producto)}
                         className="w-full bg-brand-orange hover:bg-orange-600 text-white py-5 rounded-2xl font-black italic text-xl transition-all shadow-xl shadow-orange-500/20 uppercase active:scale-95"
                     >
                         Añadir a la colección
                     </button>
-                    {/* -------------------------------------- */}
                 </div>
             </div>
         </div>
