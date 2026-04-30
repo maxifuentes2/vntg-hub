@@ -49,26 +49,48 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// POST - Crear un producto nuevo (ABM - Solo para Vendedores)
+// POST - Crear un producto nuevo con FICHA TÉCNICA
 app.post('/api/products', async (req, res) => {
-    const { title, description, price, stock, images, categoryId } = req.body;
+    const { 
+        title, description, price, stock, images, categoryId, 
+        escala, fabricante, anio, material, estado, gallery 
+    } = req.body;
     
     if (!title || !price || !categoryId) {
         return res.status(400).json({ error: "Título, precio y categoría son obligatorios" });
     }
 
     try {
-        const [result] = await db.query(
-            'INSERT INTO products (title, description, price, stock, images, categoryId) VALUES (?, ?, ?, ?, ?, ?)',
-            [title, description, price, stock, images, categoryId]
-        );
-        res.status(201).json({ 
-            id: result.insertId, 
-            message: "Producto publicado con éxito" 
-        });
+        const sql = `INSERT INTO products 
+            (title, description, price, stock, images, categoryId, escala, fabricante, anio, material, estado, gallery) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        
+        const [result] = await db.query(sql, [
+            title, description, price, stock, images, categoryId, 
+            escala, fabricante, anio, material, estado, 
+            Array.isArray(gallery) ? gallery.join(',') : gallery // Convertimos el array de fotos a texto para SQL
+        ]);
+
+        res.status(201).json({ id: result.insertId, message: "¡Tesoro publicado con éxito!" });
     } catch (error) {
-        console.error("Error en POST /api/products:", error);
+        console.error("Error en POST:", error);
         res.status(500).json({ error: "Error al crear el producto" });
+    }
+});
+
+// GET - Obtener un producto por ID (Necesario para DetalleProducto.jsx)
+app.get('/api/products/:id', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
+        if (rows.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
+        
+        // Convertimos la cadena de texto de 'gallery' de vuelta a un Array para React
+        const producto = rows[0];
+        if (producto.gallery) producto.gallery = producto.gallery.split(',');
+        
+        res.json(producto);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener el detalle" });
     }
 });
 
@@ -87,16 +109,23 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // ==========================================
-// 2. RUTAS DE CATEGORÍAS
+// 2. RUTAS DE CATEGORÍAS (DINÁMICAS)
 // ==========================================
 
-// GET - Obtener todas las categorías
+// GET - Obtener solo categorías que tienen productos con stock (Evita categorías vacías)
 app.get('/api/categories', async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM categories');
+        const sql = `
+            SELECT DISTINCT c.* 
+            FROM categories c
+            INNER JOIN products p ON c.id = p.categoryId
+            WHERE p.stock > 0
+        `;
+        const [rows] = await db.query(sql);
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ error: "Error al obtener categorías" });
+        console.error("Error en GET /api/categories:", error);
+        res.status(500).json({ error: "Error al obtener categorías dinámicas" });
     }
 });
 
