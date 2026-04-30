@@ -2,22 +2,16 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Inicio from './pages/Inicio';
-// Importamos la nueva página de categorías
 import Categoria from './pages/Categoria'; 
 import DetalleProducto from './pages/DetalleProducto';
-
-// Dejamos Login y Registro de relleno por ahora
-const Login = () => (
-  <div className="py-20 flex justify-center text-3xl font-bold text-black dark:text-white">
-    Página de Login
-  </div>
-);
-
-const Registro = () => (
-  <div className="py-20 flex justify-center text-3xl font-bold text-black dark:text-white">
-    Página de Registro
-  </div>
-);
+import Carrito from './pages/Carrito';
+import Login from './pages/Login';
+import Registro from './pages/Registro';
+import GuiaAutenticidad from './pages/GuiaAutenticidad';
+import EnviosSeguros from './pages/EnviosSeguros';
+import Contacto from './pages/Contacto';
+import Terminos from './pages/Terminos';
+import Privacidad from './pages/Privacidad';
 
 function App() {
   return (
@@ -30,11 +24,15 @@ function App() {
           <Routes>
             <Route path="/" element={<Inicio />} />
             <Route path="/producto/:id" element={<DetalleProducto />} />
-            {/* RUTA DINÁMICA: Detecta /categorias/marvel, /categorias/autos, etc. */}
             <Route path="/categorias/:categorySlug" element={<Categoria />} />
-            
+            <Route path="/carrito" element={<Carrito />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Registro />} />
+            <Route path="/guia-autenticidad" element={<GuiaAutenticidad />} />
+            <Route path="/envios" element={<EnviosSeguros />} />
+            <Route path="/contacto" element={<Contacto />} />
+            <Route path="/terminos" element={<Terminos />} />
+            <Route path="/privacidad" element={<Privacidad />} />
           </Routes>
         </main>
 
@@ -45,4 +43,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

@@ -1,122 +1,79 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 
-const Login = () => {
-    const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log("Intentando iniciar sesión con:", formData);
-        // Aquí iría la lógica de autenticación
-    };
-
-    const handleChange = (e) => {
-        setFormData({
-        ...formData,
-        [e.target.name]: e.target.value
-        });
-    };
-
+export default function Login() {
     return (
-        <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-        {/* Tarjeta del Formulario */}
-        <div className="w-full max-w-md bg-white dark:bg-brand-dark p-8 rounded-2xl shadow-2xl border border-gray-100 dark:border-zinc-800 transition-colors duration-300">
-            
-            {/* Encabezado */}
-            <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Bienvenido a <span className="text-brand-orange">VNTG HUB</span>
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400">
-                Ingresa para gestionar tu colección
-            </p>
-            </div>
+        <div className="w-full min-h-[80vh] flex items-center justify-center py-12 px-4 transition-colors duration-300">
+            <div className="max-w-md w-full bg-white dark:bg-neutral-900 rounded-3xl shadow-xl border border-gray-100 dark:border-neutral-800 p-8">
+                
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-black dark:text-white tracking-tight">
+                        Bienvenido a <span className="text-brand-blue dark:text-white">VNTG</span><span className="text-brand-orange">HUB</span>
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                        Ingresa a tu cuenta para continuar
+                    </p>
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">
-                Correo Electrónico
-                </label>
-                <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-blue transition-colors">
-                    <Mail size={20} />
-                </div>
-                <input
-                    type="email"
-                    name="email"
-                    required
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
-                    placeholder="tu@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                />
-                </div>
-            </div>
+                <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                    {/* Campo Email */}
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            Correo Electrónico
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Mail size={20} className="text-gray-400" />
+                            </div>
+                            <input 
+                                type="email" 
+                                placeholder="tu@email.com"
+                                className="w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-brand-blue outline-none transition-all"
+                                required
+                            />
+                        </div>
+                    </div>
 
-            {/* Contraseña */}
-            <div className="space-y-2">
-                <div className="flex justify-between items-center ml-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Contraseña
-                </label>
-                <a href="#" className="text-xs text-brand-blue hover:underline">
-                    ¿Olvidaste tu contraseña?
-                </a>
-                </div>
-                <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-blue transition-colors">
-                    <Lock size={20} />
-                </div>
-                <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    required
-                    className="w-full pl-10 pr-12 py-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-                </div>
-            </div>
+                    {/* Campo Contraseña */}
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                                Contraseña
+                            </label>
+                            <a href="#" className="text-xs font-bold text-brand-blue hover:text-brand-orange transition-colors">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Lock size={20} className="text-gray-400" />
+                            </div>
+                            <input 
+                                type="password" 
+                                placeholder="••••••••"
+                                className="w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-brand-blue outline-none transition-all"
+                                required
+                            />
+                        </div>
+                    </div>
 
-            {/* Botón de Ingreso */}
-            <button
-                type="submit"
-                className="w-full bg-brand-orange hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transform transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-orange-500/20"
-            >
-                <LogIn size={20} />
-                Iniciar Sesión
-            </button>
-            </form>
+                    {/* Botón de Ingreso */}
+                    <button 
+                        type="submit" 
+                        className="w-full mt-6 bg-brand-orange hover:bg-orange-600 text-white py-3.5 rounded-xl font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 active:scale-95"
+                    >
+                        Iniciar Sesión <ArrowRight size={20} />
+                    </button>
+                </form>
 
-            {/* Footer del Formulario */}
-            <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-                ¿No tienes cuenta?{' '}
-                <Link 
-                to="/register" 
-                className="text-brand-blue font-semibold hover:underline decoration-2 underline-offset-4 transition-all"
-                >
-                Regístrate aquí
-                </Link>
-            </p>
+                {/* Enlace al Registro */}
+                <p className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    ¿No tienes una cuenta?{' '}
+                    <Link to="/register" className="text-brand-orange font-bold hover:underline">
+                        Regístrate aquí
+                    </Link>
+                </p>
             </div>
-        </div>
         </div>
     );
-};
-
-export default Login;
+}
