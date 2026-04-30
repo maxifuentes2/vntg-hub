@@ -74,6 +74,29 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
+app.post('/api/products/:id/buy', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // 1. Buscamos el producto
+        const [rows] = await db.query('SELECT stock FROM products WHERE id = ?', [id]);
+        const product = rows[0];
+
+        if (product.stock > 0) {
+            // 2. Simulamos un pequeño retraso para facilitar que ocurra el error
+            // (En la vida real, esto es el tiempo que tarda la DB en responder)
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // 3. Restamos stock
+            await db.query('UPDATE products SET stock = stock - 1 WHERE id = ?', [id]);
+            res.json({ message: "Compra exitosa" });
+        } else {
+            res.status(400).json({ error: "Sin stock" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Error en la compra" });
+    }
+});
+
 // DELETE - Eliminar un producto (ABM)
 app.delete('/api/products/:id', async (req, res) => {
     const { id } = req.params;
