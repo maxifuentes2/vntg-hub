@@ -63,7 +63,7 @@ export default function Inicio() {
                     <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-neutral-800 transition-all hover:-translate-y-2">
                         <div className="h-64 bg-gray-300 dark:bg-neutral-700 relative">
                             <div className="absolute top-4 left-4 bg-brand-orange text-white text-xs font-black px-3 py-1 rounded-full shadow-md">
-                               NUEVO
+                                NUEVO
                             </div>
                         </div>
                         <div className="p-6">

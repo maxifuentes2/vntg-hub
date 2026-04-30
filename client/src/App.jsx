@@ -1,19 +1,20 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-
-// IMPORTAMOS TU NUEVA PÁGINA REAL
 import Inicio from './pages/Inicio';
+// Importamos la nueva página de categorías
+import Categoria from './pages/Categoria'; 
+import DetalleProducto from './pages/DetalleProducto';
 
-// Dejamos Login y Registro de relleno solo por ahora
+// Dejamos Login y Registro de relleno por ahora
 const Login = () => (
-  <div className="py-20 flex justify-center text-3xl font-bold text-black dark:text-white transition-colors duration-300">
+  <div className="py-20 flex justify-center text-3xl font-bold text-black dark:text-white">
     Página de Login
   </div>
 );
 
 const Registro = () => (
-  <div className="py-20 flex justify-center text-3xl font-bold text-black dark:text-white transition-colors duration-300">
+  <div className="py-20 flex justify-center text-3xl font-bold text-black dark:text-white">
     Página de Registro
   </div>
 );
@@ -27,8 +28,10 @@ function App() {
 
         <main className="flex-grow">
           <Routes>
-            {/* AHORA CARGA EL ARCHIVO Inicio.jsx QUE CREASTE */}
             <Route path="/" element={<Inicio />} />
+            <Route path="/producto/:id" element={<DetalleProducto />} />
+            {/* RUTA DINÁMICA: Detecta /categorias/marvel, /categorias/autos, etc. */}
+            <Route path="/categorias/:categorySlug" element={<Categoria />} />
             
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Registro />} />
@@ -42,4 +45,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 
