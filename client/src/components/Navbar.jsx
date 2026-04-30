@@ -6,26 +6,27 @@ import {
     Search, 
     Sun, 
     Moon, 
-    Globe,
-    User,
-    LogOut
+    User
 } from 'lucide-react'; 
 import CategorySidebar from './CategorySidebar';
-
-// 1. IMPORTAMOS EL HOOK DEL CARRITO
 import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+    const [dbCategories, setDbCategories] = useState([]); 
     
-    // 2. OBTENEMOS EL CONTEO REAL DESDE EL CONTEXTO
     const { cartCount } = useCart();
+    const user = null; // Mock de usuario
 
-    // MOCK: Simulamos el usuario por ahora
-    const user = null; 
-    const handleLogout = () => console.log("Cerrando sesión...");
-    
+    // Mantenemos el fetch aquí para que el Sidebar tenga los datos
+    useEffect(() => {
+        fetch('http://localhost:5000/api/categories')
+            .then(res => res.json())
+            .then(data => setDbCategories(Array.isArray(data) ? data : []))
+            .catch(err => console.error("Error cargando categorías:", err));
+    }, []);
+
     useEffect(() => {
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
@@ -64,63 +65,38 @@ export default function Navbar() {
                             </Link>
                         </div>
 
-                        {/* Centro: Buscador Desktop */}
+                        {/* Centro: Buscador */}
                         <div className="hidden md:flex flex-1 max-w-xl mx-8">
                             <div className="relative w-full flex group shadow-sm">
                                 <input 
                                     type="text" 
-                                    placeholder="Buscar figuras, monedas..." 
+                                    placeholder="Buscar figuras, autos..." 
                                     className="w-full bg-gray-100 dark:bg-neutral-800 border-none rounded-l-xl py-2 px-4 focus:ring-2 focus:ring-brand-blue outline-none dark:text-white transition-all"
                                 />
-                                <button className="bg-brand-blue hover:bg-blue-800 text-white px-5 rounded-r-xl transition-colors flex items-center justify-center">
-                                    <Search size={18} className="group-hover:scale-110 transition-transform duration-300" />
+                                <button className="bg-brand-blue hover:bg-blue-800 text-white px-5 rounded-r-xl transition-colors">
+                                    <Search size={18} />
                                 </button>
                             </div>
                         </div>
 
                         {/* Derecha: Acciones */}
                         <div className="flex items-center space-x-1 md:space-x-3">
-                            
-                            <Link 
-                                to={user ? "/cuenta" : "/login"} 
-                                title={user ? "Mi Cuenta" : "Iniciar Sesión"}
-                                className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300 flex items-center"
-                            >
+                            <Link to={user ? "/cuenta" : "/login"} className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange transition-all">
                                 <User size={22} />
                             </Link>
 
-                            <div className="relative group flex justify-center">
-                                <button className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300">
-                                    <Globe size={22} />
-                                </button>
-                                
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 w-20 pt-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible origin-top scale-y-95 group-hover:scale-y-100 transition-all duration-300 z-50">
-                                    <div className="bg-white dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700 rounded-lg shadow-xl py-2 flex flex-col">
-                                        <button className="px-3 py-2 text-sm text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-brand-orange hover:text-white transition-colors w-full">🇪🇸 ES</button>
-                                        <button className="px-3 py-2 text-sm text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-brand-orange hover:text-white transition-colors w-full">🇺🇸 EN</button>
-                                        <button className="px-3 py-2 text-sm text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-brand-orange hover:text-white transition-colors w-full">🇵🇹 PT</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={toggleTheme} 
-                                className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300 transform hover:rotate-12"
-                            >
+                            <button onClick={toggleTheme} className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange transition-all transform hover:rotate-12">
                                 {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                             </button>
 
-                            {/* 3. CARRITO CONECTADO: Usamos cartCount del contexto */}
-                            <Link to="/carrito" className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300 group ml-1">
-                                <ShoppingCart size={24} className="group-hover:scale-110 transition-transform duration-300" />
-                                
+                            <Link to="/carrito" className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange group">
+                                <ShoppingCart size={24} className="group-hover:scale-110 transition-transform" />
                                 {cartCount > 0 && (
-                                    <span className="absolute top-0 right-0 bg-brand-orange text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
+                                    <span className="absolute top-0 right-0 bg-brand-orange text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
                                         {cartCount}
                                     </span>
                                 )}
                             </Link>
-
                         </div>
                     </div>
                 </div>
@@ -129,6 +105,7 @@ export default function Navbar() {
             <CategorySidebar 
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
+                categories={dbCategories}
             />
         </>
     );
