@@ -1,15 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
-// 1. Importamos el hook para usar el carrito real
 import { useCart } from '../context/CartContext';
 
 export default function Carrito() {
-    // 2. Traemos los datos y funciones desde el contexto
-    const { cart, removeFromCart, updateQuantity } = useCart();
+    // 1. Agregamos 'processCheckout' a la extracción del context
+    const { cart, removeFromCart, updateQuantity, processCheckout } = useCart();
 
-    // 3. Los cálculos ahora usan 'cart' en lugar de una lista vacía
     const subtotal = cart.reduce((acc, p) => acc + (p.price * p.cantidad), 0);
-    const envio = cart.length > 0 ? 1500 : 0; // Ejemplo: 1500 de envío si hay algo
+    const envio = cart.length > 0 ? 1500 : 0;
     const total = subtotal + envio;
 
     return (
@@ -21,7 +19,6 @@ export default function Carrito() {
                     Tu Carrito
                 </h1>
 
-                {/* 4. Cambiamos la condición para usar 'cart' */}
                 {cart.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         
@@ -30,22 +27,24 @@ export default function Carrito() {
                             {cart.map((producto) => (
                                 <div key={producto.id} className="bg-white dark:bg-neutral-900 p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-neutral-800 flex flex-col md:flex-row items-center gap-6">
                                     
-                                    {/* Imagen: Usamos 'images' que viene de tu API */}
                                     <img 
                                         src={producto.images} 
                                         alt={producto.title} 
                                         className="w-24 h-24 md:w-32 md:h-32 rounded-xl shrink-0 object-cover bg-gray-100" 
                                     />
 
-                                    {/* Información: Usamos 'title' y 'price' de tu API */}
                                     <div className="flex-grow text-center md:text-left">
                                         <h3 className="text-lg md:text-xl font-black dark:text-white mt-1">{producto.title}</h3>
                                         <p className="text-brand-blue dark:text-blue-400 font-bold mt-1">
                                             ${Number(producto.price).toLocaleString('es-AR')}
                                         </p>
+                                        {/* Badge de stock restante (opcional para dar contexto al usuario) */}
+                                        <p className="text-[10px] text-gray-400 uppercase font-black mt-2">
+                                            Disponibles: {producto.stock}
+                                        </p>
                                     </div>
 
-                                    {/* Controles de Cantidad conectados al contexto */}
+                                    {/* Controles de Cantidad */}
                                     <div className="flex items-center gap-4 bg-gray-100 dark:bg-neutral-800 px-4 py-2 rounded-full">
                                         <button 
                                             onClick={() => updateQuantity(producto.id, -1)}
@@ -53,16 +52,24 @@ export default function Carrito() {
                                         >
                                             <Minus size={18} />
                                         </button>
+                                        
                                         <span className="font-bold dark:text-white w-4 text-center">{producto.cantidad}</span>
+                                        
+                                        {/* 2. BOTÓN PLUS CON VALIDACIÓN DE STOCK */}
                                         <button 
                                             onClick={() => updateQuantity(producto.id, 1)}
-                                            className="text-gray-500 hover:text-brand-orange transition-colors"
+                                            disabled={producto.cantidad >= producto.stock}
+                                            className={`transition-colors ${
+                                                producto.cantidad >= producto.stock 
+                                                ? 'text-gray-300 dark:text-neutral-700 cursor-not-allowed' 
+                                                : 'text-gray-500 hover:text-brand-orange'
+                                            }`}
+                                            title={producto.cantidad >= producto.stock ? "Límite de stock alcanzado" : ""}
                                         >
                                             <Plus size={18} />
                                         </button>
                                     </div>
 
-                                    {/* Eliminar conectado al contexto */}
                                     <button 
                                         onClick={() => removeFromCart(producto.id)}
                                         className="text-gray-400 hover:text-red-500 transition-colors p-2"
@@ -93,7 +100,11 @@ export default function Carrito() {
                                     </div>
                                 </div>
 
-                                <button className="w-full bg-brand-orange hover:bg-orange-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-95">
+                                {/* 3. BOTÓN FINALIZAR CONECTADO AL BACKEND */}
+                                <button 
+                                    onClick={() => processCheckout()}
+                                    className="w-full bg-brand-orange hover:bg-orange-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                                >
                                     Finalizar Compra
                                 </button>
 
