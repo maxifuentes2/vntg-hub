@@ -12,7 +12,7 @@ export default function Footer() {
                         <span className="text-brand-orange">HUB</span>
                     </h2>
                     <p className="text-gray-600 dark:text-gray-400 max-w-sm leading-relaxed">
-                        La plataforma líder para coleccionistas de alto nivel. Autenticidad garantizada en cada pieza de Marvel, DC y Numismática.
+                        La plataforma líder para coleccionistas de alto nivel. Autenticidad garantizada en cada pieza.
                     </p>
                 </div>
                 
