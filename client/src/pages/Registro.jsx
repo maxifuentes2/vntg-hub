@@ -27,7 +27,7 @@ export default function Registro() {
                             </div>
                             <input 
                                 type="text" 
-                                placeholder="Ej: Bruce Wayne"
+                                placeholder="Ej: Santiago Zufia"
                                 className="w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-brand-blue outline-none transition-all"
                                 required
                             />
