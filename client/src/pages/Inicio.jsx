@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react'; 
+import { ShoppingCart, Box } from 'lucide-react'; 
 import { useCart } from '../context/CartContext'; 
 
 export default function Inicio() {
@@ -16,68 +16,93 @@ export default function Inicio() {
 
     return (
         <div className="w-full transition-colors duration-300">
-            {/* EL CONTENEDOR DEL WALLPAPER AHORA ENVUELVE TODO EL COMPONENTE */}
             <div 
                 className="relative w-full min-h-screen bg-cover bg-center bg-fixed" 
                 style={{ backgroundImage: "url('/wallpaper.webp')" }}
             >
-                {/* OVERLAY GENERAL (blanco en claro, negro en oscuro) */}
                 <div className="absolute inset-0 bg-white/85 dark:bg-neutral-950/90 transition-colors duration-300 pointer-events-none"></div>
 
-                {/* CONTENIDO (Todo dentro de z-10 para que quede por encima del overlay general) */}
                 <div className="relative z-10">
                     
-                    {/* SECCIÓN HERO (Ahora con opacidad y blur, y sobre el wallpaper) */}
-                    {/* <section className="bg-brand-blue/50 py-20 px-4 border-b border-white/10"> */}
                     <section className="bg-brand-blue/90 backdrop-blur-md py-20 px-4 border-b border-white/10">
                         <div className="max-w-4xl mx-auto text-center">
-                            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight drop-shadow-md">
+                            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight drop-shadow-md italic uppercase">
                                 Encuentra tu próximo <span className="text-brand-orange">TESORO</span>
                             </h1>
-                            <p className="text-lg md:text-xl text-blue-100/90 max-w-2xl mx-auto font-medium leading-relaxed">
+                            <p className="text-lg md:text-xl text-blue-100/90 max-w-2xl mx-auto font-medium leading-relaxed italic">
                                 Piezas únicas, cómics graduados y figuras de edición limitada con autenticidad garantizada.
                             </p>
                         </div>
                     </section>
 
-                    {/* SECCIÓN DE PRODUCTOS */}
                     <section className="max-w-7xl mx-auto px-4 py-20">
-                        <div className="flex justify-between items-end mb-10">
+                        <div className="flex justify-between items-end mb-12">
                             <div>
-                                <span className="text-brand-orange font-black uppercase tracking-widest text-xs">Coleccionables</span>
-                                <h2 className="text-3xl font-black dark:text-white mt-1">🔥 Ofertas del Día</h2>
+                                <span className="text-brand-orange font-black uppercase tracking-[0.3em] text-xs">Coleccionables</span>
+                                <h2 className="text-4xl font-black dark:text-white mt-1 italic uppercase tracking-tighter">🔥 Ofertas del Día</h2>
                             </div>
                         </div>
 
+                        {/* GRID CON EL MISMO ESPACIADO QUE CATEGORÍAS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {productos.map((prod) => (
-                                <div key={prod.id} className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-neutral-800 transition-all hover:-translate-y-2">
-                                    <Link to={`/producto/${prod.id}`}>
-                                        <div className="h-64 bg-gray-200 dark:bg-neutral-800 relative">
-                                            <img src={prod.images} alt={prod.title} className="w-full h-full object-cover" />
-                                        </div>
-                                    </Link>
-                                    <div className="p-6">
-                                        <h3 className="text-gray-900 dark:text-white font-black text-xl mb-2">{prod.title}</h3>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-2xl font-black text-brand-blue dark:text-brand-orange">
-                                                ${Number(prod.price).toLocaleString('es-AR')}
+                            {productos.map((item) => (
+                                <div 
+                                    key={item.id} 
+                                    className="group bg-white dark:bg-zinc-900 rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden relative z-10"
+                                >
+                                    {/* CONTENEDOR DE IMAGEN CON BADGES */}
+                                    <div className="relative aspect-square w-full overflow-hidden bg-zinc-950">
+                                        <Link to={`/producto/${item.id}`}>
+                                            <img 
+                                                src={item.images} 
+                                                alt={item.title}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out opacity-90 group-hover:opacity-100"
+                                            />
+                                        </Link>
+                                        
+                                        {/* BADGE DE ESTADO */}
+                                        <div className="absolute top-5 left-5 bg-white/95 dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-2xl border dark:border-zinc-700 shadow-xl pointer-events-none">
+                                            <span className="text-[10px] font-black text-brand-blue uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 bg-brand-blue rounded-full"></div>
+                                                {item.estado || "STOCK"}
                                             </span>
                                         </div>
+
+                                        {/* BADGE DE FRANQUICIA */}
+                                        <div className="absolute bottom-5 right-5 bg-brand-orange text-white px-3 py-1 rounded-xl text-[9px] font-black uppercase italic tracking-widest shadow-lg pointer-events-none">
+                                            {item.franchise}
+                                        </div>
+                                    </div>
+
+                                    {/* CUERPO DE LA CARD */}
+                                    <div className="p-7">
+                                        <Link to={`/producto/${item.id}`}>
+                                            <h3 className="text-xl font-black text-gray-900 dark:text-gray-100 leading-tight h-14 line-clamp-2 group-hover:text-brand-orange transition-colors uppercase italic tracking-tighter">
+                                                {item.title}
+                                            </h3>
+                                        </Link>
                                         
-                                        <button 
-                                            onClick={() => addToCart(prod)}
-                                            className="w-full mt-6 bg-brand-blue text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                                        >
-                                            <ShoppingCart size={20} />
-                                            Añadir al Carrito
-                                        </button>
+                                        <div className="mt-8 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Inversión</p>
+                                                <p className="text-3xl font-black text-brand-orange italic leading-none">
+                                                    ${Number(item.price).toLocaleString('es-AR')}
+                                                </p>
+                                            </div>
+                                            
+                                            {/* BOTÓN DE COMPRA INDEPENDIENTE[cite: 10] */}
+                                            <button 
+                                                onClick={() => addToCart(item)}
+                                                className="bg-brand-blue text-white p-4 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-brand-orange hover:shadow-orange-500/30 transition-all duration-300 active:scale-90"
+                                            >
+                                                <ShoppingCart size={22} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </section>
-
                 </div>
             </div>
         </div>
