@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import Chatbot from './components/Chatbot'; // <-- 1. AGREGAMOS LA IMPORTACIÓN AQUÍ
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
 import DetalleProducto from './pages/DetalleProducto';
@@ -13,12 +14,12 @@ import Contacto from './pages/Contacto';
 import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 
-// 1. IMPORTAMOS EL PROVEEDOR DEL CARRITO
+// IMPORTAMOS EL PROVEEDOR DEL CARRITO
 import { CartProvider } from './context/CartContext';
 
 function App() {
   return (
-    /* 2. ENVOLVEMOS TODA LA APP CON EL PROVIDER */
+    /* ENVOLVEMOS TODA LA APP CON EL PROVIDER */
     <CartProvider>
       <Router>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-neutral-900 transition-colors duration-300">
@@ -39,6 +40,10 @@ function App() {
             </Routes>
           </main>
           <Footer />
+          
+          {/* 2. COLOCAMOS EL CHATBOT AQUÍ, DENTRO DEL DIV PRINCIPAL */}
+          <Chatbot />
+          
         </div>
       </Router>
     </CartProvider>

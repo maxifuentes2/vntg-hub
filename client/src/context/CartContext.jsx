@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import { CheckCircle, X, AlertCircle } from 'lucide-react';
 
 const CartContext = createContext();
 
@@ -8,20 +9,40 @@ export const CartProvider = ({ children }) => {
         return savedCart ? JSON.parse(savedCart) : [];
     });
 
+    const [toasts, setToasts] = useState([]);
+
     useEffect(() => {
         localStorage.setItem('vntg_cart', JSON.stringify(cart));
     }, [cart]);
 
-    // 1. AÑADIR AL CARRITO (Validando Stock)
+    const addToast = (product, message, type = 'success') => {
+        const id = Date.now() + Math.random(); 
+        
+        setToasts((prev) => [...prev, { id, product, message, type, isExiting: false }]);
+
+        setTimeout(() => {
+            setToasts((prev) => prev.map(t => t.id === id ? { ...t, isExiting: true } : t));
+        }, 3500);
+
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        }, 3900);
+    };
+
+    const removeToast = (id) => {
+        setToasts((prev) => prev.map(t => t.id === id ? { ...t, isExiting: true } : t));
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        }, 400); 
+    };
+
     const addToCart = async (product, userId = 1) => {
         try {
-            // Buscamos si ya está en el carrito local para comparar cantidades
             const existingInCart = cart.find(item => item.id === product.id);
             const currentQty = existingInCart ? existingInCart.cantidad : 0;
 
-            // Validamos contra el stock total del producto antes de llamar al backend
             if (currentQty >= product.stock) {
-                alert(`Lo sentimos, solo hay ${product.stock} unidades disponibles de este tesoro.`);
+                addToast(product, `Solo hay ${product.stock} unidades disponibles.`, 'error');
                 return;
             }
 
@@ -32,8 +53,9 @@ export const CartProvider = ({ children }) => {
             });
 
             const data = await res.json();
+            
             if (!res.ok) {
-                alert(data.error);
+                addToast(product, data.error || "Error al reservar stock", 'error');
                 return;
             }
 
@@ -47,24 +69,24 @@ export const CartProvider = ({ children }) => {
                 return [...prevCart, { ...product, cantidad: 1 }];
             });
 
+            addToast(product, '¡Tesoro añadido al carrito!', 'success');
+
         } catch (error) {
             console.error("Error al añadir al carrito:", error);
+            addToast(product, "Error de conexión", 'error');
         }
     };
 
-    // 2. ACTUALIZAR CANTIDAD (Clampeado entre 1 y el Stock Real)
     const updateQuantity = (productId, amount) => {
         setCart(prevCart => prevCart.map(item => {
             if (item.id === productId) {
                 const newQty = item.cantidad + amount;
                 
-                // Si intenta subir más del stock, lo frenamos
                 if (newQty > item.stock) {
-                    alert("Has alcanzado el límite de stock disponible para este artículo.");
+                    addToast(item, "Límite de stock alcanzado.", 'error');
                     return item; 
                 }
 
-                // Aseguramos que sea al menos 1 y máximo el stock
                 return { ...item, cantidad: Math.max(1, Math.min(newQty, item.stock)) };
             }
             return item;
@@ -90,6 +112,68 @@ export const CartProvider = ({ children }) => {
             cartTotal 
         }}>
             {children}
+
+            <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-3 items-end pointer-events-none">
+                {toasts.map((toast) => (
+                    <div 
+                        key={toast.id}
+                        className={`pointer-events-auto bg-white dark:bg-zinc-900 border-2 rounded-2xl shadow-2xl p-4 flex items-center gap-4 min-w-[300px] max-w-sm ${
+                            toast.isExiting ? 'toast-exit' : 'toast-enter'
+                        } ${
+                            toast.type === 'error' ? 'border-red-500' : 'border-green-500' /* <-- CAMBIO A VERDE AQUÍ */
+                        }`}
+                    >
+                        {toast.product && (
+                            <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                                <img 
+                                    src={toast.product.images} 
+                                    alt={toast.product.title} 
+                                    className="w-full h-full object-cover" 
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex-1">
+                            <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mb-1 ${
+                                toast.type === 'error' ? 'text-red-500' : 'text-green-500' /* <-- CAMBIO A VERDE AQUÍ */
+                            }`}>
+                                {toast.type === 'error' ? <AlertCircle size={12} /> : <CheckCircle size={12} />} 
+                                {toast.message}
+                            </p>
+                            {toast.product && (
+                                <p className="text-sm font-black text-gray-900 dark:text-white italic line-clamp-1">
+                                    {toast.product.title}
+                                </p>
+                            )}
+                        </div>
+
+                        <button 
+                            onClick={() => removeToast(toast.id)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes fadeOutRight {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(120%); opacity: 0; }
+                }
+                .toast-enter {
+                    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                }
+                .toast-exit {
+                    animation: fadeOutRight 0.4s ease-in forwards;
+                }
+            `}} />
+
         </CartContext.Provider>
     );
 };
