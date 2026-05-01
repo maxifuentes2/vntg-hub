@@ -6,6 +6,9 @@ const Categoria = () => {
     const { id } = useParams();
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // ESTADO NUEVO: Para guardar el nombre de la categoría actual
+    const [categoriaInfo, setCategoriaInfo] = useState(null);
 
     const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState("");
     const [listaFranquicias, setListaFranquicias] = useState([]);
@@ -20,18 +23,19 @@ const Categoria = () => {
     const [showFranchiseList, setShowFranchiseList] = useState(false);
     const [showOrderList, setShowOrderList] = useState(false);
 
-    // 1. Reset total y limpieza de lista al cambiar de categoría principal[cite: 10]
+    // 1. Reset total y limpieza al cambiar de categoría
     useEffect(() => {
         setFranquiciaSeleccionada("");
-        setListaFranquicias([]); // Limpiamos para que no aparezcan marcas de la categoría anterior[cite: 10]
+        setListaFranquicias([]);
         setPrecioMinLocal(0);
         setPrecioMaxLocal(1000000);
         setPrecioMinFinal(0);
         setPrecioMaxFinal(1000000);
         setOrden("reciente");
+        setCategoriaInfo(null); // Resetear nombre al cambiar
     }, [id]);
 
-    // 2. Debounce para el rango de precio[cite: 10]
+    // 2. Debounce para el rango de precio
     useEffect(() => {
         const timer = setTimeout(() => {
             setPrecioMinFinal(precioMinLocal);
@@ -40,12 +44,23 @@ const Categoria = () => {
         return () => clearTimeout(timer);
     }, [precioMinLocal, precioMaxLocal]);
 
-    // 3. Carga de productos y de la lista de franquicias[cite: 10]
+    // 3. Carga de productos, categorías y franquicias[cite: 3]
     useEffect(() => {
-        const fetchProductos = async () => {
+        const fetchDatos = async () => {
             setLoading(true);
             try {
-                // Petición al backend con todos los filtros[cite: 10]
+                // OBTENER NOMBRE DE LA CATEGORÍA:[cite: 3]
+                // Si el ID es 'all', ponemos un nombre genérico, sino buscamos en la API
+                if (id === 'all') {
+                    setCategoriaInfo({ name: "TODO EL CATÁLOGO" });
+                } else {
+                    const resCat = await fetch(`http://localhost:5000/api/categories`);
+                    const cats = await resCat.json();
+                    const actual = cats.find(c => c.id.toString() === id.toString());
+                    if (actual) setCategoriaInfo(actual);
+                }
+
+                // Petición de productos con filtros[cite: 3]
                 let url = `http://localhost:5000/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
                 if (franquiciaSeleccionada) {
                     url += `&franchise=${franquiciaSeleccionada}`;
@@ -53,7 +68,6 @@ const Categoria = () => {
                 const res = await fetch(url);
                 const data = await res.json();
 
-                // Lógica de ordenamiento[cite: 10]
                 let productosOrdenados = [...data];
                 if (orden === "precioAsc") productosOrdenados.sort((a, b) => a.price - b.price);
                 else if (orden === "precioDesc") productosOrdenados.sort((a, b) => b.price - a.price);
@@ -61,10 +75,7 @@ const Categoria = () => {
 
                 setProductos(productosOrdenados);
 
-                // CORRECCIÓN: Cargamos la lista de franquicias disponibles para esta categoría 
-                // si la lista está vacía (independientemente de si hay una seleccionada)[cite: 10]
                 if (listaFranquicias.length === 0) {
-                    // Hacemos una petición rápida sin filtros de franquicia para obtener todas las marcas de esta categoría[cite: 10]
                     const resFull = await fetch(`http://localhost:5000/api/products?categoryId=${id}`);
                     const dataFull = await resFull.json();
                     const unicas = [...new Set(dataFull.map(p => p.franchise).filter(f => f))];
@@ -77,7 +88,7 @@ const Categoria = () => {
                 setLoading(false);
             }
         };
-        fetchProductos();
+        fetchDatos();
     }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, listaFranquicias.length]);
 
     useEffect(() => {
@@ -105,8 +116,11 @@ const Categoria = () => {
                     
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                         <div>
+                            {/* CAMBIO AQUÍ: Título dinámico basado en categoriaInfo[cite: 3] */}
                             <h1 className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter uppercase italic leading-none">
-                                EXPLORANDO <span className="text-brand-orange">COLECCIÓN</span>
+                                EXPLORANDO <span className="text-brand-orange">
+                                    {categoriaInfo ? categoriaInfo.name : "COLECCIÓN"}
+                                </span>
                             </h1>
                             <p className="text-zinc-500 font-bold tracking-[0.3em] text-[10px] uppercase mt-3 flex items-center gap-2">
                                 <div className="w-2 h-2 bg-brand-orange rounded-full animate-pulse"></div>
@@ -228,7 +242,7 @@ const Categoria = () => {
                         {productos.map((item) => (
                             <Link to={`/producto/${item.id}`} key={item.id} className="group bg-white dark:bg-zinc-900 rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
                                 <div className="relative aspect-square w-full overflow-hidden bg-zinc-950">
-                                    <img src={item.images} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
+                                    <img src={item.images} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" alt={item.title} />
                                     <div className="absolute top-5 left-5 bg-white/95 dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-2xl border dark:border-zinc-700 shadow-xl">
                                         <span className="text-[10px] font-black text-brand-blue uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 bg-brand-blue rounded-full"></div>
