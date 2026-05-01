@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, ShieldCheck, Truck, Gauge, Maximize2, Scale, CalendarDays, Box } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, ShieldCheck, Gauge, Scale, CalendarDays, Box, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const DetalleProducto = () => {
@@ -17,7 +17,6 @@ const DetalleProducto = () => {
     useEffect(() => {
         const fetchProducto = async () => {
             try {
-                // LLAMADA REAL A TU API
                 const res = await fetch(`http://localhost:5000/api/products/${id}`);
                 const data = await res.json();
                 
@@ -41,8 +40,6 @@ const DetalleProducto = () => {
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-black text-white font-black italic uppercase tracking-widest">Catalogando Pieza...</div>;
-    
-    // Si la DB no devuelve nada
     if (!producto) return <div className="min-h-screen flex items-center justify-center bg-black text-white italic font-black">PRODUCTO NO ENCONTRADO</div>;
 
     return (
@@ -70,7 +67,6 @@ const DetalleProducto = () => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* GALERÍA - Solo se muestra si existe el campo gallery */}
                         <div className="lg:col-span-1 flex lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0">
                             {producto.gallery && producto.gallery.map((img, i) => (
                                 <button 
@@ -114,8 +110,12 @@ const DetalleProducto = () => {
                                 <div className="space-y-6">
                                     <p className="text-zinc-700 dark:text-zinc-200 text-base leading-relaxed font-medium italic">"{producto.description}"</p>
                                     
-                                    {/* CAMBIO CLAVE: Usamos las propiedades directas de la base de datos */}
                                     <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-6 border-t border-gray-100 dark:border-zinc-800 text-sm">
+                                        {/* NUEVO CAMPO: FRANQUICIA[cite: 4] */}
+                                        <div className="flex items-center gap-2.5 text-zinc-600 dark:text-zinc-400 font-semibold col-span-2">
+                                            <Tag size={16} className="text-brand-orange" /> Franquicia: <span className="text-zinc-900 dark:text-white font-black uppercase">{producto.franchise || "General"}</span>
+                                        </div>
+
                                         <div className="flex items-center gap-2.5 text-zinc-600 dark:text-zinc-400 font-semibold">
                                             <Scale size={16} className="text-brand-orange" /> Escala: <span className="text-zinc-900 dark:text-white font-black">{producto.escala}</span>
                                         </div>

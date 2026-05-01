@@ -17,7 +17,7 @@ app.use(express.json());
 
 // GET - Listar productos con filtros avanzados
 app.get("/api/products", async (req, res) => {
-    const { categoryId, minPrice, maxPrice, title } = req.query;
+    const { categoryId, minPrice, maxPrice, title, franchise } = req.query;
 
     let sql = "SELECT * FROM products WHERE 1=1";
     const params = [];
@@ -25,6 +25,10 @@ app.get("/api/products", async (req, res) => {
     if (categoryId) {
         sql += " AND categoryId = ?";
         params.push(categoryId);
+    }
+    if (franchise) {
+        sql += " AND franchise = ?";
+        params.push(franchise);
     }
     if (minPrice) {
         sql += " AND price >= ?";
@@ -54,6 +58,7 @@ app.get("/api/products", async (req, res) => {
 app.post("/api/products", async (req, res) => {
     const {
         title, description, price, stock, images, categoryId,
+        franchise,
         escala, fabricante, anio, material, estado, gallery
     } = req.body;
 
@@ -63,11 +68,12 @@ app.post("/api/products", async (req, res) => {
 
     try {
         const sql = `INSERT INTO products 
-            (title, description, price, stock, images, categoryId, escala, fabricante, anio, material, estado, gallery) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            (title, description, price, stock, images, categoryId, franchise, escala, fabricante, anio, material, estado, gallery) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const [result] = await db.query(sql, [
             title, description, price, stock, images, categoryId,
+            franchise,
             escala, fabricante, anio, material, estado,
             Array.isArray(gallery) ? gallery.join(",") : gallery
         ]);
@@ -84,6 +90,7 @@ app.put("/api/products/:id", async (req, res) => {
     const { id } = req.params;
     const {
         title, description, price, stock, images, categoryId,
+        franchise,
         escala, fabricante, anio, material, estado, gallery
     } = req.body;
 
@@ -95,13 +102,14 @@ app.put("/api/products/:id", async (req, res) => {
         const sql = `
             UPDATE products 
             SET title = ?, description = ?, price = ?, stock = ?, images = ?, 
-                categoryId = ?, escala = ?, fabricante = ?, anio = ?, 
+                categoryId = ?, franchise = ?, escala = ?, fabricante = ?, anio = ?, 
                 material = ?, estado = ?, gallery = ?
             WHERE id = ?
         `;
 
         const [result] = await db.query(sql, [
             title, description, price, stock, images, categoryId,
+            franchise,
             escala, fabricante, anio, material, estado,
             Array.isArray(gallery) ? gallery.join(",") : gallery,
             id
@@ -132,7 +140,6 @@ app.patch("/api/products/:id/gallery", async (req, res) => {
         const currentGallery = rows[0].gallery;
         let galleryArray = currentGallery ? currentGallery.split(",") : [];
         
-        // Combinamos y evitamos duplicados
         const updatedGallery = [...new Set([...galleryArray, ...newImages])];
 
         await db.query("UPDATE products SET gallery = ? WHERE id = ?", [updatedGallery.join(","), id]);
@@ -159,19 +166,14 @@ app.get("/api/products/:id", async (req, res) => {
     }
 });
 
-// DELETE - Eliminar un producto a la fuerza (Ignorando llaves foráneas)
+// DELETE - Eliminar un producto a la fuerza
 app.delete("/api/products/:id", async (req, res) => {
     const { id } = req.params;
-    const connection = await db.getConnection(); // Usamos una conexión dedicada
+    const connection = await db.getConnection();
 
     try {
-        // 1. Apagamos la seguridad de MySQL a la fuerza
         await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-
-        // 2. Borramos el producto directo, sin preguntar
         const [result] = await connection.query("DELETE FROM products WHERE id = ?", [id]);
-
-        // 3. Volvemos a prender la seguridad obligatoriamente
         await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
         if (result.affectedRows === 0) {
@@ -183,7 +185,6 @@ app.delete("/api/products/:id", async (req, res) => {
         console.error("Error al borrar a la fuerza:", error);
         res.status(500).json({ error: "Error interno al eliminar" });
     } finally {
-        // Soltamos la conexión para que no se cuelgue el servidor
         connection.release();
     }
 });
@@ -203,6 +204,81 @@ app.get("/api/categories", async (req, res) => {
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: "Error al obtener categorías dinámicas" });
+    }
+});
+
+// GET - Obtener TODAS las categorías (Uso administrativo en Postman)
+app.get("/api/admin/categories", async (req, res) => {
+    try {
+        // Traemos todo de la tabla sin filtros de stock o productos
+        const [rows] = await db.query("SELECT * FROM categories");
+        res.json(rows);
+    } catch (error) {
+        console.error("Error en GET /api/admin/categories:", error);
+        res.status(500).json({ error: "Error al obtener el listado completo de categorías" });
+    }
+});
+
+// POST - Crear una nueva categoría
+app.post("/api/categories", async (req, res) => {
+    const { name } = req.body; 
+
+    if (!name) {
+        return res.status(400).json({ error: "El nombre de la categoría es obligatorio" });
+    }
+
+    try {
+        const sql = "INSERT INTO categories (name) VALUES (?)";
+        const [result] = await db.query(sql, [name]);
+        res.status(201).json({ id: result.insertId, message: "¡Categoría creada con éxito!" });
+    } catch (error) {
+        console.error("Error en POST /api/categories:", error);
+        res.status(500).json({ error: "Error al crear la categoría" });
+    }
+});
+
+// PUT - Editar el nombre de una categoría
+app.put("/api/categories/:id", async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: "El nuevo nombre es obligatorio" });
+    }
+
+    try {
+        const [result] = await db.query("UPDATE categories SET name = ? WHERE id = ?", [name, id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: "Categoría no encontrada" });
+        res.json({ message: "¡Categoría actualizada con éxito!" });
+    } catch (error) {
+        console.error("Error en PUT /api/categories:", error);
+        res.status(500).json({ error: "Error al actualizar la categoría" });
+    }
+});
+
+// DELETE - Eliminar una categoría
+app.delete("/api/categories/:id", async (req, res) => {
+    const { id } = req.params;
+    const connection = await db.getConnection();
+
+    try {
+        // Desactivamos checks para poder borrar aunque tenga productos asociados
+        await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+        const [result] = await connection.query("DELETE FROM categories WHERE id = ?", [id]);
+
+        await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Categoría no encontrada" });
+        }
+
+        res.json({ message: "Categoría eliminada con éxito" });
+    } catch (error) {
+        console.error("Error al eliminar categoría:", error);
+        res.status(500).json({ error: "Error interno al eliminar" });
+    } finally {
+        connection.release();
     }
 });
 
