@@ -199,6 +199,7 @@ app.post("/api/auth/google", async (req, res) => {
 app.get("/api/health", (req, res) => res.json({ status: "Servidor activo" }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor de VNTG-HUB activo en puerto ${PORT}`);
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Servidor accesible vía MagicDNS en http://kernelos-pc:${PORT}`);
 });

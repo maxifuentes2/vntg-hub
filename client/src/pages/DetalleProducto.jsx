@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ShoppingCart, ChevronLeft, ShieldCheck, Gauge, Scale, CalendarDays, Box, Tag } from 'lucide-react';
+import { useParams, Link } from 'react-router-dom';
+import { ShoppingCart, ChevronLeft, ShieldCheck, Gauge, Scale, CalendarDays, Box, Tag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const DetalleProducto = () => {
@@ -8,6 +8,7 @@ const DetalleProducto = () => {
     const { addToCart } = useCart();
 
     const [producto, setProducto] = useState(null);
+    const [relacionados, setRelacionados] = useState([]);
     const [loading, setLoading] = useState(true);
     
     const [imgPrincipal, setImgPrincipal] = useState("");
@@ -15,20 +16,38 @@ const DetalleProducto = () => {
     const [isZooming, setIsZooming] = useState(false);
 
     useEffect(() => {
-        const fetchProducto = async () => {
+        const fetchProductoYRelacionados = async () => {
             try {
+                // 1. Obtener producto principal
                 const res = await fetch(`http://localhost:5000/api/products/${id}`);
                 const data = await res.json();
                 
                 setProducto(data);
                 setImgPrincipal(data.images);
+
+                // 2. Obtener todos los productos para filtrar por franquicia
+                const resRel = await fetch(`http://localhost:5000/api/products`);
+                const allProducts = await resRel.json();
+                
+                // FILTRADO ESTRICTO:
+                // - Comparamos p.id (como en Categoria.jsx) para excluir el actual
+                // - Filtramos por misma franquicia
+                const filtrados = allProducts
+                    .filter(p => p.id.toString() !== id.toString() && p.franchise === data.franchise)
+                    .sort(() => 0.5 - Math.random()) 
+                    .slice(0, 4);
+                
+                setRelacionados(filtrados);
                 setLoading(false);
+                
+                // Reset de scroll al cargar nuevo producto
+                window.scrollTo(0, 0);
             } catch (error) {
                 console.error("Error al conectar con el servidor:", error);
                 setLoading(false);
             }
         };
-        fetchProducto();
+        fetchProductoYRelacionados();
     }, [id]);
 
     const handleMouseMove = (e) => {
@@ -51,9 +70,9 @@ const DetalleProducto = () => {
                 <div className="absolute inset-0 bg-white/85 dark:bg-neutral-950/90 transition-colors duration-300 pointer-events-none"></div>
                 
                 <div className="relative z-10 max-w-[1440px] mx-auto select-none">
-                    <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-500 hover:text-brand-orange mb-6 font-black text-[10px] uppercase tracking-[0.3em]">
+                    <Link to="/" className="flex items-center gap-2 text-gray-500 hover:text-brand-orange mb-6 font-black text-[10px] uppercase tracking-[0.3em]">
                         <ChevronLeft size={18} /> Volver al catálogo
-                    </button>
+                    </Link>
 
                     <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b-2 border-gray-200 dark:border-zinc-800 pb-8 mb-8">
                         <div className="max-w-2xl">
@@ -66,7 +85,7 @@ const DetalleProducto = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-20">
                         <div className="lg:col-span-1 flex lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0">
                             {producto.gallery && producto.gallery.map((img, i) => (
                                 <button 
@@ -111,7 +130,6 @@ const DetalleProducto = () => {
                                     <p className="text-zinc-700 dark:text-zinc-200 text-base leading-relaxed font-medium italic">"{producto.description}"</p>
                                     
                                     <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-6 border-t border-gray-100 dark:border-zinc-800 text-sm">
-                                        {/* NUEVO CAMPO: FRANQUICIA[cite: 4] */}
                                         <div className="flex items-center gap-2.5 text-zinc-600 dark:text-zinc-400 font-semibold col-span-2">
                                             <Tag size={16} className="text-brand-orange" /> Franquicia: <span className="text-zinc-900 dark:text-white font-black uppercase">{producto.franchise || "General"}</span>
                                         </div>
@@ -139,6 +157,44 @@ const DetalleProducto = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* SECCIÓN RELACIONADOS - MISMA FRANQUICIA */}
+                    {relacionados.length > 0 && (
+                        <div className="mt-20 pt-10 border-t-2 border-gray-100 dark:border-zinc-900">
+                            <div className="flex justify-between items-center mb-10">
+                                <div>
+                                    <h2 className="text-3xl font-black italic uppercase tracking-tighter dark:text-white">Más de {producto.franchise}</h2>
+                                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">Piezas similares para tu vitrina</p>
+                                </div>
+                                <Link to="/" className="hidden md:flex items-center gap-2 text-brand-orange font-black text-[10px] uppercase tracking-widest hover:translate-x-1 transition-transform">
+                                    Ver todo el catálogo <ArrowRight size={14} />
+                                </Link>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {relacionados.map((item) => (
+                                    <Link 
+                                        key={item.id} 
+                                        to={`/producto/${item.id}`} // Usamos item.id para evitar undefined
+                                        className="group bg-white/50 dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800 rounded-2xl p-4 transition-all hover:border-brand-orange hover:shadow-2xl hover:shadow-orange-500/10"
+                                    >
+                                        <div className="aspect-square rounded-xl overflow-hidden mb-4 bg-zinc-100 dark:bg-zinc-800">
+                                            <img 
+                                                src={item.images} 
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                                alt={item.title} 
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <span className="text-[8px] font-black text-brand-orange uppercase tracking-[0.2em]">{item.franchise}</span>
+                                            <h4 className="text-sm font-black italic uppercase dark:text-white line-clamp-1">{item.title}</h4>
+                                            <p className="text-lg font-black text-zinc-900 dark:text-zinc-300 italic">${Number(item.price).toLocaleString('es-AR')}</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
