@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // <-- IMPORTAMOS useNavigate
 import { 
     Menu, 
     ShoppingCart, 
@@ -15,11 +15,12 @@ export default function Navbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
     const [dbCategories, setDbCategories] = useState([]); 
+    const [searchTerm, setSearchTerm] = useState(''); // <-- ESTADO PARA LA BÚSQUEDA
     
     const { cartCount } = useCart();
-    const user = null; // Mock de usuario
+    const user = null; 
+    const navigate = useNavigate(); // <-- INICIAMOS NAVEGACIÓN
 
-    // Mantenemos el fetch aquí para que el Sidebar tenga los datos
     useEffect(() => {
         fetch('http://localhost:5000/api/categories')
             .then(res => res.json())
@@ -38,6 +39,16 @@ export default function Navbar() {
     }, [theme]);
 
     const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+
+    // MANEJADOR DE BÚSQUEDA
+    const handleSearch = (e) => {
+        e.preventDefault(); // Prevenir recarga de página
+        if (searchTerm.trim()) {
+            // Redirigimos a la vista de categoría 'all' pero con un parámetro de query
+            navigate(`/categoria/all?search=${encodeURIComponent(searchTerm.trim())}`);
+            setSearchTerm(''); // Limpiamos el input
+        }
+    };
 
     return (
         <>
@@ -65,22 +76,25 @@ export default function Navbar() {
                             </Link>
                         </div>
 
-                        {/* Centro: Buscador */}
+                        {/* Centro: Buscador ACTUALIZADO A FORMULARIO */}
                         <div className="hidden md:flex flex-1 max-w-xl mx-8">
-                            <div className="relative w-full flex group shadow-sm">
+                            <form onSubmit={handleSearch} className="relative w-full flex group shadow-sm">
                                 <input 
                                     type="text" 
-                                    placeholder="Buscar figuras, autos..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Buscar figuras, autos, franquicias..." 
                                     className="w-full bg-gray-100 dark:bg-neutral-800 border-none rounded-l-xl py-2 px-4 focus:ring-2 focus:ring-brand-blue outline-none dark:text-white transition-all"
                                 />
-                                <button className="bg-brand-blue hover:bg-blue-800 text-white px-5 rounded-r-xl transition-colors">
+                                <button type="submit" className="bg-brand-blue hover:bg-blue-800 text-white px-5 rounded-r-xl transition-colors">
                                     <Search size={18} />
                                 </button>
-                            </div>
+                            </form>
                         </div>
 
                         {/* Derecha: Acciones */}
                         <div className="flex items-center space-x-1 md:space-x-3">
+                            {/* ... Resto de los botones ... */}
                             <Link to={user ? "/cuenta" : "/login"} className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange transition-all">
                                 <User size={22} />
                             </Link>

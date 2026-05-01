@@ -1,29 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom'; // <-- IMPORTAMOS useLocation
 import { ShoppingCart, Box, ChevronDown, ListFilter, ArrowUpDown, CircleDollarSign, Check } from 'lucide-react';
+import { useCart } from '../context/CartContext'; 
 
 const Categoria = () => {
     const { id } = useParams();
+    const location = useLocation(); // <-- OBTENEMOS LA URL ACTUAL
+    const { addToCart } = useCart(); 
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // ESTADO NUEVO: Para guardar el nombre de la categoría actual
     const [categoriaInfo, setCategoriaInfo] = useState(null);
-
     const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState("");
     const [listaFranquicias, setListaFranquicias] = useState([]);
     const [orden, setOrden] = useState("reciente");
 
     const [precioMinLocal, setPrecioMinLocal] = useState(0);
     const [precioMaxLocal, setPrecioMaxLocal] = useState(1000000);
-
     const [precioMinFinal, setPrecioMinFinal] = useState(0);
     const [precioMaxFinal, setPrecioMaxFinal] = useState(1000000);
 
     const [showFranchiseList, setShowFranchiseList] = useState(false);
     const [showOrderList, setShowOrderList] = useState(false);
 
-    // 1. Reset total y limpieza al cambiar de categoría
+    // OBTENER EL TÉRMINO DE BÚSQUEDA DE LA URL
+    const queryParams = new URLSearchParams(location.search);
+    const searchQuery = queryParams.get('search') || '';
+
+    // 1. Limpieza al cambiar de categoría o de búsqueda
     useEffect(() => {
         setFranquiciaSeleccionada("");
         setListaFranquicias([]);
@@ -32,8 +36,8 @@ const Categoria = () => {
         setPrecioMinFinal(0);
         setPrecioMaxFinal(1000000);
         setOrden("reciente");
-        setCategoriaInfo(null); // Resetear nombre al cambiar
-    }, [id]);
+        setCategoriaInfo(null); 
+    }, [id, searchQuery]); // <-- Añadido searchQuery a las dependencias
 
     // 2. Debounce para el rango de precio
     useEffect(() => {
@@ -44,14 +48,15 @@ const Categoria = () => {
         return () => clearTimeout(timer);
     }, [precioMinLocal, precioMaxLocal]);
 
-    // 3. Carga de productos, categorías y franquicias[cite: 3]
+    // 3. Carga de datos filtrados
     useEffect(() => {
         const fetchDatos = async () => {
             setLoading(true);
             try {
-                // OBTENER NOMBRE DE LA CATEGORÍA:[cite: 3]
-                // Si el ID es 'all', ponemos un nombre genérico, sino buscamos en la API
-                if (id === 'all') {
+                // Info de Categoría: Lógica adaptada para mostrar título de búsqueda
+                if (searchQuery) {
+                    setCategoriaInfo({ name: `RESULTADOS PARA "${searchQuery.toUpperCase()}"` });
+                } else if (id === 'all') {
                     setCategoriaInfo({ name: "TODO EL CATÁLOGO" });
                 } else {
                     const resCat = await fetch(`http://localhost:5000/api/categories`);
@@ -60,11 +65,18 @@ const Categoria = () => {
                     if (actual) setCategoriaInfo(actual);
                 }
 
-                // Petición de productos con filtros[cite: 3]
+                // Petición de productos incluyendo el parámetro de búsqueda 'q'
                 let url = `http://localhost:5000/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                
                 if (franquiciaSeleccionada) {
                     url += `&franchise=${franquiciaSeleccionada}`;
                 }
+                
+                // Si hay búsqueda, la enviamos al backend
+                if (searchQuery) {
+                    url += `&q=${encodeURIComponent(searchQuery)}`;
+                }
+
                 const res = await fetch(url);
                 const data = await res.json();
 
@@ -89,7 +101,7 @@ const Categoria = () => {
             }
         };
         fetchDatos();
-    }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, listaFranquicias.length]);
+    }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, listaFranquicias.length, searchQuery]); // <-- Añadido searchQuery
 
     useEffect(() => {
         const closeMenus = () => {
@@ -116,9 +128,9 @@ const Categoria = () => {
                     
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                         <div>
-                            {/* CAMBIO AQUÍ: Título dinámico basado en categoriaInfo[cite: 3] */}
                             <h1 className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter uppercase italic leading-none">
-                                EXPLORANDO <span className="text-brand-orange">
+                                {searchQuery ? "" : "EXPLORANDO "}
+                                <span className="text-brand-orange">
                                     {categoriaInfo ? categoriaInfo.name : "COLECCIÓN"}
                                 </span>
                             </h1>
@@ -238,37 +250,56 @@ const Categoria = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-                        {productos.map((item) => (
-                            <Link to={`/producto/${item.id}`} key={item.id} className="group bg-white dark:bg-zinc-900 rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
-                                <div className="relative aspect-square w-full overflow-hidden bg-zinc-950">
-                                    <img src={item.images} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" alt={item.title} />
-                                    <div className="absolute top-5 left-5 bg-white/95 dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-2xl border dark:border-zinc-700 shadow-xl">
-                                        <span className="text-[10px] font-black text-brand-blue uppercase tracking-[0.2em] flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 bg-brand-blue rounded-full"></div>
-                                            {item.estado || "STOCK"}
-                                        </span>
-                                    </div>
-                                    <div className="absolute bottom-5 right-5 bg-brand-orange text-white px-3 py-1 rounded-xl text-[9px] font-black uppercase italic tracking-widest shadow-lg">{item.franchise}</div>
-                                </div>
-                                <div className="p-7">
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-gray-100 leading-tight h-14 line-clamp-2 group-hover:text-brand-orange transition-colors uppercase italic tracking-tighter">{item.title}</h3>
-                                    <div className="mt-8 flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Inversión</p>
-                                            <p className="text-3xl font-black text-brand-orange italic leading-none">${Number(item.price).toLocaleString('es-AR')}</p>
+                    {/* MUESTRA MENSAJE SI NO HAY RESULTADOS */}
+                    {productos.length === 0 && !loading ? (
+                        <div className="text-center py-20 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-2xl relative z-10">
+                            <h2 className="text-2xl font-black dark:text-white italic uppercase tracking-tighter mb-2">No encontramos tesoros</h2>
+                            <p className="text-zinc-500 font-bold">Intenta con otros términos o ajusta los filtros de búsqueda.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
+                            {productos.map((item) => (
+                                <Link to={`/producto/${item.id}`} key={item.id} className="group bg-white dark:bg-zinc-900 rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+                                    
+                                    <div className="relative aspect-square w-full overflow-hidden bg-zinc-950">
+                                        <img src={item.images} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" alt={item.title} />
+                                        
+                                        <div className="absolute top-4 left-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-xl">
+                                            <span className="text-[8px] font-black text-brand-blue uppercase tracking-[0.2em] flex items-center gap-1.5">
+                                                <div className="w-1 h-1 bg-brand-blue rounded-full animate-pulse"></div>
+                                                {item.estado || "STOCK"}
+                                            </span>
                                         </div>
-                                        <div 
-                                            className="bg-brand-blue text-white p-4 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-brand-orange transition-all duration-300"
-                                            onClick={(e) => { e.preventDefault(); }}
-                                        >
-                                            <ShoppingCart size={22} />
+
+                                        <div className="absolute bottom-4 right-4 bg-brand-orange text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase italic tracking-widest shadow-lg">
+                                            {item.franchise}
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+
+                                    <div className="p-7">
+                                        <h3 className="text-xl font-black text-gray-900 dark:text-gray-100 leading-tight h-14 line-clamp-2 group-hover:text-brand-orange transition-colors uppercase italic tracking-tighter">
+                                            {item.title}
+                                        </h3>
+                                        <div className="mt-8 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Inversión</p>
+                                                <p className="text-3xl font-black text-brand-orange italic leading-none">${Number(item.price).toLocaleString('es-AR')}</p>
+                                            </div>
+                                            <div 
+                                                className="bg-brand-blue text-white p-4 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-brand-orange transition-all duration-300"
+                                                onClick={(e) => { 
+                                                    e.preventDefault(); 
+                                                    addToCart(item);
+                                                }}
+                                            >
+                                                <ShoppingCart size={22} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
             

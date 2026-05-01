@@ -20,13 +20,12 @@ app.use(express.json());
 
 // GET - Listar productos con filtros avanzados
 app.get("/api/products", async (req, res) => {
-    const { categoryId, minPrice, maxPrice, title, franchise } = req.query;
+    const { categoryId, minPrice, maxPrice, title, franchise, q } = req.query; // <-- AGREGAMOS 'q'
 
     // Solo mostramos productos que tengan stock disponible
     let sql = "SELECT * FROM products WHERE stock > 0";
     const params = [];
 
-    // LÓGICA CLAVE: Si categoryId es 'all', omitimos el filtro de ID
     if (categoryId && categoryId !== 'all') {
         sql += " AND categoryId = ?";
         params.push(categoryId);
@@ -46,6 +45,13 @@ app.get("/api/products", async (req, res) => {
     if (title) {
         sql += " AND title LIKE ?";
         params.push(`%${title}%`);
+    }
+    
+    // BÚSQUEDA FLEXIBLE: Busca en título, descripción o franquicia
+    if (q) {
+        sql += " AND (title LIKE ? OR description LIKE ? OR franchise LIKE ?)";
+        const searchTerm = `%${q}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
     }
 
     sql += " ORDER BY createdAt DESC";
@@ -172,7 +178,35 @@ app.get("/api/categories", async (req, res) => {
 });
 
 // ==========================================
-// 3. AUTENTICACIÓN Y OTROS
+// 3. CARRITO / RESERVAS (NUEVO)
+// ==========================================
+
+app.post("/api/reserve", async (req, res) => {
+    const { productId, userId } = req.body;
+    
+    try {
+        // Verificamos si el producto existe y tiene stock en la base de datos
+        const [rows] = await db.query("SELECT stock FROM products WHERE id = ?", [productId]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Producto no encontrado" });
+        }
+        
+        if (rows[0].stock <= 0) {
+            return res.status(400).json({ error: "Lo sentimos, ya no queda stock de este tesoro." });
+        }
+        
+        // Si hay stock, permitimos que el frontend lo agregue al carrito
+        res.status(200).json({ message: "Stock validado y reservado temporalmente." });
+        
+    } catch (error) {
+        console.error("Error en POST /api/reserve:", error);
+        res.status(500).json({ error: "Error al validar la reserva" });
+    }
+});
+
+// ==========================================
+// 4. AUTENTICACIÓN Y OTROS
 // ==========================================
 
 app.post("/api/auth/google", async (req, res) => {
