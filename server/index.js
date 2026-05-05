@@ -9,9 +9,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Middlewares
 // Se simplifica el CORS para permitir peticiones locales de desarrollo
-app.use(cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"] 
-}));
+app.use(cors());
 app.use(express.json());
 
 // ==========================================
