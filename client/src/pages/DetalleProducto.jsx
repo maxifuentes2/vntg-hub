@@ -20,7 +20,8 @@ const DetalleProducto = () => {
     useEffect(() => {
         const fetchProductoYRelacionados = async () => {
             try {
-                const fetchConfig = { headers: { "ngrok-skip-browser-warning": "true" } };
+                // AGREGAMOS EL PASE VIP DE LOCALTUNNEL AL OBJETO DE CONFIGURACIÓN
+                const fetchConfig = { headers: { "Bypass-Tunnel-Reminder": "true" } };
 
                 const res = await fetch(`${API_URL}/api/products/${id}`, fetchConfig);
                 const data = await res.json();

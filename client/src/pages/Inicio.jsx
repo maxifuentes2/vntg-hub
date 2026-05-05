@@ -12,7 +12,7 @@ export default function Inicio() {
     useEffect(() => {
         fetch(`${API_URL}/api/products`, {
             headers: {
-                "ngrok-skip-browser-warning": "true"
+                "Bypass-Tunnel-Reminder": "true" 
             }
         })
             .then(res => res.json())
@@ -35,9 +35,6 @@ export default function Inicio() {
                             <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight drop-shadow-md italic uppercase">
                                 Encuentra tu próximo <span className="text-brand-orange">TESORO</span>
                             </h1>
-                            <div className="bg-red-500 text-white p-4 font-bold text-center mt-4">
-                                ESTOY APUNTANDO A: {import.meta.env.VITE_API_URL || "http://kernelos-pc:5000"}
-                            </div>
                             <p className="text-lg md:text-xl text-blue-100/90 max-w-2xl mx-auto font-medium leading-relaxed italic">
                                 Piezas únicas, cómics graduados y figuras de edición limitada con autenticidad garantizada.
                             </p>
