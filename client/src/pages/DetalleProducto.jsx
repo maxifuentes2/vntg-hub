@@ -20,16 +20,13 @@ const DetalleProducto = () => {
     useEffect(() => {
         const fetchProductoYRelacionados = async () => {
             try {
-                // AGREGAMOS EL PASE VIP DE LOCALTUNNEL AL OBJETO DE CONFIGURACIÓN
-                const fetchConfig = { headers: { "Bypass-Tunnel-Reminder": "true" } };
-
-                const res = await fetch(`${API_URL}/api/products/${id}`, fetchConfig);
+                const res = await fetch(`${API_URL}/api/products/${id}`);
                 const data = await res.json();
                 
                 setProducto(data);
                 setImgPrincipal(data.images);
 
-                const resRel = await fetch(`${API_URL}/api/products`, fetchConfig);
+                const resRel = await fetch(`${API_URL}/api/products`);
                 const allProducts = await resRel.json();
                 
                 const filtrados = allProducts

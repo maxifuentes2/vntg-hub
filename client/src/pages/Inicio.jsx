@@ -10,11 +10,8 @@ export default function Inicio() {
     const { addToCart } = useCart();
 
     useEffect(() => {
-        fetch(`${API_URL}/api/products`, {
-            headers: {
-                "Bypass-Tunnel-Reminder": "true" 
-            }
-        })
+        // Petición 100% limpia sin headers
+        fetch(`${API_URL}/api/products`)
             .then(res => res.json())
             .then(data => setProductos(Array.isArray(data) ? data : []))
             .catch(err => console.error("Error:", err));

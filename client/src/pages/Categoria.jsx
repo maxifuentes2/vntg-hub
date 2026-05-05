@@ -51,15 +51,12 @@ const Categoria = () => {
         const fetchDatos = async () => {
             setLoading(true);
             try {
-                // AGREGAMOS EL PASE VIP DE LOCALTUNNEL AL OBJETO DE CONFIGURACIÓN
-                const fetchConfig = { headers: { "Bypass-Tunnel-Reminder": "true" } };
-
                 if (searchQuery) {
                     setCategoriaInfo({ name: `RESULTADOS PARA "${searchQuery.toUpperCase()}"` });
                 } else if (id === 'all') {
                     setCategoriaInfo({ name: "TODO EL CATÁLOGO" });
                 } else {
-                    const resCat = await fetch(`${API_URL}/api/categories`, fetchConfig);
+                    const resCat = await fetch(`${API_URL}/api/categories`);
                     const cats = await resCat.json();
                     const actual = cats.find(c => c.id.toString() === id.toString());
                     if (actual) setCategoriaInfo(actual);
@@ -75,7 +72,7 @@ const Categoria = () => {
                     url += `&q=${encodeURIComponent(searchQuery)}`;
                 }
 
-                const res = await fetch(url, fetchConfig);
+                const res = await fetch(url);
                 const data = await res.json();
 
                 let productosOrdenados = [...data];
@@ -86,7 +83,7 @@ const Categoria = () => {
                 setProductos(productosOrdenados);
 
                 if (listaFranquicias.length === 0) {
-                    const resFull = await fetch(`${API_URL}/api/products?categoryId=${id}`, fetchConfig);
+                    const resFull = await fetch(`${API_URL}/api/products?categoryId=${id}`);
                     const dataFull = await resFull.json();
                     const unicas = [...new Set(dataFull.map(p => p.franchise).filter(f => f))];
                     setListaFranquicias(unicas);

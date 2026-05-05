@@ -12,8 +12,7 @@ export default function Login() {
             const response = await fetch(`${API_URL}/api/auth/google`, {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'true' // AGREGAMOS EL PASE VIP DE LOCALTUNNEL
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ token: credentialResponse.credential })
             });

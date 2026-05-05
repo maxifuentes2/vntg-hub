@@ -41,8 +41,7 @@ export const CartProvider = ({ children }) => {
             const res = await fetch(`${API_URL}/api/reserve`, {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'true' // AGREGAMOS EL PASE VIP DE LOCALTUNNEL
+                    'Content-Type': 'application/json' 
                 },
                 body: JSON.stringify({ productId: product.id, userId })
             });
