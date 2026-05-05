@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, ChevronLeft, ShieldCheck, Gauge, Scale, CalendarDays, Box, Tag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+
 const DetalleProducto = () => {
     const { id } = useParams();
     const { addToCart } = useCart();
@@ -18,20 +20,17 @@ const DetalleProducto = () => {
     useEffect(() => {
         const fetchProductoYRelacionados = async () => {
             try {
-                // 1. Obtener producto principal
-                const res = await fetch(`http://localhost:5000/api/products/${id}`);
+                const fetchConfig = { headers: { "ngrok-skip-browser-warning": "true" } };
+
+                const res = await fetch(`${API_URL}/api/products/${id}`, fetchConfig);
                 const data = await res.json();
                 
                 setProducto(data);
                 setImgPrincipal(data.images);
 
-                // 2. Obtener todos los productos para filtrar por franquicia
-                const resRel = await fetch(`http://localhost:5000/api/products`);
+                const resRel = await fetch(`${API_URL}/api/products`, fetchConfig);
                 const allProducts = await resRel.json();
                 
-                // FILTRADO ESTRICTO:
-                // - Comparamos p.id (como en Categoria.jsx) para excluir el actual
-                // - Filtramos por misma franquicia
                 const filtrados = allProducts
                     .filter(p => p.id.toString() !== id.toString() && p.franchise === data.franchise)
                     .sort(() => 0.5 - Math.random()) 
@@ -40,7 +39,6 @@ const DetalleProducto = () => {
                 setRelacionados(filtrados);
                 setLoading(false);
                 
-                // Reset de scroll al cargar nuevo producto
                 window.scrollTo(0, 0);
             } catch (error) {
                 console.error("Error al conectar con el servidor:", error);
@@ -158,7 +156,6 @@ const DetalleProducto = () => {
                         </div>
                     </div>
 
-                    {/* SECCIÓN RELACIONADOS - MISMA FRANQUICIA */}
                     {relacionados.length > 0 && (
                         <div className="mt-20 pt-10 border-t-2 border-gray-100 dark:border-zinc-900">
                             <div className="flex justify-between items-center mb-10">
@@ -175,7 +172,7 @@ const DetalleProducto = () => {
                                 {relacionados.map((item) => (
                                     <Link 
                                         key={item.id} 
-                                        to={`/producto/${item.id}`} // Usamos item.id para evitar undefined
+                                        to={`/producto/${item.id}`} 
                                         className="group bg-white/50 dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800 rounded-2xl p-4 transition-all hover:border-brand-orange hover:shadow-2xl hover:shadow-orange-500/10"
                                     >
                                         <div className="aspect-square rounded-xl overflow-hidden mb-4 bg-zinc-100 dark:bg-zinc-800">

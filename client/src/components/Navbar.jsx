@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // <-- IMPORTAMOS useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 import { 
     Menu, 
     ShoppingCart, 
@@ -11,18 +11,24 @@ import {
 import CategorySidebar from './CategorySidebar';
 import { useCart } from '../context/CartContext';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+
 export default function Navbar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
     const [dbCategories, setDbCategories] = useState([]); 
-    const [searchTerm, setSearchTerm] = useState(''); // <-- ESTADO PARA LA BÚSQUEDA
+    const [searchTerm, setSearchTerm] = useState('');
     
     const { cartCount } = useCart();
     const user = null; 
-    const navigate = useNavigate(); // <-- INICIAMOS NAVEGACIÓN
+    const navigate = useNavigate(); 
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/categories')
+        fetch(`${API_URL}/api/categories`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true"
+            }
+        })
             .then(res => res.json())
             .then(data => setDbCategories(Array.isArray(data) ? data : []))
             .catch(err => console.error("Error cargando categorías:", err));
@@ -40,13 +46,11 @@ export default function Navbar() {
 
     const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
-    // MANEJADOR DE BÚSQUEDA
     const handleSearch = (e) => {
-        e.preventDefault(); // Prevenir recarga de página
+        e.preventDefault(); 
         if (searchTerm.trim()) {
-            // Redirigimos a la vista de categoría 'all' pero con un parámetro de query
             navigate(`/categoria/all?search=${encodeURIComponent(searchTerm.trim())}`);
-            setSearchTerm(''); // Limpiamos el input
+            setSearchTerm(''); 
         }
     };
 
@@ -56,7 +60,6 @@ export default function Navbar() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         
-                        {/* Izquierda: Menú + Logo */}
                         <div className="flex items-center gap-4">
                             <button 
                                 onClick={() => setIsSidebarOpen(true)}
@@ -76,7 +79,6 @@ export default function Navbar() {
                             </Link>
                         </div>
 
-                        {/* Centro: Buscador ACTUALIZADO A FORMULARIO */}
                         <div className="hidden md:flex flex-1 max-w-xl mx-8">
                             <form onSubmit={handleSearch} className="relative w-full flex group shadow-sm">
                                 <input 
@@ -92,9 +94,7 @@ export default function Navbar() {
                             </form>
                         </div>
 
-                        {/* Derecha: Acciones */}
                         <div className="flex items-center space-x-1 md:space-x-3">
-                            {/* ... Resto de los botones ... */}
                             <Link to={user ? "/cuenta" : "/login"} className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange transition-all">
                                 <User size={22} />
                             </Link>

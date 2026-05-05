@@ -3,12 +3,18 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Box } from 'lucide-react'; 
 import { useCart } from '../context/CartContext'; 
 
+const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+
 export default function Inicio() {
     const [productos, setProductos] = useState([]);
     const { addToCart } = useCart(); 
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/products')
+        fetch(`${API_URL}/api/products`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true"
+            }
+        })
             .then(res => res.json())
             .then(data => setProductos(Array.isArray(data) ? data : []))
             .catch(err => console.error("Error:", err));
@@ -43,14 +49,12 @@ export default function Inicio() {
                             </div>
                         </div>
 
-                        {/* GRID CON EL MISMO ESPACIADO QUE CATEGORÍAS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                             {productos.map((item) => (
                                 <div 
                                     key={item.id} 
                                     className="group bg-white dark:bg-zinc-900 rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden relative z-10"
                                 >
-                                    {/* CONTENEDOR DE IMAGEN CON BADGES */}
                                     <div className="relative aspect-square w-full overflow-hidden bg-zinc-950">
                                         <Link to={`/producto/${item.id}`}>
                                             <img 
@@ -60,7 +64,6 @@ export default function Inicio() {
                                             />
                                         </Link>
                                         
-                                        {/* BADGE DE ESTADO */}
                                         <div className="absolute top-5 left-5 bg-white/95 dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-2xl border dark:border-zinc-700 shadow-xl pointer-events-none">
                                             <span className="text-[10px] font-black text-brand-blue uppercase tracking-[0.2em] flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 bg-brand-blue rounded-full"></div>
@@ -68,13 +71,11 @@ export default function Inicio() {
                                             </span>
                                         </div>
 
-                                        {/* BADGE DE FRANQUICIA */}
                                         <div className="absolute bottom-5 right-5 bg-brand-orange text-white px-3 py-1 rounded-xl text-[9px] font-black uppercase italic tracking-widest shadow-lg pointer-events-none">
                                             {item.franchise}
                                         </div>
                                     </div>
 
-                                    {/* CUERPO DE LA CARD */}
                                     <div className="p-7">
                                         <Link to={`/producto/${item.id}`}>
                                             <h3 className="text-xl font-black text-gray-900 dark:text-gray-100 leading-tight h-14 line-clamp-2 group-hover:text-brand-orange transition-colors uppercase italic tracking-tighter">
@@ -90,7 +91,6 @@ export default function Inicio() {
                                                 </p>
                                             </div>
                                             
-                                            {/* BOTÓN DE COMPRA INDEPENDIENTE[cite: 10] */}
                                             <button 
                                                 onClick={() => addToCart(item)}
                                                 className="bg-brand-blue text-white p-4 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-brand-orange hover:shadow-orange-500/30 transition-all duration-300 active:scale-90"
