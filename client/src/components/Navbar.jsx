@@ -84,7 +84,7 @@ export default function Navbar() {
                                     type="text" 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Buscar figuras, autos, franquicias..." 
+                                    placeholder="¿Qué estás buscando?" 
                                     className="w-full bg-gray-100 dark:bg-neutral-800 border-none py-2 px-4 focus:ring-0 outline-none dark:text-white transition-all"
                                 />
                                 <button type="submit" className="bg-brand-blue hover:bg-blue-800 text-white px-5 transition-colors">
