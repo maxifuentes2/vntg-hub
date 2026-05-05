@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Chatbot from './components/Chatbot'; // <-- 1. AGREGAMOS LA IMPORTACIÓN AQUÍ
+import Chatbot from './components/Chatbot'; 
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
 import DetalleProducto from './pages/DetalleProducto';
@@ -13,6 +13,9 @@ import EnviosSeguros from './pages/EnviosSeguros';
 import Contacto from './pages/Contacto';
 import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
+
+// 1. AGREGAMOS LA IMPORTACIÓN DE LA NUEVA PÁGINA AQUÍ
+import NotFound from './pages/NotFound'; 
 
 // IMPORTAMOS EL PROVEEDOR DEL CARRITO
 import { CartProvider } from './context/CartContext';
@@ -37,11 +40,15 @@ function App() {
               <Route path="/contacto" element={<Contacto />} />
               <Route path="/terminos" element={<Terminos />} />
               <Route path="/privacidad" element={<Privacidad />} />
+              
+              {/* 2. AGREGAMOS LA RUTA 404 AL FINAL DE TODAS LAS DEMÁS */}
+              <Route path="*" element={<NotFound />} />
+              
             </Routes>
           </main>
           <Footer />
           
-          {/* 2. COLOCAMOS EL CHATBOT AQUÍ, DENTRO DEL DIV PRINCIPAL */}
+          {/* COLOCAMOS EL CHATBOT AQUÍ, DENTRO DEL DIV PRINCIPAL */}
           <Chatbot />
           
         </div>
