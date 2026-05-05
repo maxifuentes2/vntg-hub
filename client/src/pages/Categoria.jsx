@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom'; // <-- IMPORTAMOS useLocation
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, Box, ChevronDown, ListFilter, ArrowUpDown, CircleDollarSign, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
 
+const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+
 const Categoria = () => {
     const { id } = useParams();
-    const location = useLocation(); // <-- OBTENEMOS LA URL ACTUAL
+    const location = useLocation(); 
     const { addToCart } = useCart(); 
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,11 +25,9 @@ const Categoria = () => {
     const [showFranchiseList, setShowFranchiseList] = useState(false);
     const [showOrderList, setShowOrderList] = useState(false);
 
-    // OBTENER EL TÉRMINO DE BÚSQUEDA DE LA URL
     const queryParams = new URLSearchParams(location.search);
     const searchQuery = queryParams.get('search') || '';
 
-    // 1. Limpieza al cambiar de categoría o de búsqueda
     useEffect(() => {
         setFranquiciaSeleccionada("");
         setListaFranquicias([]);
@@ -37,9 +37,8 @@ const Categoria = () => {
         setPrecioMaxFinal(1000000);
         setOrden("reciente");
         setCategoriaInfo(null); 
-    }, [id, searchQuery]); // <-- Añadido searchQuery a las dependencias
+    }, [id, searchQuery]);
 
-    // 2. Debounce para el rango de precio
     useEffect(() => {
         const timer = setTimeout(() => {
             setPrecioMinFinal(precioMinLocal);
@@ -48,36 +47,34 @@ const Categoria = () => {
         return () => clearTimeout(timer);
     }, [precioMinLocal, precioMaxLocal]);
 
-    // 3. Carga de datos filtrados
     useEffect(() => {
         const fetchDatos = async () => {
             setLoading(true);
             try {
-                // Info de Categoría: Lógica adaptada para mostrar título de búsqueda
+                const fetchConfig = { headers: { "ngrok-skip-browser-warning": "true" } };
+
                 if (searchQuery) {
                     setCategoriaInfo({ name: `RESULTADOS PARA "${searchQuery.toUpperCase()}"` });
                 } else if (id === 'all') {
                     setCategoriaInfo({ name: "TODO EL CATÁLOGO" });
                 } else {
-                    const resCat = await fetch(`http://localhost:5000/api/categories`);
+                    const resCat = await fetch(`${API_URL}/api/categories`, fetchConfig);
                     const cats = await resCat.json();
                     const actual = cats.find(c => c.id.toString() === id.toString());
                     if (actual) setCategoriaInfo(actual);
                 }
 
-                // Petición de productos incluyendo el parámetro de búsqueda 'q'
-                let url = `http://localhost:5000/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                let url = `${API_URL}/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
                 
                 if (franquiciaSeleccionada) {
                     url += `&franchise=${franquiciaSeleccionada}`;
                 }
                 
-                // Si hay búsqueda, la enviamos al backend
                 if (searchQuery) {
                     url += `&q=${encodeURIComponent(searchQuery)}`;
                 }
 
-                const res = await fetch(url);
+                const res = await fetch(url, fetchConfig);
                 const data = await res.json();
 
                 let productosOrdenados = [...data];
@@ -88,7 +85,7 @@ const Categoria = () => {
                 setProductos(productosOrdenados);
 
                 if (listaFranquicias.length === 0) {
-                    const resFull = await fetch(`http://localhost:5000/api/products?categoryId=${id}`);
+                    const resFull = await fetch(`${API_URL}/api/products?categoryId=${id}`, fetchConfig);
                     const dataFull = await resFull.json();
                     const unicas = [...new Set(dataFull.map(p => p.franchise).filter(f => f))];
                     setListaFranquicias(unicas);
@@ -101,7 +98,7 @@ const Categoria = () => {
             }
         };
         fetchDatos();
-    }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, listaFranquicias.length, searchQuery]); // <-- Añadido searchQuery
+    }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, listaFranquicias.length, searchQuery]); 
 
     useEffect(() => {
         const closeMenus = () => {
@@ -250,7 +247,6 @@ const Categoria = () => {
                         </div>
                     </div>
 
-                    {/* MUESTRA MENSAJE SI NO HAY RESULTADOS */}
                     {productos.length === 0 && !loading ? (
                         <div className="text-center py-20 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl rounded-[2.5rem] border-2 border-gray-100 dark:border-zinc-800/50 shadow-2xl relative z-10">
                             <h2 className="text-2xl font-black dark:text-white italic uppercase tracking-tighter mb-2">No encontramos tesoros</h2>

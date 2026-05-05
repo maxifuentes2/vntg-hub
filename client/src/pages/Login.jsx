@@ -2,14 +2,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+
 export default function Login() {
     const navigate = useNavigate();
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            const response = await fetch('http://localhost:5000/api/auth/google', {
+            const response = await fetch(`${API_URL}/api/auth/google`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: JSON.stringify({ token: credentialResponse.credential })
             });
 

@@ -3,6 +3,8 @@ import { CheckCircle, X, AlertCircle } from 'lucide-react';
 
 const CartContext = createContext();
 
+const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(() => {
         const savedCart = localStorage.getItem('vntg_cart');
@@ -46,9 +48,12 @@ export const CartProvider = ({ children }) => {
                 return;
             }
 
-            const res = await fetch('http://localhost:5000/api/reserve', {
+            const res = await fetch(`${API_URL}/api/reserve`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: JSON.stringify({ productId: product.id, userId })
             });
 
@@ -120,7 +125,7 @@ export const CartProvider = ({ children }) => {
                         className={`pointer-events-auto bg-white dark:bg-zinc-900 border-2 rounded-2xl shadow-2xl p-4 flex items-center gap-4 min-w-[300px] max-w-sm ${
                             toast.isExiting ? 'toast-exit' : 'toast-enter'
                         } ${
-                            toast.type === 'error' ? 'border-red-500' : 'border-green-500' /* <-- CAMBIO A VERDE AQUÍ */
+                            toast.type === 'error' ? 'border-red-500' : 'border-green-500'
                         }`}
                     >
                         {toast.product && (
@@ -135,7 +140,7 @@ export const CartProvider = ({ children }) => {
 
                         <div className="flex-1">
                             <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mb-1 ${
-                                toast.type === 'error' ? 'text-red-500' : 'text-green-500' /* <-- CAMBIO A VERDE AQUÍ */
+                                toast.type === 'error' ? 'text-red-500' : 'text-green-500'
                             }`}>
                                 {toast.type === 'error' ? <AlertCircle size={12} /> : <CheckCircle size={12} />} 
                                 {toast.message}
