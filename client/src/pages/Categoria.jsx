@@ -51,7 +51,8 @@ const Categoria = () => {
         const fetchDatos = async () => {
             setLoading(true);
             try {
-                const fetchConfig = { headers: { "ngrok-skip-browser-warning": "true" } };
+                // AGREGAMOS EL PASE VIP DE LOCALTUNNEL AL OBJETO DE CONFIGURACIÓN
+                const fetchConfig = { headers: { "Bypass-Tunnel-Reminder": "true" } };
 
                 if (searchQuery) {
                     setCategoriaInfo({ name: `RESULTADOS PARA "${searchQuery.toUpperCase()}"` });

@@ -13,7 +13,7 @@ export default function Login() {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
+                    'Bypass-Tunnel-Reminder': 'true' // AGREGAMOS EL PASE VIP DE LOCALTUNNEL
                 },
                 body: JSON.stringify({ token: credentialResponse.credential })
             });

@@ -25,8 +25,9 @@ export default function Navbar() {
 
     useEffect(() => {
         fetch(`${API_URL}/api/categories`, {
+            // AGREGAMOS EL PASE VIP DE LOCALTUNNEL
             headers: {
-                "ngrok-skip-browser-warning": "true"
+                "Bypass-Tunnel-Reminder": "true" 
             }
         })
             .then(res => res.json())

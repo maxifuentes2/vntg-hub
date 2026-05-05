@@ -2,7 +2,6 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import { CheckCircle, X, AlertCircle } from 'lucide-react';
 
 const CartContext = createContext();
-
 const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
 
 export const CartProvider = ({ children }) => {
@@ -19,23 +18,14 @@ export const CartProvider = ({ children }) => {
 
     const addToast = (product, message, type = 'success') => {
         const id = Date.now() + Math.random(); 
-        
         setToasts((prev) => [...prev, { id, product, message, type, isExiting: false }]);
-
-        setTimeout(() => {
-            setToasts((prev) => prev.map(t => t.id === id ? { ...t, isExiting: true } : t));
-        }, 3500);
-
-        setTimeout(() => {
-            setToasts((prev) => prev.filter((toast) => toast.id !== id));
-        }, 3900);
+        setTimeout(() => setToasts((prev) => prev.map(t => t.id === id ? { ...t, isExiting: true } : t)), 3500);
+        setTimeout(() => setToasts((prev) => prev.filter((toast) => toast.id !== id)), 3900);
     };
 
     const removeToast = (id) => {
         setToasts((prev) => prev.map(t => t.id === id ? { ...t, isExiting: true } : t));
-        setTimeout(() => {
-            setToasts((prev) => prev.filter((toast) => toast.id !== id));
-        }, 400); 
+        setTimeout(() => setToasts((prev) => prev.filter((toast) => toast.id !== id)), 400); 
     };
 
     const addToCart = async (product, userId = 1) => {
@@ -52,7 +42,7 @@ export const CartProvider = ({ children }) => {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
+                    'Bypass-Tunnel-Reminder': 'true' // AGREGAMOS EL PASE VIP DE LOCALTUNNEL
                 },
                 body: JSON.stringify({ productId: product.id, userId })
             });
@@ -86,38 +76,25 @@ export const CartProvider = ({ children }) => {
         setCart(prevCart => prevCart.map(item => {
             if (item.id === productId) {
                 const newQty = item.cantidad + amount;
-                
                 if (newQty > item.stock) {
                     addToast(item, "Límite de stock alcanzado.", 'error');
                     return item; 
                 }
-
                 return { ...item, cantidad: Math.max(1, Math.min(newQty, item.stock)) };
             }
             return item;
         }));
     };
 
-    const removeFromCart = (productId) => {
-        setCart(prevCart => prevCart.filter(item => item.id !== productId));
-    };
-
+    const removeFromCart = (productId) => setCart(prevCart => prevCart.filter(item => item.id !== productId));
     const clearCart = () => setCart([]);
+    
     const cartCount = cart.reduce((total, item) => total + item.cantidad, 0);
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.cantidad), 0);
 
     return (
-        <CartContext.Provider value={{ 
-            cart, 
-            addToCart, 
-            removeFromCart, 
-            updateQuantity, 
-            clearCart,
-            cartCount,
-            cartTotal 
-        }}>
+        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal }}>
             {children}
-
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-3 items-end pointer-events-none">
                 {toasts.map((toast) => (
                     <div 
@@ -178,7 +155,6 @@ export const CartProvider = ({ children }) => {
                     animation: fadeOutRight 0.4s ease-in forwards;
                 }
             `}} />
-
         </CartContext.Provider>
     );
 };
