@@ -1,105 +1,30 @@
 import { Link } from 'react-router-dom';
-import { Mail, Lock, User, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export default function Registro() {
     return (
-        <div className="w-full transition-colors duration-300">
-            <div 
-                className="relative w-full min-h-[80vh] flex items-center justify-center py-12 px-4 bg-cover bg-center bg-fixed"
-                style={{ backgroundImage: "url('/wallpaper.webp')" }}
-            >
-                <div className="absolute inset-0 bg-white/85 dark:bg-neutral-950/90 transition-colors duration-300 pointer-events-none"></div>
-                
-                <div className="relative z-10 max-w-md w-full bg-white dark:bg-neutral-900 rounded-3xl shadow-xl border border-gray-100 dark:border-neutral-800 p-8">
-                    
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-black dark:text-white tracking-tight">
-                            Crea tu cuenta
-                        </h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
-                            Únete a la comunidad de coleccionistas
-                        </p>
+        <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors">
+            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-12 text-center relative shadow-2xl">
+                <div className="absolute top-0 left-0 w-24 h-24 bg-brand-blue transform -rotate-45 -translate-x-12 -translate-y-12"></div>
+                <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Registro</h1>
+                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Join the squadron</p>
+                <form className="space-y-4 text-left" onSubmit={(e) => e.preventDefault()}>
+                    <input type="text" placeholder="NOMBRE COMPLETO" className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" required />
+                    <input type="email" placeholder="EMAIL" className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" required />
+                    <input type="password" placeholder="PASSWORD" className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" required />
+                    <div className="flex items-start gap-3 pt-2">
+                        <input type="checkbox" id="terms" className="mt-1 accent-brand-orange" required />
+                        <label htmlFor="terms" className="text-[10px] text-zinc-500 font-bold uppercase italic leading-tight">
+                            Acepto los <Link to="/terminos" className="text-brand-blue hover:underline">Términos</Link> y <Link to="/privacidad" className="text-brand-blue hover:underline">Privacidad</Link>.
+                        </label>
                     </div>
-
-                    <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                                Nombre Completo
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <User size={20} className="text-gray-400" />
-                                </div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Ej: Santiago Zufia"
-                                    className="w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-brand-blue outline-none transition-all"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                                Correo Electrónico
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <Mail size={20} className="text-gray-400" />
-                                </div>
-                                <input 
-                                    type="email" 
-                                    placeholder="tu@email.com"
-                                    className="w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-brand-blue outline-none transition-all"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                                Contraseña
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <Lock size={20} className="text-gray-400" />
-                                </div>
-                                <input 
-                                    type="password" 
-                                    placeholder="Crea una contraseña segura"
-                                    className="w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-brand-blue outline-none transition-all"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-2 pt-2">
-                            <input 
-                                type="checkbox" 
-                                id="terms" 
-                                className="mt-1 w-4 h-4 text-brand-orange bg-gray-100 border-gray-300 rounded focus:ring-brand-orange focus:ring-2"
-                                required
-                            />
-                            <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400 font-medium leading-tight">
-                                Acepto los <Link to="/terminos" target="_blank" className="text-brand-blue hover:underline">Términos de Servicio</Link> y la <Link to="/privacidad" target="_blank" className="text-brand-blue hover:underline">Política de Privacidad</Link>.
-                            </label>
-                        </div>
-
-                        <button 
-                            type="submit" 
-                            className="w-full mt-4 bg-brand-blue hover:bg-blue-800 text-white py-3.5 rounded-xl font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 active:scale-95"
-                        >
-                            Crear Cuenta <ShieldCheck size={20} />
-                        </button>
-                    </form>
-
-                    <p className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        ¿Ya tienes una cuenta?{' '}
-                        <Link to="/login" className="text-brand-orange font-bold hover:underline">
-                            Inicia sesión aquí
-                        </Link>
-                    </p>
-                </div>
+                    <button type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all mt-4 flex items-center justify-center gap-2">
+                        Crear Cuenta <ShieldCheck size={18} />
+                    </button>
+                </form>
+                <p className="mt-10 text-[11px] font-bold uppercase italic text-zinc-500">
+                    ¿Ya tienes cuenta? <Link to="/login" className="text-brand-blue hover:text-zinc-900 dark:hover:text-white transition-colors">Inicia sesión</Link>
+                </p>
             </div>
         </div>
     );
