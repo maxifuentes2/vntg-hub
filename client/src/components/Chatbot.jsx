@@ -1,67 +1,82 @@
 import React, { useState } from 'react';
-import { MessageCircle, X, Send, Bot } from 'lucide-react';
+// Corregido: El import debe ser de lucide-react
+import { MessageCircle, X, Send, Bot, Zap } from 'lucide-react';
 
-export default function Chatbot() {
+export default function Chatbot({ isSidebarOpen }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="fixed bottom-6 right-6 z-[9999]">
+        /* Se desplaza a la izquierda si cualquier sidebar (Carrito o Filtros) está abierto */
+        <div className={`fixed bottom-6 transition-all duration-500 z-[200] ${
+            isSidebarOpen ? 'right-[20px] md:right-[470px]' : 'right-6'
+        }`}>
             
-            {/* VENTANA DEL CHATBOT - Ahora es absoluta para no ocupar espacio cuando se oculta */}
+            {/* Ventana de Chat con Estética de Competición */}
             <div 
-                className={`absolute bottom-20 right-0 mb-2 w-80 sm:w-96 bg-white dark:bg-zinc-900 border-2 border-gray-100 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 origin-bottom-right ${
-                    isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
+                className={`absolute bottom-20 right-0 mb-2 w-80 sm:w-96 bg-white dark:bg-brand-dark border-2 border-zinc-900 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right ${
+                    isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
                 }`}
             >
-                {/* Header */}
-                <div className="bg-brand-blue p-4 flex justify-between items-center text-white">
-                    <div className="flex items-center gap-2">
-                        <Bot size={24} className="text-brand-orange" />
+                {/* Header Estilo Pit Wall */}
+                <div className="bg-zinc-900 p-6 flex justify-between items-center text-white border-b-4 border-brand-orange">
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <div className="bg-brand-orange p-2 rounded-full animate-pulse">
+                                <Zap size={18} className="text-white" fill="currentColor" />
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-zinc-900 rounded-full"></div>
+                        </div>
                         <div>
-                            <h3 className="font-black italic uppercase tracking-tighter leading-none text-lg">VNTG Bot</h3>
-                            <span className="text-[10px] text-blue-200 font-bold tracking-widest uppercase flex items-center gap-1 mt-1">
-                                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div> En línea
-                            </span>
+                            <h3 className="font-black italic uppercase tracking-tighter text-sm">Pit Wall Support</h3>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">VNTG Hub Engineering</span>
                         </div>
                     </div>
-                    <button 
-                        onClick={() => setIsOpen(false)}
-                        className="text-blue-200 hover:text-white hover:bg-white/10 p-1 rounded-lg transition-colors"
-                    >
-                        <X size={20} />
+                    <button onClick={() => setIsOpen(false)} className="hover:rotate-90 transition-transform bg-white/10 p-1">
+                        <X size={18} />
                     </button>
                 </div>
 
-                {/* Body (Mensajes falsos) */}
-                <div className="h-72 p-4 bg-gray-50/50 dark:bg-zinc-950/50 overflow-y-auto flex flex-col gap-3">
-                    <div className="bg-gray-200 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 p-3 rounded-2xl rounded-tl-sm w-11/12 text-sm font-medium">
-                        ¡Hola! 👋 Bienvenido a VNTG Hub. ¿Estás buscando alguna franquicia en especial o necesitas ayuda con una figura?
+                {/* Historial de Chat */}
+                <div className="h-80 overflow-y-auto p-6 space-y-6 bg-zinc-50 dark:bg-zinc-950/50 custom-scrollbar">
+                    <div className="flex gap-3">
+                        <div className="w-8 h-8 bg-zinc-900 flex items-center justify-center shrink-0 border border-brand-orange">
+                            <Bot size={14} className="text-brand-orange" />
+                        </div>
+                        <div className="bg-white dark:bg-[#1a1a1a] p-4 text-[10px] font-black italic uppercase leading-relaxed text-zinc-900 dark:text-white border-l-4 border-brand-orange shadow-sm">
+                            Bienvenido al Hub, piloto. ¿Buscás una pieza histórica o asistencia técnica con un envío?
+                        </div>
                     </div>
                 </div>
 
-                {/* Footer (Input falso) */}
-                <div className="p-3 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 flex gap-2">
+                {/* Input de Mensaje */}
+                <div className="p-4 bg-white dark:bg-brand-dark border-t dark:border-white/5 flex gap-2">
                     <input 
                         type="text" 
-                        placeholder="Escribe tu mensaje..." 
+                        placeholder="Escribir al equipo..." 
                         disabled
-                        className="flex-1 bg-gray-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-2 text-sm focus:outline-none dark:text-white cursor-not-allowed opacity-70"
+                        className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none px-4 py-3 text-[10px] font-black uppercase italic focus:outline-none dark:text-white opacity-50"
                     />
-                    <button 
-                        disabled
-                        className="bg-brand-orange text-white p-2.5 rounded-xl opacity-70 cursor-not-allowed"
-                    >
-                        <Send size={18} />
+                    <button disabled className="bg-brand-orange text-white px-4 opacity-50">
+                        <Send size={16} />
                     </button>
                 </div>
             </div>
 
-            {/* BOTÓN FLOTANTE BURBUJA */}
+            {/* BOTÓN "ENGINE START" CIRCULAR */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="bg-brand-blue hover:bg-brand-orange text-white p-4 rounded-full shadow-xl shadow-blue-500/30 hover:shadow-orange-500/30 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center relative"
+                className={`group relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl active:scale-90 ${
+                    isOpen ? 'bg-zinc-900 rotate-180' : 'bg-brand-orange hover:bg-zinc-900'
+                }`}
             >
-                {isOpen ? <X size={28} /> : <MessageCircle size={28} />}
+                {/* Anillo de tacómetro decorativo */}
+                <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/30 group-hover:rotate-180 transition-transform duration-[2000ms]"></div>
+                
+                {isOpen ? (
+                    <X size={28} className="text-white relative z-10" />
+                ) : (
+                    <MessageCircle size={28} className="text-white relative z-10" fill="currentColor" />
+                )}
             </button>
         </div>
     );

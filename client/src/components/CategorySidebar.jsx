@@ -27,66 +27,73 @@ const getCategoryIcon = (categoryName) => {
 export default function CategorySidebar({ isOpen, onClose, categories }) {
     return (
         <>
+            {/* Overlay: Se pone por encima de todo (z-200) y cierra al clickear */}
             <div 
-                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 z-[200] ${
+                    isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                }`}
                 onClick={onClose}
             />
 
-            <aside className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-brand-dark z-[70] shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                
-                <div className="p-6 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800 shrink-0">
-                    <span className="font-black dark:text-white text-xl italic tracking-tighter">
-                        VNTG <span className="text-brand-orange">MENU</span>
-                    </span>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-brand-orange transition-colors">
-                        <X size={24} />
-                    </button>
-                </div>
-
-                <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                    <div className="px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                        Categorías Disponibles
-                    </div>
-
-                    {categories && categories.length > 0 ? (
-                        categories.map((cat) => (
-                            <Link
-                                key={cat.id}
-                                to={`/categoria/${cat.id}`}
-                                onClick={onClose}
-                                className="flex items-center justify-between p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900 hover:text-brand-orange transition-all group"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <span className="text-brand-blue group-hover:scale-110 transition-transform">
-                                        {getCategoryIcon(cat.name)}
-                                    </span>
-                                    <span className="font-bold text-sm uppercase tracking-tight">{cat.name}</span>
-                                </div>
-                                <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                            </Link>
-                        ))
-                    ) : (
-                        <div className="px-4 py-8 text-center">
-                            <p className="text-xs text-zinc-500 italic uppercase font-bold">No hay categorías con stock disponible</p>
-                        </div>
-                    )}
-
-                    <div className="pt-6 mt-6 border-t dark:border-zinc-800">
-                        {/* CORRECCIÓN: Apuntamos a /categoria/all para mantener la misma vista pero sin filtro */}
-                        <Link
-                            to="/categoria/all"
+            {/* Sidebar: z-210 para estar sobre el overlay */}
+            <aside className={`fixed top-0 left-0 h-full w-[300px] sm:w-[350px] bg-white dark:bg-brand-dark shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] z-[210] ${
+                isOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}>
+                <div className="flex flex-col h-full">
+                    <div className="p-6 flex items-center justify-between border-b dark:border-white/5">
+                        <span className="text-brand-orange font-black uppercase tracking-[0.3em] text-[10px] italic">Menu Principal</span>
+                        <button 
                             onClick={onClose}
-                            className="flex items-center gap-3 px-4 py-3 text-brand-blue font-black text-[11px] uppercase italic hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
+                            className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-lg transition-colors dark:text-white"
                         >
-                            <LayoutGrid size={16} /> Ver todo el catálogo
-                        </Link>
+                            <X size={20} />
+                        </button>
                     </div>
-                </nav>
 
-                <div className="w-full p-6 border-t dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 mt-auto shrink-0">
-                    <p className="text-[9px] text-gray-400 font-bold uppercase text-center tracking-widest">
-                        VNTG-HUB © 2026 Mendoza, Argentina
-                    </p>
+                    <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                        <div className="px-4 py-4">
+                            <h3 className="text-zinc-400 font-black uppercase text-[10px] tracking-widest mb-6">Categorías</h3>
+                        </div>
+
+                        {categories.length > 0 ? (
+                            categories.map((cat) => (
+                                <Link
+                                    key={cat.id}
+                                    to={`/categoria/${cat.id}`}
+                                    onClick={onClose}
+                                    className="flex items-center justify-between group px-4 py-4 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all border border-transparent hover:border-brand-orange/20"
+                                >
+                                    <div className="flex items-center gap-4 dark:text-white">
+                                        <div className="text-brand-blue group-hover:text-brand-orange transition-colors">
+                                            {getCategoryIcon(cat.name)}
+                                        </div>
+                                        <span className="text-sm font-black uppercase italic tracking-tight">{cat.name}</span>
+                                    </div>
+                                    <ChevronRight size={16} className="text-zinc-300 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="px-4 py-8 text-center">
+                                <p className="text-xs text-zinc-500 italic uppercase font-bold">Sin categorías disponibles</p>
+                            </div>
+                        )}
+
+                        <div className="pt-6 mt-6 border-t dark:border-white/5">
+                            <Link
+                                to="/categoria/all"
+                                onClick={onClose}
+                                className="flex items-center gap-3 px-4 py-4 bg-brand-blue/5 text-brand-blue font-black text-[11px] uppercase italic hover:bg-brand-blue hover:text-white transition-all"
+                            >
+                                <LayoutGrid size={16} /> Ver todo el catálogo
+                            </Link>
+                        </div>
+                    </nav>
+
+                    <div className="p-6 border-t dark:border-white/5 bg-zinc-50 dark:bg-zinc-900/50">
+                        <p className="text-[9px] text-zinc-400 font-black uppercase text-center tracking-[0.2em]">
+                            VNTG-HUB © 2026 MENDOZA, ARG
+                        </p>
+                    </div>
                 </div>
             </aside>
         </>
