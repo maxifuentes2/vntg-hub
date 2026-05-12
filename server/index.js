@@ -235,3 +235,5 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log(`📍 URL LOCAL: http://localhost:${PORT}`);
     console.log(`====================================================`);
 });
+
+module.exports = app;
