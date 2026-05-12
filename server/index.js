@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const os = require("os"); 
 require("dotenv").config();
 const db = require("./db");
 const { OAuth2Client } = require("google-auth-library");
@@ -7,8 +8,6 @@ const { OAuth2Client } = require("google-auth-library");
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Middlewares
-// Se simplifica el CORS para permitir peticiones locales de desarrollo
 app.use(cors());
 app.use(express.json());
 
@@ -18,7 +17,7 @@ app.use(express.json());
 
 // GET - Listar productos con filtros avanzados
 app.get("/api/products", async (req, res) => {
-    const { categoryId, minPrice, maxPrice, title, franchise, q } = req.query; // <-- AGREGAMOS 'q'
+    const { categoryId, minPrice, maxPrice, title, franchise, q } = req.query;
 
     // Solo mostramos productos que tengan stock disponible
     let sql = "SELECT * FROM products WHERE stock > 0";
@@ -176,35 +175,26 @@ app.get("/api/categories", async (req, res) => {
 });
 
 // ==========================================
-// 3. CARRITO / RESERVAS (NUEVO)
+// 3. CARRITO / RESERVAS
 // ==========================================
 
 app.post("/api/reserve", async (req, res) => {
-    const { productId, userId } = req.body;
+    const { productId } = req.body;
     
     try {
-        // Verificamos si el producto existe y tiene stock en la base de datos
         const [rows] = await db.query("SELECT stock FROM products WHERE id = ?", [productId]);
         
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "Producto no encontrado" });
-        }
+        if (rows.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
+        if (rows[0].stock <= 0) return res.status(400).json({ error: "Sin stock disponible." });
         
-        if (rows[0].stock <= 0) {
-            return res.status(400).json({ error: "Lo sentimos, ya no queda stock de este tesoro." });
-        }
-        
-        // Si hay stock, permitimos que el frontend lo agregue al carrito
-        res.status(200).json({ message: "Stock validado y reservado temporalmente." });
-        
+        res.status(200).json({ message: "Stock validado." });
     } catch (error) {
-        console.error("Error en POST /api/reserve:", error);
-        res.status(500).json({ error: "Error al validar la reserva" });
+        res.status(500).json({ error: "Error al validar reserva" });
     }
 });
 
 // ==========================================
-// 4. AUTENTICACIÓN Y OTROS
+// 4. AUTENTICACIÓN Y ESTADO
 // ==========================================
 
 app.post("/api/auth/google", async (req, res) => {
@@ -230,8 +220,18 @@ app.post("/api/auth/google", async (req, res) => {
 
 app.get("/api/health", (req, res) => res.json({ status: "Servidor activo" }));
 
+// ==========================================
+// LANZAMIENTO DEL SERVIDOR
+// ==========================================
+
 const PORT = process.env.PORT || 5000;
+const hostname = os.hostname().toLowerCase(); 
 
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Servidor accesible vía MagicDNS en http://kernelos-pc:${PORT}`);
+    console.log(`====================================================`);
+    console.log(`🚀 SERVIDOR VNTG HUB`); 
+    console.log(`💻 PC ACTUAL: ${hostname.toUpperCase()}`); 
+    console.log(`🔗 BASE DE DATOS EN: ${process.env.DB_HOST}`); 
+    console.log(`📍 URL LOCAL: http://localhost:${PORT}`);
+    console.log(`====================================================`);
 });
