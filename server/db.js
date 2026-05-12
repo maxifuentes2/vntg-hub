@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// Generamos la ruta absoluta al certificado para compatibilidad total con Vercel
+// Esto genera la ruta correcta tanto en tu PC como en Vercel
 const sslCertPath = path.join(__dirname, 'isrgrootx1.pem');
 
 const pool = mysql.createPool({
@@ -15,12 +15,9 @@ const pool = mysql.createPool({
     ssl: {
         minVersion: 'TLSv1.2',
         rejectUnauthorized: true,
-        // fs.readFileSync con ruta absoluta es la clave para la nube
+        // USAR ESTA VARIABLE ES CLAVE:
         ca: fs.readFileSync(sslCertPath), 
-    },
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    }
 });
 
 module.exports = pool.promise();
