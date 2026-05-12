@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollTotop';
 import Chatbot from './components/Chatbot'; 
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
@@ -19,7 +20,6 @@ import { CartProvider } from './context/CartContext';
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  // Estado compartido para los filtros de la página Categoria
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   return (
@@ -33,10 +33,10 @@ function App() {
 
           <main className="flex-grow">
             <Routes>
+              {/* Rutas corregidas: se eliminaron las barras invertidas innecesarias */}
               <Route path="/" element={<Inicio />} />
               <Route path="/producto/:id" element={<DetalleProducto />} />
               
-              {/* Categoria recibe el estado y el setter como props */}
               <Route 
                 path="/categoria/:id" 
                 element={
@@ -60,9 +60,8 @@ function App() {
           
           <Footer />
 
-          {/* El Chatbot solo se declara aquí una vez. 
-              Se desplaza si el carrito O los filtros están abiertos.
-          */}
+          <ScrollToTop />
+
           <Chatbot isSidebarOpen={isCartOpen || isFilterOpen} />
         </div>
       </Router>
