@@ -13,6 +13,9 @@ export default {
           orange: '#ff5a00', 
           blue: '#0056b3',   
         }
+      },
+      fontFamily: {
+        sans: ['Barlow', 'sans-serif'], 
       }
     },
   },

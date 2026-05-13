@@ -1,69 +1,179 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react'; // Importamos el ícono para que quede más pro
-import { useCart } from '../context/CartContext'; // Importamos nuestro hook del carrito
+import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Inicio() {
     const [productos, setProductos] = useState([]);
-    const { addToCart } = useCart(); // Obtenemos la función para agregar al carrito
+    const [dbCategories, setDbCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const { addToCart } = useCart();
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/products')
-            .then(res => res.json())
-            .then(data => setProductos(Array.isArray(data) ? data : []))
-            .catch(err => console.error("Error:", err));
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [prodRes, catRes] = await Promise.all([
+                    fetch(`${API_URL}/api/products`),
+                    fetch(`${API_URL}/api/categories`)
+                ]);
+
+                const prods = await prodRes.json();
+                const cats = await catRes.json();
+
+                setProductos(Array.isArray(prods) ? prods : []);
+                setDbCategories(Array.isArray(cats) ? cats : []);
+            } catch (err) {
+                console.error("Error al sincronizar con la DB:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
     }, []);
 
+    const secciones = dbCategories.map(cat => {
+        const filtrados = productos.filter(p =>
+            String(p.categoryId || p.category_id) === String(cat.id)
+        );
+
+        return {
+            id: cat.id,
+            nombre: cat.name,
+            banner: cat.banner_url || "/wallpaper.webp",
+            items: filtrados.slice(0, 4)
+        };
+    }).filter(seccion => seccion.items.length > 0);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
+                <Loader2 className="animate-spin text-brand-orange" size={40} />
+            </div>
+        );
+    }
+
     return (
-        <div className="w-full bg-white dark:bg-brand-dark transition-colors duration-300">
-            <section className="bg-brand-blue py-20 px-4">
-                <div className="max-w-4xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight drop-shadow-md">
-                        Encuentra tu próximo <span className="text-brand-orange">TESORO</span>
+        <div className="w-full transition-colors duration-300 font-sans overflow-x-hidden bg-white dark:bg-brand-dark">
+
+            {/* HERO SECTION */}
+            <section className="relative h-[85vh] flex items-center justify-center overflow-hidden mb-20">
+                <div className="absolute inset-0 w-full h-full">
+                    <img
+                        src="/wallpaper.webp"
+                        className="w-full h-full object-cover opacity-20 scale-110"
+                        style={{
+                            maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                            WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)'
+                        }}
+                        alt="Hero Background"
+                    />
+                </div>
+
+                {/* Capas de degradado para fundir con el fondo oscuro */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-brand-dark via-transparent to-transparent"></div>
+
+                <div className="relative z-10 text-center px-4">
+                    <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">
+                        VNTG <span className="text-brand-orange">HUB</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto font-medium leading-relaxed">
-                        Piezas únicas, cómics graduados y figuras de edición limitada con autenticidad garantizada.
+                    <p className="text-lg md:text-xl font-bold italic text-zinc-600 dark:text-zinc-500 uppercase tracking-[0.4em]">
+                        Coleccionismo de Alto Nivel
                     </p>
                 </div>
+
+                {/* 👇 NUEVO: Indicador de Scroll Centrado Perfecto 👇 */}
+                <div className="absolute bottom-10 w-full flex flex-col items-center justify-center animate-bounce z-20 text-zinc-900 dark:text-white opacity-70">
+                    <ChevronDown size={36} className="mb-1" />
+                    <span className="text-xs font-black italic uppercase tracking-[0.3em] pl-[0.3em]">
+                        Sigue Explorando
+                    </span>
+                </div>
+                {/* 👆 FIN Indicador de Scroll 👆 */}
             </section>
 
-            <section className="max-w-7xl mx-auto px-4 py-20">
-                <div className="flex justify-between items-end mb-10">
-                    <div>
-                        <span className="text-brand-orange font-black uppercase tracking-widest text-xs">Coleccionables</span>
-                        <h2 className="text-3xl font-black dark:text-white mt-1">🔥 Ofertas del Día</h2>
-                    </div>
-                </div>
+            {/* SECCIONES DINÁMICAS */}
+            {secciones.map((seccion) => (
+                <section key={seccion.id} className="w-full pb-20">
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {productos.map((prod) => (
-                        <div key={prod.id} className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-neutral-800 transition-all hover:-translate-y-2">
-                            <Link to={`/producto/${prod.id}`}>
-                                <div className="h-64 bg-gray-200 dark:bg-neutral-800 relative">
-                                    <img src={prod.images} alt={prod.title} className="w-full h-full object-cover" />
-                                </div>
+                    {/* BANNER DE CATEGORÍA */}
+                    <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-y border-zinc-200 dark:border-white/5">
+                        <img
+                            src={seccion.banner}
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/wallpaper.webp";
+                            }}
+                            className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]"
+                            alt={seccion.nombre}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-50 dark:from-brand-dark via-transparent to-transparent"></div>
+
+                        <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
+                            <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
+                                Colección Oficial
+                            </span>
+                            <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">
+                                {seccion.nombre}
+                            </h2>
+                            <Link
+                                to={`/categoria/${seccion.id}`}
+                                className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
+                            >
+                                SHOP NOW <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
                             </Link>
-                            <div className="p-6">
-                                <h3 className="text-gray-900 dark:text-white font-black text-xl mb-2">{prod.title}</h3>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-2xl font-black text-brand-blue dark:text-brand-orange">
-                                        ${Number(prod.price).toLocaleString('es-AR')}
-                                    </span>
-                                </div>
-                                
-                                {/* BOTÓN ACTUALIZADO */}
-                                <button 
-                                    onClick={() => addToCart(prod)} // Al hacer clic, enviamos el objeto 'prod'
-                                    className="w-full mt-6 bg-brand-blue text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                                >
-                                    <ShoppingCart size={20} />
-                                    Añadir al Carrito
-                                </button>
-                            </div>
                         </div>
-                    ))}
-                </div>
-            </section>
+                    </div>
+
+                    {/* GRID DE PRODUCTOS */}
+                    <div className="max-w-[1700px] mx-auto px-4 mt-12">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-3">
+                            {seccion.items.map((item) => (
+                                <div key={item.id} className="group bg-white dark:bg-[#1a1a1a]/40 border border-zinc-200 dark:border-white/5 hover:border-brand-orange transition-all duration-500">
+                                    <div className="aspect-[4/5] bg-zinc-100 dark:bg-zinc-900/50 relative overflow-hidden flex items-center justify-center">
+                                        <Link to={`/producto/${item.id}`} className="w-full h-full">
+                                            {item.images ? (
+                                                <img
+                                                    src={item.images}
+                                                    alt={item.title}
+                                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
+                                                />
+                                            ) : (
+                                                <Box size={40} className="text-zinc-300 dark:text-white/5" />
+                                            )}
+                                        </Link>
+                                        <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest">
+                                            {item.estado || "MINT"}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6">
+                                        <Link to={`/producto/${item.id}`}>
+                                            <h3 className="text-lg font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
+                                                {item.title}
+                                            </h3>
+                                        </Link>
+
+                                        <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-6">
+                                            <p className="text-2xl font-black text-zinc-900 dark:text-white italic">
+                                                ${Number(item.price).toLocaleString('es-AR')}
+                                            </p>
+                                            <button
+                                                onClick={() => addToCart(item)}
+                                                className="bg-brand-blue text-white p-3 hover:bg-brand-orange transition-all duration-300 shadow-lg active:scale-95"
+                                            >
+                                                <ShoppingCart size={22} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ))}
         </div>
     );
 }

@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Forzar scroll suave globalmente */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: smooth !important;
 }
