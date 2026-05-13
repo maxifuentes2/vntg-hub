@@ -18,7 +18,8 @@ import NotFound from './pages/NotFound';
 import CartSidebar from './components/CartSidebar'; 
 import { CartProvider } from './context/CartContext';
 
-// 👇 AQUÍ ESTÁN LAS DOS IMPORTACIONES NUEVAS 👇
+// IMPORTACIONES NUEVAS
+import Checkout from './pages/Checkout';
 import RecuperarPassword from './pages/RecuperarPassword';
 import RestablecerPassword from './pages/RestablecerPassword';
 
@@ -40,7 +41,9 @@ function App() {
               <Route path="/" element={<Inicio />} />
               <Route path="/producto/:id" element={<DetalleProducto />} />
               
-              {/* Rutas de recuperación de contraseña */}
+              {/* RUTA DE CHECKOUT AGREGADA */}
+              <Route path="/checkout" element={<Checkout />} />
+              
               <Route path="/recuperar-password" element={<RecuperarPassword />} />
               <Route path="/reset-password" element={<RestablecerPassword />} />
               
