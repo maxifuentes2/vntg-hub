@@ -11,7 +11,7 @@ const crypto = require("crypto");
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// CONFIGURACIÓN DE NODEMAILER (Para envío de códigos y enlaces de recuperación)
+// CONFIGURACIÓN DE NODEMAILER
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -157,7 +157,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 });
 
-// 3. Login Local - Fase 1: Validar contraseña y enviar código 2FA
+// 3. Login Local - Enviar código 2FA
 app.post("/api/auth/login/local", async (req, res) => {
     const { email, password } = req.body;
 
@@ -166,7 +166,7 @@ app.post("/api/auth/login/local", async (req, res) => {
         const user = users.length === 0 ? null : users[0];
 
         if (!user || !user.password) {
-            return res.status(401).json({ error: "Credenciales inválidas o cuenta de Google." });
+            return res.status(401).json({ error: "Credenciales inválidas o cuenta vinculada a Google." });
         }
 
         const validPassword = await bcrypt.compare(password, user.password);
@@ -176,8 +176,9 @@ app.post("/api/auth/login/local", async (req, res) => {
 
         const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+        // AQUÍ AJUSTAMOS A 5 MINUTOS EL CÓDIGO DE 6 DÍGITOS
         await db.query(
-            "UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE id = ?",
+            "UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?",
             [code, user.id]
         );
 
@@ -188,9 +189,9 @@ app.post("/api/auth/login/local", async (req, res) => {
             html: `
                 <div style="font-family: sans-serif; text-align: center; padding: 20px; background-color: #111; color: #fff;">
                     <h2 style="color: #FF5A00; font-style: italic;">VNTG HUB</h2>
-                    <p style="color: #ddd;">Tu código de verificación de 6 dígitos es:</p>
+                    <p style="color: #ddd;">Tu código de verificación es:</p>
                     <h1 style="font-size: 40px; letter-spacing: 5px; color: #FF5A00; background: #222; padding: 10px; border-radius: 5px; display: inline-block;">${code}</h1>
-                    <p style="color: #888; font-size: 12px; margin-top: 20px;">Este código expira en 10 minutos.</p>
+                    <p style="color: #888; font-size: 12px; margin-top: 20px;">Expira en 5 minutos.</p>
                 </div>
             `
         });
@@ -202,7 +203,7 @@ app.post("/api/auth/login/local", async (req, res) => {
     }
 });
 
-// 4. Login Local - Fase 2: Verificar el código 2FA
+// 4. Verificar código 2FA
 app.post("/api/auth/verify-code", async (req, res) => {
     const { email, code } = req.body;
 
@@ -229,7 +230,7 @@ app.post("/api/auth/verify-code", async (req, res) => {
     }
 });
 
-// 5. Olvidé mi contraseña (Enviar enlace de recuperación)
+// 5. Olvidé mi contraseña (Enviar enlace)
 app.post("/api/auth/forgot-password", async (req, res) => {
     const { email } = req.body;
 
@@ -246,6 +247,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 
         const resetToken = crypto.randomBytes(32).toString("hex");
 
+        // EL ENLACE YA ESTABA AJUSTADO A 5 MINUTOS AQUÍ
         await db.query(
             "UPDATE users SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?",
             [resetToken, user.id]

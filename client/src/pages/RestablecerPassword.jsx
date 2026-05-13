@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -15,6 +15,14 @@ export default function RestablecerPassword() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [mensaje, setMensaje] = useState('');
+
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [capsLock, setCapsLock] = useState(false);
+
+    const checkCapsLock = (e) => {
+        setCapsLock(e.getModifierState('CapsLock'));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -58,14 +66,50 @@ export default function RestablecerPassword() {
 
                 {!mensaje && (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <input 
-                            type="password" placeholder="NUEVA CONTRASEÑA" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
-                            className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" 
-                        />
-                        <input 
-                            type="password" placeholder="CONFIRMAR CONTRASEÑA" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6}
-                            className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" 
-                        />
+                        
+                        <div>
+                            <div className="relative">
+                                <input 
+                                    type={showNewPassword ? "text" : "password"} 
+                                    placeholder="NUEVA CONTRASEÑA" 
+                                    value={newPassword} 
+                                    onChange={(e) => setNewPassword(e.target.value)} 
+                                    onKeyUp={checkCapsLock}
+                                    required minLength={6}
+                                    className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-orange transition-colors"
+                                >
+                                    {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="relative">
+                                <input 
+                                    type={showConfirmPassword ? "text" : "password"} 
+                                    placeholder="CONFIRMAR CONTRASEÑA" 
+                                    value={confirmPassword} 
+                                    onChange={(e) => setConfirmPassword(e.target.value)} 
+                                    onKeyUp={checkCapsLock}
+                                    required minLength={6}
+                                    className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-orange transition-colors"
+                                >
+                                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                            {capsLock && <p className="text-brand-orange text-left text-[10px] font-bold uppercase italic mt-1 ml-1">⚠️ Mayúsculas activadas</p>}
+                        </div>
+
                         <button type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all mt-4 flex items-center justify-center gap-2">
                             Guardar Cambios <ShieldCheck size={18} />
                         </button>

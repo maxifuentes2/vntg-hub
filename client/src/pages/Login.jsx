@@ -1,22 +1,28 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react'; // Añadidos Eye y EyeOff
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
     const navigate = useNavigate();
 
-    // Estados para el formulario manual
-    const [step, setStep] = useState(1); // 1 = Credenciales, 2 = Código
+    const [step, setStep] = useState(1); 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
     const [error, setError] = useState('');
     const [mensaje, setMensaje] = useState('');
+    
+    // Nuevos estados para la contraseña
+    const [showPassword, setShowPassword] = useState(false);
+    const [capsLock, setCapsLock] = useState(false);
 
-    // --- LOGIN CON GOOGLE ---
+    const checkCapsLock = (e) => {
+        setCapsLock(e.getModifierState('CapsLock'));
+    };
+
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
             const response = await fetch(`${API_URL}/api/auth/google`, {
@@ -38,7 +44,6 @@ export default function Login() {
         }
     };
 
-    // --- LOGIN MANUAL FASE 1: ENVIAR CREDENCIALES ---
     const handleLocalLogin = async (e) => {
         e.preventDefault();
         setError('');
@@ -50,11 +55,10 @@ export default function Login() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-
             const data = await response.json();
 
             if (response.ok && data.requireCode) {
-                setStep(2); // Cambiamos a la pantalla del código
+                setStep(2); 
                 setMensaje("Revisa tu bandeja de entrada o spam.");
             } else {
                 setError(data.error || "Error al iniciar sesión");
@@ -65,7 +69,6 @@ export default function Login() {
         }
     };
 
-    // --- LOGIN MANUAL FASE 2: VERIFICAR CÓDIGO ---
     const handleVerifyCode = async (e) => {
         e.preventDefault();
         setError('');
@@ -76,7 +79,6 @@ export default function Login() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, code })
             });
-
             const data = await response.json();
 
             if (response.ok) {
@@ -115,16 +117,32 @@ export default function Login() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-blue outline-none"
+                                // Usamos placeholder:uppercase para que lo tipeado sea normal
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none"
                             />
-                            <input
-                                type="password"
-                                placeholder="PASSWORD"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-blue outline-none"
-                            />
+                            
+                            <div>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="PASSWORD"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onKeyUp={checkCapsLock}
+                                        required
+                                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none"
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-orange transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
+                                {capsLock && <p className="text-brand-orange text-[10px] font-bold uppercase italic mt-1 ml-1">⚠️ Mayúsculas activadas</p>}
+                            </div>
+
                             <button type="submit" className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest hover:bg-brand-orange transition-all mt-4 shadow-lg shadow-blue-900/20">
                                 Entrar
                             </button>
@@ -147,7 +165,6 @@ export default function Login() {
                     </>
                 ) : (
                     <>
-                        {/* BOTÓN VOLVER */}
                         <button
                             onClick={() => setStep(1)}
                             className="absolute top-6 left-6 text-zinc-500 hover:text-brand-orange transition-colors"
