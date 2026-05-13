@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Box, ArrowRight, Loader2 } from 'lucide-react';
+import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -35,14 +35,14 @@ export default function Inicio() {
     }, []);
 
     const secciones = dbCategories.map(cat => {
-        const filtrados = productos.filter(p => 
+        const filtrados = productos.filter(p =>
             String(p.categoryId || p.category_id) === String(cat.id)
         );
 
         return {
             id: cat.id,
             nombre: cat.name,
-            banner: cat.banner_url || "/wallpaper.webp", 
+            banner: cat.banner_url || "/wallpaper.webp",
             items: filtrados.slice(0, 4)
         };
     }).filter(seccion => seccion.items.length > 0);
@@ -57,13 +57,13 @@ export default function Inicio() {
 
     return (
         <div className="w-full transition-colors duration-300 font-sans overflow-x-hidden bg-white dark:bg-brand-dark">
-            
-            {/* HERO SECTION - Se eliminó 'border-b' para quitar la línea blanca */}
+
+            {/* HERO SECTION */}
             <section className="relative h-[85vh] flex items-center justify-center overflow-hidden mb-20">
                 <div className="absolute inset-0 w-full h-full">
-                    <img 
-                        src="/wallpaper.webp" 
-                        className="w-full h-full object-cover opacity-20 scale-110" 
+                    <img
+                        src="/wallpaper.webp"
+                        className="w-full h-full object-cover opacity-20 scale-110"
                         style={{
                             maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
                             WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)'
@@ -71,10 +71,10 @@ export default function Inicio() {
                         alt="Hero Background"
                     />
                 </div>
-                
+
                 {/* Capas de degradado para fundir con el fondo oscuro */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-brand-dark via-transparent to-transparent"></div>
-                
+
                 <div className="relative z-10 text-center px-4">
                     <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">
                         VNTG <span className="text-brand-orange">HUB</span>
@@ -83,25 +83,34 @@ export default function Inicio() {
                         Coleccionismo de Alto Nivel
                     </p>
                 </div>
+
+                {/* 👇 NUEVO: Indicador de Scroll Centrado Perfecto 👇 */}
+                <div className="absolute bottom-10 w-full flex flex-col items-center justify-center animate-bounce z-20 text-zinc-900 dark:text-white opacity-70">
+                    <ChevronDown size={36} className="mb-1" />
+                    <span className="text-xs font-black italic uppercase tracking-[0.3em] pl-[0.3em]">
+                        Sigue Explorando
+                    </span>
+                </div>
+                {/* 👆 FIN Indicador de Scroll 👆 */}
             </section>
 
             {/* SECCIONES DINÁMICAS */}
             {secciones.map((seccion) => (
                 <section key={seccion.id} className="w-full pb-20">
-                    
+
                     {/* BANNER DE CATEGORÍA */}
                     <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-y border-zinc-200 dark:border-white/5">
-                        <img 
-                            src={seccion.banner} 
+                        <img
+                            src={seccion.banner}
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = "/wallpaper.webp";
                             }}
-                            className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]" 
+                            className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]"
                             alt={seccion.nombre}
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-zinc-50 dark:from-brand-dark via-transparent to-transparent"></div>
-                        
+
                         <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
                             <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
                                 Colección Oficial
@@ -109,8 +118,8 @@ export default function Inicio() {
                             <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">
                                 {seccion.nombre}
                             </h2>
-                            <Link 
-                                to={`/categoria/${seccion.id}`} 
+                            <Link
+                                to={`/categoria/${seccion.id}`}
                                 className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
                             >
                                 SHOP NOW <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
@@ -126,9 +135,9 @@ export default function Inicio() {
                                     <div className="aspect-[4/5] bg-zinc-100 dark:bg-zinc-900/50 relative overflow-hidden flex items-center justify-center">
                                         <Link to={`/producto/${item.id}`} className="w-full h-full">
                                             {item.images ? (
-                                                <img 
-                                                    src={item.images} 
-                                                    alt={item.title} 
+                                                <img
+                                                    src={item.images}
+                                                    alt={item.title}
                                                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
                                                 />
                                             ) : (
@@ -146,7 +155,7 @@ export default function Inicio() {
                                                 {item.title}
                                             </h3>
                                         </Link>
-                                        
+
                                         <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-6">
                                             <p className="text-2xl font-black text-zinc-900 dark:text-white italic">
                                                 ${Number(item.price).toLocaleString('es-AR')}
