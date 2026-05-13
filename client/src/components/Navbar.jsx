@@ -1,127 +1,204 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
     Menu, 
     ShoppingCart, 
     Search, 
     Sun, 
     Moon, 
-    Globe,
     User,
-    LogOut
+    LogOut,
+    Settings
 } from 'lucide-react'; 
 import CategorySidebar from './CategorySidebar';
-
-// 1. IMPORTAMOS EL HOOK DEL CARRITO
 import { useCart } from '../context/CartContext';
 
-export default function Navbar() {
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+export default function Navbar({ onOpenCart }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+    const [dbCategories, setDbCategories] = useState([]); 
+    const [searchTerm, setSearchTerm] = useState('');
     
-    // 2. OBTENEMOS EL CONTEO REAL DESDE EL CONTEXTO
+    // --- NUEVOS ESTADOS PARA EL MENÚ DE USUARIO ---
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [user, setUser] = useState(null);
+    const userMenuRef = useRef(null);
+    
     const { cartCount } = useCart();
+    const navigate = useNavigate(); 
 
-    // MOCK: Simulamos el usuario por ahora
-    const user = null; 
-    const handleLogout = () => console.log("Cerrando sesión...");
-    
+    // Cargar categorías y verificar si el usuario está logueado
+    useEffect(() => {
+        fetch(`${API_URL}/api/categories`)
+            .then(res => res.json())
+            .then(data => setDbCategories(Array.isArray(data) ? data : []))
+            .catch(err => console.error("Error cargando categorías:", err));
+
+        // Verificar sesión del usuario
+        const storedUser = localStorage.getItem('vntg_user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    }, []);
+
+    // Cerrar el menú de usuario si se hace clic fuera de él
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Manejar el cambio de tema (Dark/Light)
     useEffect(() => {
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
         } else {
             document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
         }
+        localStorage.setItem('theme', theme);
     }, [theme]);
 
-    const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            navigate(`/categoria/all?search=${encodeURIComponent(searchTerm.trim())}`);
+            setSearchTerm('');
+            setIsSidebarOpen(false);
+        }
+    };
+
+    // Función para cerrar sesión
+    const handleLogout = () => {
+        localStorage.removeItem('vntg_user');
+        setUser(null);
+        setIsUserMenuOpen(false);
+        navigate('/');
+        window.location.reload(); // Recarga para limpiar cualquier estado global
+    };
 
     return (
         <>
-            <nav className="sticky top-0 z-50 bg-white dark:bg-brand-dark border-b border-gray-200 dark:border-neutral-800 shadow-sm transition-colors duration-300">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-20 items-center">
-                        
-                        {/* Izquierda: Menú + Logo */}
-                        <div className="flex items-center gap-4">
-                            <button 
-                                onClick={() => setIsSidebarOpen(true)}
-                                className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-                            >
-                                <Menu size={24} />
+            <nav className="sticky top-0 z-[100] bg-white/80 dark:bg-brand-dark/80 backdrop-blur-md border-b border-zinc-200 dark:border-white/5 transition-colors duration-300">
+                <div className="max-w-[1700px] mx-auto px-4 h-20 flex items-center justify-between gap-4">
+                    
+                    {/* SECCIÓN IZQUIERDA: MENU Y LOGO */}
+                    <div className="flex items-center gap-6">
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white"
+                        >
+                            <Menu size={24} />
+                        </button>
+
+                        <Link to="/" className="flex items-center">
+                            <img 
+                                src="/logo-texto-transparente.webp" 
+                                alt="VNTG HUB Logo" 
+                                className="h-10 md:h-12 w-auto object-contain" 
+                            />
+                        </Link>
+                    </div>
+
+                    {/* SECCIÓN CENTRAL: BUSCADOR (DESKTOP) */}
+                    <div className="hidden md:flex flex-1 max-w-xl">
+                        <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent focus-within:border-brand-orange transition-all">
+                            <input 
+                                type="text" 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Buscar tesoros..." 
+                                className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-sm italic font-medium"
+                            />
+                            <button type="submit" className="px-6 text-zinc-400 hover:text-brand-orange transition-colors">
+                                <Search size={20} />
                             </button>
+                        </form>
+                    </div>
 
-                            <Link to="/" className="flex-shrink-0 flex items-center group">
-                                <div className="text-2xl font-black dark:text-white tracking-tighter">
-                                    <img 
-                                        src="/logo-texto-transparente.webp" 
-                                        alt="VNTG Hub" 
-                                        className="w-[150px] h-[50px] object-contain transition-transform group-hover:scale-105 dark:invert dark:brightness-200" 
-                                    />
-                                </div>
-                            </Link>
-                        </div>
+                    {/* SECCIÓN DERECHA: ACCIONES */}
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white"
+                        >
+                            {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+                        </button>
 
-                        {/* Centro: Buscador Desktop */}
-                        <div className="hidden md:flex flex-1 max-w-xl mx-8">
-                            <div className="relative w-full flex group shadow-sm">
-                                <input 
-                                    type="text" 
-                                    placeholder="Buscar figuras, monedas..." 
-                                    className="w-full bg-gray-100 dark:bg-neutral-800 border-none rounded-l-xl py-2 px-4 focus:ring-2 focus:ring-brand-blue outline-none dark:text-white transition-all"
-                                />
-                                <button className="bg-brand-blue hover:bg-blue-800 text-white px-5 rounded-r-xl transition-colors flex items-center justify-center">
-                                    <Search size={18} className="group-hover:scale-110 transition-transform duration-300" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Derecha: Acciones */}
-                        <div className="flex items-center space-x-1 md:space-x-3">
-                            
-                            <Link 
-                                to={user ? "/cuenta" : "/login"} 
-                                title={user ? "Mi Cuenta" : "Iniciar Sesión"}
-                                className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300 flex items-center"
+                        {/* --- MENÚ DE USUARIO DESPLEGABLE --- */}
+                        <div className="relative" ref={userMenuRef}>
+                            <button 
+                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white"
                             >
                                 <User size={22} />
-                            </Link>
-
-                            <div className="relative group flex justify-center">
-                                <button className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300">
-                                    <Globe size={22} />
-                                </button>
-                                
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 w-20 pt-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible origin-top scale-y-95 group-hover:scale-y-100 transition-all duration-300 z-50">
-                                    <div className="bg-white dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700 rounded-lg shadow-xl py-2 flex flex-col">
-                                        <button className="px-3 py-2 text-sm text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-brand-orange hover:text-white transition-colors w-full">🇪🇸 ES</button>
-                                        <button className="px-3 py-2 text-sm text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-brand-orange hover:text-white transition-colors w-full">🇺🇸 EN</button>
-                                        <button className="px-3 py-2 text-sm text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-brand-orange hover:text-white transition-colors w-full">🇵🇹 PT</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={toggleTheme} 
-                                className="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300 transform hover:rotate-12"
-                            >
-                                {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                             </button>
 
-                            {/* 3. CARRITO CONECTADO: Usamos cartCount del contexto */}
-                            <Link to="/carrito" className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-brand-orange hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-300 group ml-1">
-                                <ShoppingCart size={24} className="group-hover:scale-110 transition-transform duration-300" />
-                                
-                                {cartCount > 0 && (
-                                    <span className="absolute top-0 right-0 bg-brand-orange text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </Link>
-
+                            {/* Dropdown Menu */}
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#111111] border border-zinc-200 dark:border-white/5 shadow-2xl py-2 z-50">
+                                    {user ? (
+                                        // SI ESTÁ LOGUEADO
+                                        <>
+                                            <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 mb-2 bg-zinc-50 dark:bg-white/5">
+                                                <p className="text-[9px] font-black uppercase italic tracking-widest text-brand-orange">Bienvenido</p>
+                                                <p className="text-sm font-bold truncate text-zinc-900 dark:text-white">{user.name}</p>
+                                                <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
+                                            </div>
+                                            <Link 
+                                                to="/mi-cuenta" 
+                                                onClick={() => setIsUserMenuOpen(false)}
+                                                className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors"
+                                            >
+                                                <Settings size={16} /> Mi Cuenta
+                                            </Link>
+                                            <button 
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center gap-3 text-left px-4 py-3 text-xs font-black uppercase italic text-red-500 hover:bg-red-500 hover:text-white transition-colors border-t border-zinc-200 dark:border-white/5 mt-1"
+                                            >
+                                                <LogOut size={16} /> Cerrar Sesión
+                                            </button>
+                                        </>
+                                    ) : (
+                                        // SI NO ESTÁ LOGUEADO
+                                        <>
+                                            <Link 
+                                                to="/login" 
+                                                onClick={() => setIsUserMenuOpen(false)}
+                                                className="block px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors"
+                                            >
+                                                Iniciar Sesión
+                                            </Link>
+                                            <Link 
+                                                to="/register" 
+                                                onClick={() => setIsUserMenuOpen(false)}
+                                                className="block px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors"
+                                            >
+                                                Registrarse
+                                            </Link>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
+                        {/* --- FIN MENÚ DE USUARIO --- */}
+
+                        <button 
+                            onClick={onOpenCart} 
+                            className="relative p-2 bg-brand-orange text-white rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all"
+                        >
+                            <ShoppingCart size={22} />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-orange">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </button>
                     </div>
                 </div>
             </nav>
@@ -129,6 +206,7 @@ export default function Navbar() {
             <CategorySidebar 
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
+                categories={dbCategories}
             />
         </>
     );

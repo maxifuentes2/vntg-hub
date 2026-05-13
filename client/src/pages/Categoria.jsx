@@ -1,88 +1,271 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Tag, Box } from 'lucide-react';
+import { useParams, Link, useLocation } from 'react-router-dom';
+import { 
+    ShoppingCart, 
+    Box, 
+    X, 
+    SlidersHorizontal, 
+    CircleDollarSign,
+    Tag,
+    Loader2
+} from 'lucide-react';
+import { useCart } from '../context/CartContext'; 
 
-const Categoria = () => {
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const { id } = useParams();
+    const location = useLocation(); 
+    const { addToCart } = useCart(); 
+    
     const [productos, setProductos] = useState([]);
-    const [title, setTitle] = useState("CATEGORÍA");
     const [loading, setLoading] = useState(true);
+    const [categoriaInfo, setCategoriaInfo] = useState(null);
+    const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState("");
+    const [listaFranquicias, setListaFranquicias] = useState([]);
+    const [orden, setOrden] = useState("reciente");
 
-    // BASE DE DATOS LOCAL UNIFICADA (Para que coincida con DetalleProducto)
-    const dbMaestra = [
-        { id: 3, categoryId: 1, title: "Ecto-1 Cadillac Miller-Meteor Sentinel de 1959", price: 50000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506211/ecto-1_ehvzjx.webp" },
-        { id: 4, categoryId: 1, title: "1965 AC Shelby 427 Cobra", price: 55000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506219/cobra1_ulmge8.webp" },
-        { id: 1, categoryId: 1, title: "Batman (1989) Batmobile - Edición Coleccionista", price: 120000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506233/batimobile_gpiwne.webp" },
-        { id: 2, categoryId: 1, title: "Delorean Time Machine - Back to the Future", price: 95000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506242/delorean1_ni8uvi.webp" },
-        { id: 5, categoryId: 1, title: "Mercedes-Benz 300 SL Gullwing - Silver Edition", price: 150000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506251/mercedes1_ouo6sd.webp" },
-        { id: 6, categoryId: 1, title: "Mach 5 - Speed Racer (Meteor) Collector's Edition", price: 85000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506267/meteoro1_iul29s.webp" },
-        { id: 7, categoryId: 1, title: "1967 Ford Mustang GT Fastback - Red Passion", price: 110000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777506281/mustang_eotaku.webp" },
-        { id: 8, categoryId: 1, title: "Fiat Palio Fire 1.4 G3 - Edición Limitada", price: 45000, images: "https://res.cloudinary.com/dhg3jbifk/image/upload/v1777525854/palio1_mtc69b.webp" }
-    ];
+    const [precioMinLocal, setPrecioMinLocal] = useState(0);
+    const [precioMaxLocal, setPrecioMaxLocal] = useState(1000000);
+    const [precioMinFinal, setPrecioMinFinal] = useState(0);
+    const [precioMaxFinal, setPrecioMaxFinal] = useState(1000000);
+
+    const queryParams = new URLSearchParams(location.search);
+    const searchQuery = queryParams.get('search') || '';
 
     useEffect(() => {
-        // Forzamos el título para que se vea bien
-        setTitle("AUTOS A ESCALA");
+        const fetchDatos = async () => {
+            setLoading(true);
+            try {
+                // 1. Obtener productos de la categoría (id puede ser 'all')
+                let url = `${API_URL}/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                if (franquiciaSeleccionada) url += `&franchise=${franquiciaSeleccionada}`;
+                if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
 
-        // OPCIÓN SEGURA: Mostramos todos los productos de dbMaestra 
-        // sin filtrar por ID de la URL para que no salga vacío
-        setProductos(dbMaestra);
-        
-        setLoading(false);
-    }, [id]); // El componente se recargará si cambia el ID, pero mostrará siempre la lista
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                let productosOrdenados = Array.isArray(data) ? [...data] : [];
+                if (orden === "precioAsc") productosOrdenados.sort((a, b) => a.price - b.price);
+                else if (orden === "precioDesc") productosOrdenados.sort((a, b) => b.price - a.price);
+                
+                setProductos(productosOrdenados);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center dark:text-white font-black italic tracking-widest">CARGANDO CATÁLOGO...</div>;
+                // 2. Obtener info de la categoría (banners y nombres reales)
+                const resCats = await fetch(`${API_URL}/api/categories`);
+                const cats = await resCats.json();
+                const catActual = cats.find(c => String(c.id) === String(id));
+                
+                if (catActual) {
+                    setCategoriaInfo(catActual);
+                } else {
+                    setCategoriaInfo(null);
+                }
+
+                // 3. Franquicias para el filtro
+                if (listaFranquicias.length === 0 && productosOrdenados.length > 0) {
+                    const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
+                    setListaFranquicias(unicas);
+                }
+
+            } catch (error) { 
+                console.error("Error cargando categoría:", error); 
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDatos();
+    }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, searchQuery]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPrecioMinFinal(precioMinLocal);
+            setPrecioMaxFinal(precioMaxLocal);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [precioMinLocal, precioMaxLocal]);
+
+    const renderTitulo = () => {
+        if (searchQuery) return `"${searchQuery}"`;
+        if (id === 'all') return "TODO EL CATALOGO";
+        if (categoriaInfo?.name || categoriaInfo?.nombre) return categoriaInfo.name || categoriaInfo.nombre;
+        if (isNaN(id)) return id.replace(/-/g, ' ');
+        return "COLECCIÓN"; 
+    };
+
+    // Determinamos la imagen del banner
+    const bannerImg = id === 'all' 
+        ? "/wallpaper.webp" 
+        : (categoriaInfo?.banner_url || "/wallpaper.webp");
+
+    if (loading && productos.length === 0) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
+                <Loader2 className="animate-spin text-brand-orange" size={40} />
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-12 select-none">
-            <div className="mb-12">
-                <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter uppercase italic">
-                    EXPLORANDO <span className="text-brand-orange">{title}</span>
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-2 font-bold tracking-widest text-xs uppercase">
-                    {productos.length} tesoros encontrados
-                </p>
-            </div>
+        <div className="w-full bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white transition-colors duration-300">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {productos.map((item) => (
-                    <Link 
-                        to={`/producto/${item.id}`} 
-                        key={item.id} 
-                        className="group bg-white dark:bg-brand-dark rounded-3xl border border-gray-100 dark:border-zinc-800 shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden"
+            {/* BANNER DINÁMICO ESTILO INICIO */}
+            <section className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-b border-zinc-200 dark:border-white/5">
+                <img 
+                    src={bannerImg} 
+                    className="w-full h-full object-cover opacity-60 dark:opacity-40 group-hover:scale-105 transition-transform duration-[2000ms]" 
+                    alt={renderTitulo()}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-white dark:from-brand-dark via-white/50 dark:via-brand-dark/30 to-transparent"></div>
+                
+                <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
+                    <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
+                        {id === 'all' ? "Tienda Completa" : "Colección Oficial"}
+                    </span>
+                    <h1 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
+                        {renderTitulo()}
+                    </h1>
+                </div>
+            </section>
+
+            <main className="max-w-[1800px] mx-auto px-6 py-10">
+                <div className="flex justify-between items-center mb-12 border-b border-zinc-200 dark:border-white/5 pb-6">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-zinc-500">
+                        {productos.length} PRODUCTOS ENCONTRADOS
+                    </span>
+                    <button 
+                        onClick={() => setIsFilterOpen(true)} 
+                        className="flex items-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 py-3 font-black uppercase italic text-xs hover:bg-brand-orange transition-all"
                     >
-                        <div className="relative aspect-square w-full overflow-hidden bg-zinc-900">
-                            <img 
-                                src={item.images} 
-                                alt={item.title}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                            />
-                            <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border dark:border-zinc-700">
-                                <span className="text-[10px] font-black text-brand-blue uppercase tracking-widest flex items-center gap-1">
-                                    <Box size={10} /> NUEVO
-                                </span>
+                        <SlidersHorizontal size={16} /> Filter + Sort
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {productos.map((item) => (
+                        <div key={item.id} className="group bg-zinc-50 dark:bg-[#1a1a1a]/40 border border-zinc-200 dark:border-white/5 hover:border-brand-orange transition-all duration-500">
+                            <div className="aspect-[4/5] bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center overflow-hidden relative">
+                                <Link to={`/producto/${item.id}`} className="w-full h-full">
+                                    <img 
+                                        src={item.images} 
+                                        className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-all duration-700" 
+                                        alt={item.title} 
+                                    />
+                                </Link>
+                                <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest">
+                                    {item.estado || "MINT"}
+                                </div>
+                            </div>
+                            <div className="p-6">
+                                <h3 className="text-lg font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
+                                    {item.title}
+                                </h3>
+                                <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-4">
+                                    <p className="text-2xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
+                                    <button 
+                                        onClick={(e) => { e.preventDefault(); addToCart(item); }} 
+                                        className="bg-brand-blue text-white p-3 hover:bg-brand-orange transition-colors shadow-lg"
+                                    >
+                                        <ShoppingCart size={22} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </main>
+
+            {/* SIDEBAR DE FILTROS */}
+            <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${isFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
+                <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-brand-dark shadow-2xl transform transition-transform duration-500 ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="h-full flex flex-col p-8">
+                        <div className="flex justify-between items-center border-b border-zinc-200 dark:border-white/5 pb-6 mb-8">
+                            <h2 className="text-2xl font-black italic uppercase">Filtros</h2>
+                            <button onClick={() => setIsFilterOpen(false)}><X size={28} /></button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-10 custom-scrollbar pr-2">
+                            {/* Ordenar */}
+                            <div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+                                    <Tag size={14} className="text-brand-orange" /> Ordenar
+                                </h4>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {["reciente", "precioAsc", "precioDesc"].map((k) => (
+                                        <button key={k} onClick={() => setOrden(k)} className={`px-6 py-4 text-left text-xs font-bold uppercase italic border ${orden === k ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>
+                                            {k === "reciente" ? "Novedades" : k === "precioAsc" ? "Menor Precio" : "Mayor Precio"}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Rango de Precio */}
+                            <div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                                        <CircleDollarSign size={14} className="text-brand-orange" /> Rango de Precio
+                                    </h4>
+                                    <span className="text-xs font-black italic text-brand-orange">
+                                        ${Number(precioMinLocal).toLocaleString()} - ${Number(precioMaxLocal).toLocaleString()}
+                                    </span>
+                                </div>
+                                <div className="relative h-12 flex items-center px-2">
+                                    <div className="absolute left-2 right-2 h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div>
+                                    <div className="absolute h-1 bg-brand-orange rounded-full" 
+                                        style={{ left: `${(precioMinLocal / 1000000) * 100}%`, right: `${100 - (precioMaxLocal / 1000000) * 100}%` }}>
+                                    </div>
+                                    <input type="range" min="0" max="1000000" step="5000" value={precioMinLocal}
+                                        onChange={(e) => setPrecioMinLocal(Math.min(Number(e.target.value), precioMaxLocal - 50000))}
+                                        className="absolute left-0 w-full appearance-none bg-transparent pointer-events-none z-30 dual-range-input" />
+                                    <input type="range" min="0" max="1000000" step="5000" value={precioMaxLocal}
+                                        onChange={(e) => setPrecioMaxLocal(Math.max(Number(e.target.value), precioMinLocal + 50000))}
+                                        className="absolute left-0 w-full appearance-none bg-transparent pointer-events-none z-30 dual-range-input" />
+                                </div>
+                            </div>
+
+                            {/* Franquicia */}
+                            <div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+                                    <Box size={14} className="text-brand-orange" /> Franquicia
+                                </h4>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <button onClick={() => setFranquiciaSeleccionada("")} className={`w-full text-left p-4 text-xs font-black italic uppercase border ${franquiciaSeleccionada === "" ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>Todas</button>
+                                    {listaFranquicias.map(f => (
+                                        <button key={f} onClick={() => setFranquiciaSeleccionada(f)} className={`w-full text-left p-4 text-xs font-black italic uppercase border ${franquiciaSeleccionada === f ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>{f}</button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-5">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 leading-tight h-12 line-clamp-2 group-hover:text-brand-orange transition-colors">
-                                {item.title}
-                            </h3>
-                            <div className="mt-5 flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter italic">Inversión</p>
-                                    <p className="text-2xl font-black text-brand-orange italic">
-                                        ${Number(item.price).toLocaleString('es-AR')}
-                                    </p>
-                                </div>
-                                <div className="bg-brand-blue text-white p-3.5 rounded-2xl shadow-lg shadow-blue-500/20 group-hover:bg-blue-600 transition-colors">
-                                    <ShoppingCart size={20} />
-                                </div>
-                            </div>
+                        <div className="pt-8">
+                            <button 
+                                onClick={() => setIsFilterOpen(false)} 
+                                className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest shadow-xl hover:bg-zinc-900 transition-colors"
+                            >
+                                Aplicar Configuración
+                            </button>
                         </div>
-                    </Link>
-                ))}
+                    </div>
+                </aside>
             </div>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                .dual-range-input::-webkit-slider-thumb {
+                    pointer-events: auto; width: 20px; height: 20px; border-radius: 0;
+                    background: #ff5a00; cursor: pointer; -webkit-appearance: none; border: 2px solid #fff;
+                }
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #ff5a00;
+                    border-radius: 10px;
+                }
+            ` }} />
         </div>
     );
 };
