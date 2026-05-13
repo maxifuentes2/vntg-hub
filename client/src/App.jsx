@@ -18,10 +18,11 @@ import NotFound from './pages/NotFound';
 import CartSidebar from './components/CartSidebar'; 
 import { CartProvider } from './context/CartContext';
 
-// IMPORTACIONES NUEVAS
+// IMPORTACIONES DE AUTENTICACIÓN Y CHECKOUT
 import Checkout from './pages/Checkout';
 import RecuperarPassword from './pages/RecuperarPassword';
 import RestablecerPassword from './pages/RestablecerPassword';
+import MiCuenta from './pages/MiCuenta'; // NUEVA PÁGINA
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -38,15 +39,11 @@ function App() {
 
           <main className="flex-grow">
             <Routes>
+              {/* RUTA PRINCIPAL */}
               <Route path="/" element={<Inicio />} />
+              
+              {/* PRODUCTOS Y CATEGORÍAS */}
               <Route path="/producto/:id" element={<DetalleProducto />} />
-              
-              {/* RUTA DE CHECKOUT AGREGADA */}
-              <Route path="/checkout" element={<Checkout />} />
-              
-              <Route path="/recuperar-password" element={<RecuperarPassword />} />
-              <Route path="/reset-password" element={<RestablecerPassword />} />
-              
               <Route 
                 path="/categoria/:id" 
                 element={
@@ -57,13 +54,24 @@ function App() {
                 } 
               />
 
+              {/* FLUJO DE PAGO */}
+              <Route path="/checkout" element={<Checkout />} />
+              
+              {/* USUARIO Y SESIÓN */}
+              <Route path="/mi-cuenta" element={<MiCuenta />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Registro />} />
+              <Route path="/recuperar-password" element={<RecuperarPassword />} />
+              <Route path="/reset-password" element={<RestablecerPassword />} />
+              
+              {/* PÁGINAS DE INFORMACIÓN */}
               <Route path="/guia-autenticidad" element={<GuiaAutenticidad />} />
               <Route path="/envios" element={<EnviosSeguros />} />
               <Route path="/contacto" element={<Contacto />} />
               <Route path="/terminos" element={<Terminos />} />
               <Route path="/privacidad" element={<Privacidad />} />
+              
+              {/* ERROR 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
