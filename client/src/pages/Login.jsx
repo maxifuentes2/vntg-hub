@@ -1,11 +1,22 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { ShieldCheck, ArrowLeft } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
     const navigate = useNavigate();
 
+    // Estados para el formulario manual
+    const [step, setStep] = useState(1); // 1 = Credenciales, 2 = Código
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [code, setCode] = useState('');
+    const [error, setError] = useState('');
+    const [mensaje, setMensaje] = useState('');
+
+    // --- LOGIN CON GOOGLE ---
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
             const response = await fetch(`${API_URL}/api/auth/google`, {
@@ -19,33 +30,160 @@ export default function Login() {
                 navigate('/');
                 window.location.reload();
             } else {
-                alert("Error al iniciar sesión con Google");
+                setError(data.error || "Error al iniciar sesión con Google");
             }
-        } catch (error) { console.error("Error de red:", error); }
+        } catch (error) {
+            console.error("Error de red:", error);
+            setError("Error de conexión. Inténtalo más tarde.");
+        }
+    };
+
+    // --- LOGIN MANUAL FASE 1: ENVIAR CREDENCIALES ---
+    const handleLocalLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setMensaje('');
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/login/local`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.requireCode) {
+                setStep(2); // Cambiamos a la pantalla del código
+                setMensaje("Revisa tu bandeja de entrada o spam.");
+            } else {
+                setError(data.error || "Error al iniciar sesión");
+            }
+        } catch (error) {
+            console.error("Error de red:", error);
+            setError("Error de conexión. Inténtalo más tarde.");
+        }
+    };
+
+    // --- LOGIN MANUAL FASE 2: VERIFICAR CÓDIGO ---
+    const handleVerifyCode = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/verify-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('vntg_user', JSON.stringify(data.user));
+                navigate('/');
+                window.location.reload();
+            } else {
+                setError(data.error || "Código incorrecto o expirado");
+            }
+        } catch (error) {
+            console.error("Error de red:", error);
+            setError("Error de conexión. Inténtalo más tarde.");
+        }
     };
 
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors">
             <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-12 text-center relative shadow-2xl">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange transform rotate-45 translate-x-12 -translate-y-12"></div>
-                <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Login</h1>
-                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Access your profile</p>
-                <form className="space-y-4 text-left" onSubmit={(e) => e.preventDefault()}>
-                    <input type="email" placeholder="EMAIL" className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-blue outline-none" />
-                    <input type="password" placeholder="PASSWORD" className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-blue outline-none" />
-                    <button className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest hover:bg-brand-orange transition-all mt-4 shadow-lg shadow-blue-900/20">
-                        Entrar
-                    </button>
-                </form>
-                <div className="my-8 flex items-center gap-4 text-zinc-300 dark:text-zinc-700 font-black italic text-[10px]">
-                    <div className="h-px flex-grow bg-zinc-200 dark:bg-white/5"></div> O <div className="h-px flex-grow bg-zinc-200 dark:bg-white/5"></div>
-                </div>
-                <div className="flex justify-center">
-                    <GoogleLogin onSuccess={handleGoogleSuccess} theme="filled_black" shape="square" />
-                </div>
-                <p className="mt-10 text-[11px] font-bold uppercase italic text-zinc-500">
-                    ¿No tienes cuenta? <Link to="/register" className="text-brand-orange hover:text-zinc-900 dark:hover:text-white transition-colors">Regístrate</Link>
-                </p>
+
+                {step === 1 ? (
+                    <>
+                        <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Login</h1>
+                        <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Access your profile</p>
+
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">
+                                {error}
+                            </div>
+                        )}
+
+                        <form className="space-y-4 text-left" onSubmit={handleLocalLogin}>
+                            <input
+                                type="email"
+                                placeholder="EMAIL"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-blue outline-none"
+                            />
+                            <input
+                                type="password"
+                                placeholder="PASSWORD"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-blue outline-none"
+                            />
+                            <button type="submit" className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest hover:bg-brand-orange transition-all mt-4 shadow-lg shadow-blue-900/20">
+                                Entrar
+                            </button>
+                            <Link to="/recuperar-password" className="block mt-4 text-right text-[10px] font-bold uppercase italic text-zinc-500 hover:text-brand-orange transition-colors">
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </form>
+
+                        <div className="my-8 flex items-center gap-4 text-zinc-300 dark:text-zinc-700 font-black italic text-[10px]">
+                            <div className="h-px flex-grow bg-zinc-200 dark:bg-white/5"></div> O <div className="h-px flex-grow bg-zinc-200 dark:bg-white/5"></div>
+                        </div>
+
+                        <div className="flex justify-center">
+                            <GoogleLogin onSuccess={handleGoogleSuccess} theme="filled_black" shape="square" />
+                        </div>
+
+                        <p className="mt-10 text-[11px] font-bold uppercase italic text-zinc-500">
+                            ¿No tienes cuenta? <Link to="/register" className="text-brand-orange hover:text-zinc-900 dark:hover:text-white transition-colors">Regístrate</Link>
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        {/* BOTÓN VOLVER */}
+                        <button
+                            onClick={() => setStep(1)}
+                            className="absolute top-6 left-6 text-zinc-500 hover:text-brand-orange transition-colors"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+
+                        <ShieldCheck size={48} className="mx-auto text-brand-orange mb-4" />
+                        <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Verificación</h1>
+                        <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-2 italic tracking-[0.3em]">
+                            Código enviado a tu email
+                        </p>
+                        <p className="text-brand-blue font-bold text-xs mb-8 italic">{mensaje}</p>
+
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">
+                                {error}
+                            </div>
+                        )}
+
+                        <form className="space-y-4 text-left" onSubmit={handleVerifyCode}>
+                            <input
+                                type="text"
+                                placeholder="0 0 0 0 0 0"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                maxLength={6}
+                                required
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none"
+                            />
+                            <button type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all mt-4 flex justify-center items-center gap-2">
+                                Confirmar <ShieldCheck size={18} />
+                            </button>
+                        </form>
+                    </>
+                )}
             </div>
         </div>
     );
