@@ -1,8 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import { CheckCircle, X, AlertCircle, ShoppingBag } from 'lucide-react';
+import { CheckCircle, X, AlertCircle } from 'lucide-react';
 
 const CartContext = createContext();
-const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
 
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(() => {
@@ -28,29 +27,19 @@ export const CartProvider = ({ children }) => {
         setTimeout(() => setToasts((prev) => prev.filter((toast) => toast.id !== id)), 400); 
     };
 
-    const addToCart = async (product, userId = 1) => {
+    // VERSIÓN CORREGIDA: Carrito 100% local sin llamar a /api/reserve
+    const addToCart = (product) => {
         try {
             const existingInCart = cart.find(item => item.id === product.id);
             const currentQty = existingInCart ? existingInCart.cantidad : 0;
 
+            // Verificamos si supera el stock disponible
             if (currentQty >= product.stock) {
                 addToast(product, `Máximo ${product.stock} unidades`, 'error');
                 return;
             }
 
-            const res = await fetch(`${API_URL}/api/reserve`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: product.id, userId })
-            });
-
-            const data = await res.json();
-            
-            if (!res.ok) {
-                addToast(product, data.error || "Error de stock", 'error');
-                return;
-            }
-
+            // Actualizamos el carrito localmente
             setCart((prevCart) => {
                 const existingItem = prevCart.find(item => item.id === product.id);
                 if (existingItem) {
@@ -65,7 +54,7 @@ export const CartProvider = ({ children }) => {
 
         } catch (error) {
             console.error("Error al añadir al carrito:", error);
-            addToast(product, "Error de conexión", 'error');
+            addToast(product, "Error al procesar", 'error');
         }
     };
 
@@ -93,7 +82,7 @@ export const CartProvider = ({ children }) => {
         <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal }}>
             {children}
             
-            {/* CONTENEDOR DE NOTIFICACIONES ESTANDARIZADAS CON NUEVO COLOR VERDE */}
+            {/* CONTENEDOR DE NOTIFICACIONES */}
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 items-end pointer-events-none">
                 {toasts.map((toast) => (
                     <div 
