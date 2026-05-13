@@ -26,7 +26,18 @@ export default function Checkout() {
         if (!storedUser) {
             navigate('/login'); 
         } else {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            
+            // AUTO-COMPLETADO: Si el usuario tiene datos guardados en su perfil, los cargamos aquí
+            setShipping({
+                nombre: parsedUser.name || '',
+                direccion: parsedUser.address || '',
+                ciudad: parsedUser.city || '',
+                provincia: parsedUser.province || '',
+                codigoPostal: parsedUser.zip_code || '',
+                telefono: parsedUser.phone || ''
+            });
         }
         if (cart.length === 0) navigate('/');
     }, [cart, navigate]);
@@ -47,12 +58,12 @@ export default function Checkout() {
 
             if (res.ok && data.init_point) {
                 clearCart(); 
-                // CAMBIO: Abrir pasarela en nueva pestaña
+                // ABRIR MERCADO PAGO EN PESTAÑA NUEVA
                 window.open(data.init_point, '_blank'); 
-                // Opcional: Navegar a una página de confirmación en la pestaña original
-                navigate('/');
+                // Redirigir la pestaña actual al historial para ver la orden
+                navigate('/mi-cuenta');
             } else {
-                setError(data.error || "Error al procesar. Verifica tu stock.");
+                setError(data.error || "Error al procesar el pago.");
             }
         } catch (err) {
             setError("Error de conexión con el servidor.");
@@ -67,7 +78,7 @@ export default function Checkout() {
         <div className="bg-white dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 transition-colors font-sans">
             <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
                 
-                {/* COLUMNA IZQUIERDA: FORMULARIO */}
+                {/* FORMULARIO DE ENVÍO */}
                 <div>
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-brand-orange transition-colors mb-6 text-xs font-bold uppercase italic tracking-widest">
                         <ArrowLeft size={16} /> Volver
@@ -92,7 +103,7 @@ export default function Checkout() {
                     </form>
                 </div>
 
-                {/* COLUMNA DERECHA: RESUMEN */}
+                {/* RESUMEN DE COMPRA */}
                 <div className="bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-8 h-fit shadow-2xl relative">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-brand-blue transform rotate-45 translate-x-8 -translate-y-8"></div>
                     <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-6 flex items-center gap-2">
@@ -112,10 +123,7 @@ export default function Checkout() {
                             <span>${cartTotal.toLocaleString('es-AR')}</span>
                         </div>
                     </div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest mt-6 mb-4 flex items-center gap-2 text-zinc-500">
-                        <Truck size={14} className="text-brand-blue"/> Tendrás 1 hora para realizar el pago
-                    </p>
-                    <button type="submit" form="checkout-form" disabled={loading} className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                    <button type="submit" form="checkout-form" disabled={loading} className="w-full mt-8 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
                         {loading ? 'Procesando...' : 'Pagar con Mercado Pago'} <ShieldCheck size={20} />
                     </button>
                 </div>
