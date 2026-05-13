@@ -10,6 +10,7 @@ import {
     Gamepad2,
     Package
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 
 const getCategoryIcon = (categoryName) => {

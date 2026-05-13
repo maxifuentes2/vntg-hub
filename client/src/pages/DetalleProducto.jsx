@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Plus, Minus, Box, ShieldCheck, Truck, Tag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://kernelos-pc:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const AccordionItem = ({ title, children, isOpen, onClick }) => (
     <div className="border-b border-white/10">
