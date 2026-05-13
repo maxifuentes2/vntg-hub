@@ -18,6 +18,10 @@ import NotFound from './pages/NotFound';
 import CartSidebar from './components/CartSidebar'; 
 import { CartProvider } from './context/CartContext';
 
+// 👇 AQUÍ ESTÁN LAS DOS IMPORTACIONES NUEVAS 👇
+import RecuperarPassword from './pages/RecuperarPassword';
+import RestablecerPassword from './pages/RestablecerPassword';
+
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -33,9 +37,12 @@ function App() {
 
           <main className="flex-grow">
             <Routes>
-              {/* Rutas corregidas: se eliminaron las barras invertidas innecesarias */}
               <Route path="/" element={<Inicio />} />
               <Route path="/producto/:id" element={<DetalleProducto />} />
+              
+              {/* Rutas de recuperación de contraseña */}
+              <Route path="/recuperar-password" element={<RecuperarPassword />} />
+              <Route path="/reset-password" element={<RestablecerPassword />} />
               
               <Route 
                 path="/categoria/:id" 
