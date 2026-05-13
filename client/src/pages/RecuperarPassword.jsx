@@ -12,6 +12,9 @@ export default function RecuperarPassword() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (loading) return; 
+
         setError('');
         setMensaje('');
         setLoading(true);
@@ -52,7 +55,7 @@ export default function RecuperarPassword() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input 
                         type="email" placeholder="TU EMAIL" value={email} onChange={(e) => setEmail(e.target.value)} required 
-                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" 
+                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
                     />
                     <button disabled={loading} type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all flex items-center justify-center gap-2">
                         {loading ? 'Enviando...' : 'Enviar Correo'} <Mail size={18} />

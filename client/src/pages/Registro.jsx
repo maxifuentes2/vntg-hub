@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Registro() {
     const navigate = useNavigate();
 
-    // Estados del formulario
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
-    // --- FUNCIÓN DE REGISTRO MANUAL ---
+    const [showPassword, setShowPassword] = useState(false);
+    const [capsLock, setCapsLock] = useState(false);
+
+    const checkCapsLock = (e) => {
+        setCapsLock(e.getModifierState('CapsLock'));
+    };
+
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
@@ -28,7 +33,6 @@ export default function Registro() {
             const data = await response.json();
 
             if (response.ok) {
-                // Si el registro es exitoso, lo logueamos automáticamente
                 localStorage.setItem('vntg_user', JSON.stringify(data.user));
                 navigate('/');
                 window.location.reload();
@@ -49,7 +53,6 @@ export default function Registro() {
                 <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Registro</h1>
                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Join the squadron</p>
                 
-                {/* Mostrar mensaje de error si existe */}
                 {error && (
                     <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">
                         {error}
@@ -62,7 +65,7 @@ export default function Registro() {
                         placeholder="NOMBRE COMPLETO" 
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" 
+                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
                         required 
                     />
                     <input 
@@ -70,17 +73,31 @@ export default function Registro() {
                         placeholder="EMAIL" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" 
+                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
                         required 
                     />
-                    <input 
-                        type="password" 
-                        placeholder="PASSWORD" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold uppercase italic focus:border-brand-orange outline-none" 
-                        required 
-                    />
+                    
+                    <div>
+                        <div className="relative">
+                            <input 
+                                type={showPassword ? "text" : "password"}
+                                placeholder="PASSWORD" 
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onKeyUp={checkCapsLock}
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
+                                required 
+                            />
+                            <button 
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-orange transition-colors"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+                        {capsLock && <p className="text-brand-orange text-[10px] font-bold uppercase italic mt-1 ml-1">⚠️ Mayúsculas activadas</p>}
+                    </div>
                     
                     <div className="flex items-start gap-3 pt-2">
                         <input type="checkbox" id="terms" className="mt-1 accent-brand-orange" required />
