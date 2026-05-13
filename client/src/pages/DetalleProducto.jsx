@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, Tag, ArrowRight } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+    ShoppingCart, ChevronLeft, ShieldCheck, Truck, Gauge, 
+    Scale, CalendarDays, Box, Maximize2, ZoomIn, ZoomOut, X, Tag, ArrowRight, Plus, Minus 
+} from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -24,6 +27,7 @@ const AccordionItem = ({ title, children, isOpen, onClick }) => (
 
 const DetalleProducto = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { addToCart } = useCart();
     
     const [producto, setProducto] = useState(null);
@@ -31,6 +35,8 @@ const DetalleProducto = () => {
     const [loading, setLoading] = useState(true);
     const [imgPrincipal, setImgPrincipal] = useState("");
     const [openSection, setOpenSection] = useState('descripcion');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [zoomLevel, setZoomLevel] = useState(1);
 
     useEffect(() => {
         const fetchDatos = async () => {
@@ -38,7 +44,7 @@ const DetalleProducto = () => {
                 const res = await fetch(`${API_URL}/api/products/${id}`);
                 const data = await res.json();
                 setProducto(data);
-                setImgPrincipal(data.images); 
+                setImgPrincipal(data.images);
 
                 if (data.categoryId) {
                     const resRel = await fetch(`${API_URL}/api/products?categoryId=${data.categoryId}`);
@@ -46,7 +52,6 @@ const DetalleProducto = () => {
                     const filtrados = dataRel.filter(p => String(p.id) !== String(id)).slice(0, 4);
                     setRelacionados(filtrados);
                 }
-
                 setLoading(false);
                 window.scrollTo(0, 0); 
             } catch (error) {
@@ -57,92 +62,110 @@ const DetalleProducto = () => {
         fetchDatos();
     }, [id]);
 
-    if (loading || !producto) return <div className="bg-white dark:bg-brand-dark min-h-screen transition-colors duration-300"></div>;
+    useEffect(() => {
+        const handleEsc = (e) => { if (e.key === 'Escape') setIsModalOpen(false); };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, []);
 
-    const galeriaBruta = Array.isArray(producto.gallery) ? producto.gallery : [];
-    const fotosLimpias = [producto.images, ...galeriaBruta]
-        .map(img => typeof img === 'string' ? img.trim() : '')
-        .filter(img => img !== '');
-    const fotosUnicas = Array.from(new Set(fotosLimpias));
+    const handleWheel = (e) => {
+        if (!isModalOpen) return;
+        const delta = e.deltaY * -0.001;
+        const newZoom = Math.min(Math.max(1, zoomLevel + delta), 4);
+        setZoomLevel(newZoom);
+    };
+
+    if (loading || !producto) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark font-black italic uppercase tracking-widest text-zinc-400">Catalogando Pieza...</div>;
+
+    const fotosUnicas = Array.from(new Set([producto.images, ...(producto.gallery || [])])).filter(img => img && img.trim() !== '');
 
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans py-20 px-4 transition-colors duration-300">
             <div className="max-w-[1400px] mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 mb-32">
+                
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-400 hover:text-brand-orange mb-8 font-black text-[10px] uppercase tracking-[0.3em] transition-colors">
+                    <ChevronLeft size={18} /> Volver al catálogo
+                </button>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-32 items-start">
                     
-                    {/* SECCIÓN DE IMÁGENES */}
-                    <div className="space-y-6">
-                        <div className="aspect-[4/5] bg-zinc-100 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 overflow-hidden relative flex items-center justify-center shadow-2xl transition-colors duration-300">
+                    {/* IMÁGENES */}
+                    <div className="flex flex-col gap-6">
+                        <div 
+                            className="relative w-full bg-[#f8f8f8] dark:bg-[#0a0a0a] border border-zinc-200 dark:border-white/5 overflow-hidden flex items-center justify-center shadow-xl cursor-zoom-in group rounded-sm"
+                            onClick={() => { setIsModalOpen(true); setZoomLevel(1); }}
+                        >
                             <img 
                                 src={imgPrincipal} 
                                 alt={producto.title} 
-                                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" 
+                                className="w-full h-auto max-h-[80vh] object-contain transition-transform duration-700 group-hover:scale-105" 
                             />
-                            <div className="absolute top-8 left-8 bg-brand-orange text-white px-5 py-2 font-black uppercase italic text-[10px] tracking-widest shadow-2xl">
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                                <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={32} />
+                            </div>
+                            <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl">
                                 {producto.estado || "EXCLUSIVE STOCK"}
                             </div>
                         </div>
 
-                        {fotosUnicas.length > 1 && (
-                            <div className="grid grid-cols-5 gap-3">
-                                {fotosUnicas.map((fotoUrl, idx) => (
-                                    <button 
-                                        key={idx}
-                                        onClick={() => setImgPrincipal(fotoUrl)}
-                                        className={`aspect-square border-2 transition-all duration-300 bg-zinc-100 dark:bg-[#111111] overflow-hidden ${
-                                            imgPrincipal.trim() === fotoUrl.trim() 
-                                            ? 'border-brand-orange opacity-100 scale-95' 
-                                            : 'border-zinc-200 dark:border-white/5 opacity-50 hover:opacity-100 hover:border-zinc-400 dark:hover:border-white/20'
-                                        }`}
-                                    >
-                                        <img src={fotoUrl} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        <div className="grid grid-cols-5 gap-3">
+                            {fotosUnicas.map((fotoUrl, idx) => (
+                                <button 
+                                    key={idx}
+                                    onClick={() => setImgPrincipal(fotoUrl)}
+                                    className={`aspect-square border transition-all duration-300 bg-[#f8f8f8] dark:bg-[#111111] p-1 ${
+                                        imgPrincipal.trim() === fotoUrl.trim() 
+                                        ? 'border-brand-orange opacity-100' 
+                                        : 'border-transparent opacity-50 hover:opacity-100'
+                                    }`}
+                                >
+                                    <img src={fotoUrl} alt="Thumb" className="w-full h-full object-contain" />
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* CONTENIDO Y DETALLES */}
-                    <div className="flex flex-col">
-                        <div className="mb-10">
-                            <div className="flex items-center gap-3 mb-4">
+                    {/* INFORMACIÓN */}
+                    <div className="flex flex-col pt-4">
+                        <div className="mb-8">
+                            <div className="flex items-center gap-3 mb-6">
                                 <span className="bg-brand-blue/10 dark:bg-brand-blue/20 text-brand-blue px-3 py-1 text-[9px] font-black uppercase italic tracking-widest border border-brand-blue/30">
-                                    {producto.franchise}
+                                    {producto.franchise || "VNTG SERIES"}
                                 </span>
                             </div>
-                            <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 leading-none text-zinc-900 dark:text-white">
+                            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 leading-[0.9]">
                                 {producto.title}
                             </h1>
-                            <p className="text-4xl font-black text-zinc-900 dark:text-white italic">
+                            <p className="text-4xl font-black italic text-zinc-900 dark:text-white mt-4">
                                 ${Number(producto.price).toLocaleString('es-AR')}
                             </p>
                         </div>
 
                         <button 
                             onClick={() => addToCart(producto)}
-                            className="w-full bg-brand-orange text-white py-6 font-black uppercase italic text-lg tracking-[0.2em] hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-brand-dark transition-all flex items-center justify-center gap-4 mb-12 shadow-[10px_10px_0px_0px_rgba(255,90,0,0.15)] active:translate-y-1 active:shadow-none"
+                            className="w-full bg-brand-orange text-white py-6 font-black uppercase italic text-lg tracking-[0.2em] hover:bg-zinc-900 transition-all flex items-center justify-center gap-4 mb-10 shadow-[8px_8px_0px_0px_rgba(255,90,0,0.2)] active:translate-y-1 active:shadow-none"
                         >
-                            <ShoppingCart size={24} /> Add to Cart
+                            <ShoppingCart size={24} /> Agregar al Carrito
                         </button>
 
-                        <div className="border-t border-zinc-200 dark:border-white/10 mt-4">
-                            <AccordionItem title="Descripción del Producto" isOpen={openSection === 'descripcion'} onClick={() => setOpenSection('descripcion')}>
+                        <div className="border-t border-zinc-200 dark:border-white/10">
+                            <AccordionItem title="Descripción" isOpen={openSection === 'descripcion'} onClick={() => setOpenSection('descripcion')}>
                                 <p>{producto.description}</p>
                             </AccordionItem>
 
-                            <AccordionItem title="Especificaciones Técnicas" isOpen={openSection === 'specs'} onClick={() => setOpenSection('specs')}>
+                            <AccordionItem title="Ficha Técnica" isOpen={openSection === 'specs'} onClick={() => setOpenSection('specs')}>
                                 <ul className="space-y-4">
                                     <li className="flex justify-between border-b border-zinc-200 dark:border-white/5 pb-2">
-                                        <span className="uppercase text-[10px] font-black text-zinc-500 tracking-widest">Fabricante</span>
-                                        <span className="text-zinc-900 dark:text-white font-bold italic">{producto.fabricante || 'N/A'}</span>
-                                    </li>
-                                    <li className="flex justify-between border-b border-zinc-200 dark:border-white/5 pb-2">
                                         <span className="uppercase text-[10px] font-black text-zinc-500 tracking-widest">Escala</span>
-                                        <span className="text-zinc-900 dark:text-white font-bold italic">{producto.escala || 'N/A'}</span>
+                                        <span className="font-bold italic">{producto.escala || 'N/A'}</span>
                                     </li>
                                     <li className="flex justify-between border-b border-zinc-200 dark:border-white/5 pb-2">
                                         <span className="uppercase text-[10px] font-black text-zinc-500 tracking-widest">Material</span>
-                                        <span className="text-zinc-900 dark:text-white font-bold italic">{producto.material || 'N/A'}</span>
+                                        <span className="font-bold italic">{producto.material || 'Premium'}</span>
+                                    </li>
+                                    <li className="flex justify-between border-b border-zinc-200 dark:border-white/5 pb-2">
+                                        <span className="uppercase text-[10px] font-black text-zinc-500 tracking-widest">Marca</span>
+                                        <span className="font-bold italic">{producto.fabricante || 'Original'}</span>
                                     </li>
                                 </ul>
                             </AccordionItem>
@@ -150,7 +173,7 @@ const DetalleProducto = () => {
                     </div>
                 </div>
 
-                {/* --- SECCIÓN DE PRODUCTOS RELACIONADOS --- */}
+                {/* RELACIONADOS */}
                 {relacionados.length > 0 && (
                     <div className="border-t border-zinc-200 dark:border-white/5 pt-20">
                         <div className="flex items-end justify-between mb-12">
@@ -171,12 +194,12 @@ const DetalleProducto = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                             {relacionados.map((item) => (
                                 <div key={item.id} className="group">
-                                    <div className="relative aspect-[4/5] bg-zinc-100 dark:bg-[#111111] overflow-hidden border border-zinc-200 dark:border-white/5 transition-colors duration-300">
+                                    <div className="relative w-full bg-[#f8f8f8] dark:bg-[#111111] overflow-hidden border border-zinc-200 dark:border-white/5 transition-colors duration-300">
                                         <Link to={`/producto/${item.id}`}>
                                             <img 
                                                 src={item.images} 
                                                 alt={item.title} 
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 dark:opacity-80 group-hover:opacity-100" 
+                                                className="w-full h-auto object-contain p-4 transition-transform duration-700 group-hover:scale-110" 
                                             />
                                         </Link>
                                     </div>
@@ -204,6 +227,37 @@ const DetalleProducto = () => {
                     </div>
                 )}
             </div>
+
+            {/* MODAL FULLSCREEN */}
+            {isModalOpen && (
+                <div 
+                    className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-300"
+                    onWheel={handleWheel}
+                    onClick={() => setIsModalOpen(false)}
+                >
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setIsModalOpen(false); }}
+                        className="absolute top-8 right-8 text-white/50 hover:text-brand-orange transition-all z-[10000] p-2 hover:rotate-90"
+                    >
+                        <X size={40} />
+                    </button>
+                    
+                    <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <img 
+                            src={imgPrincipal} 
+                            style={{ transform: `scale(${zoomLevel})` }}
+                            className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out shadow-2xl"
+                            alt="Zoom View"
+                        />
+                    </div>
+
+                    <div className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-white/10 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setZoomLevel(Math.max(1, zoomLevel - 0.5))} className="text-white hover:text-brand-orange"><ZoomOut size={24}/></button>
+                        <span className="text-white font-black italic text-sm w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                        <button onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.5))} className="text-white hover:text-brand-orange"><ZoomIn size={24}/></button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
