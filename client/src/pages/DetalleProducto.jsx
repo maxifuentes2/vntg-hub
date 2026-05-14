@@ -5,6 +5,7 @@ import {
     Tag, ArrowRight, Plus, Minus, Heart, ShieldCheck 
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext'; // <-- 1. NUEVA IMPORTACIÓN
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -29,12 +30,12 @@ const DetalleProducto = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { addToWishlist } = useWishlist(); // <-- 2. LLAMADA AL HOOK DE WISHLIST
     
     const [producto, setProducto] = useState(null);
     const [relacionados, setRelacionados] = useState([]);
     const [loading, setLoading] = useState(true);
     const [imgPrincipal, setImgPrincipal] = useState("");
-    // CAMBIO: Inicializamos en null para que empiecen cerradas
     const [openSection, setOpenSection] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
@@ -131,12 +132,15 @@ const DetalleProducto = () => {
                             <ShoppingCart size={24} /> Agregar al Carrito
                         </button>
 
-                        <button className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10">
+                        {/* <-- 3. BOTÓN CONECTADO AL ESTADO GLOBAL --> */}
+                        <button 
+                            onClick={() => addToWishlist(producto)} 
+                            className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10"
+                        >
                             <Heart size={18} /> Agregar a la lista de deseos
                         </button>
 
                         <div className="border-t border-white/10">
-                            {/* CAMBIO: Lógica togglable para Descripción */}
                             <AccordionItem 
                                 title="Descripción" 
                                 isOpen={openSection === 'descripcion'} 
@@ -145,7 +149,6 @@ const DetalleProducto = () => {
                                 <p>{producto.description}</p>
                             </AccordionItem>
 
-                            {/* CAMBIO: Lógica togglable para Ficha Técnica */}
                             <AccordionItem 
                                 title="Ficha Técnica" 
                                 isOpen={openSection === 'specs'} 
