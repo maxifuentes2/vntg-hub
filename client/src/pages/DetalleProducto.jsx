@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-    ShoppingCart, ChevronLeft, Maximize2, ZoomIn, ZoomOut, X, 
+    ShoppingCart, ChevronLeft, ChevronRight, Maximize2, ZoomIn, ZoomOut, X, 
     Tag, ArrowRight, Plus, Minus, Heart, ShieldCheck 
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -246,6 +246,22 @@ const DetalleProducto = () => {
                         <X size={40} />
                     </button>
 
+                    {/* Botón Anterior (Solo se muestra si hay más de 1 foto) */}
+                    {fotosUnicas.length > 1 && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const currentIndex = fotosUnicas.indexOf(imgPrincipal);
+                                const prevIndex = (currentIndex - 1 + fotosUnicas.length) % fotosUnicas.length;
+                                setImgPrincipal(fotosUnicas[prevIndex]);
+                                setZoomLevel(1); // Resetea el zoom al cambiar de foto
+                            }}
+                            className="absolute left-4 md:left-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
+                        >
+                            <ChevronLeft size={48} />
+                        </button>
+                    )}
+
                     <div className="relative w-full h-full flex items-center justify-center">
                         <img 
                             src={imgPrincipal} 
@@ -256,6 +272,22 @@ const DetalleProducto = () => {
                         />
                     </div>
                     
+                    {/* Botón Siguiente (Solo se muestra si hay más de 1 foto) */}
+                    {fotosUnicas.length > 1 && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const currentIndex = fotosUnicas.indexOf(imgPrincipal);
+                                const nextIndex = (currentIndex + 1) % fotosUnicas.length;
+                                setImgPrincipal(fotosUnicas[nextIndex]);
+                                setZoomLevel(1); // Resetea el zoom al cambiar de foto
+                            }}
+                            className="absolute right-4 md:right-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
+                        >
+                            <ChevronRight size={48} />
+                        </button>
+                    )}
+
                     <div 
                         className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-white/10 backdrop-blur-xl z-50" 
                         onClick={(e) => e.stopPropagation()}
