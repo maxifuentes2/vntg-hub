@@ -3,14 +3,15 @@ import { Home } from 'lucide-react';
 
 export default function NotFound() {
     return (
-        <div className="bg-brand-dark min-h-screen flex items-center justify-center p-4 font-sans">
+        <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-300">
             <div className="text-center">
-                <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs">Error 404</span>
-                <h1 className="text-[12rem] font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-brand-blue to-brand-dark border-b-8 border-brand-orange mb-8">
-                    OUT
+                <h1 className="text-[10rem] md:text-[14rem] font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white border-b-[8px] border-brand-orange mb-8 inline-block">
+                    ERROR 404
                 </h1>
-                <h2 className="text-3xl font-black italic uppercase mb-10">Pista fuera de límites</h2>
-                <Link to="/" className="inline-flex items-center gap-3 bg-white text-brand-dark px-10 py-4 font-black uppercase italic hover:bg-brand-orange hover:text-white transition-all">
+                <h2 className="text-3xl md:text-4xl font-black italic uppercase mb-10 text-zinc-800 dark:text-zinc-200">
+                    Página no encontrada.
+                </h2>
+                <Link to="/" className="inline-flex items-center justify-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-10 py-5 font-black uppercase italic hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all shadow-xl">
                     <Home size={20} /> Volver al Inicio
                 </Link>
             </div>
