@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 // Corregido: El import debe ser de lucide-react
 import { MessageCircle, X, Send, Bot, Zap } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Chatbot({ isSidebarOpen }) {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
@@ -19,7 +21,7 @@ export default function Chatbot({ isSidebarOpen }) {
         setIsLoading(true);
 
         try {
-            const res = await fetch("http://localhost:5000/api/chat", {
+            const res = await fetch(`${API_URL}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: userMsg })
