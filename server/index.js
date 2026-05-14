@@ -345,8 +345,8 @@ app.post("/api/admin/products", async (req, res) => {
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         await db.query(
-            "INSERT INTO products (id, title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [id, title, description || '', franchise || '', categoryId, price, stock, images || '', gal, escala || '', fabricante || '', anio || '', material || '', estado || '']
+            "INSERT INTO products (title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [title, description || '', franchise || '', categoryId, price, stock, images || '', gal, escala || '', fabricante || '', anio || '', material || '', estado || '']
         );
         res.json({ message: "Producto creado exitosamente" });
     } catch (error) { res.status(500).json({ error: error.message }); }
