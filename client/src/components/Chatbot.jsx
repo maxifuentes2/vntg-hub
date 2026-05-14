@@ -37,12 +37,12 @@ export default function Chatbot({ isSidebarOpen }) {
 
     return (
         /* Se desplaza a la izquierda si cualquier sidebar (Carrito o Filtros) está abierto */
-        <div className={`fixed bottom-6 transition-all duration-500 z-[200] ${isSidebarOpen ? 'right-[20px] md:right-[470px]' : 'right-6'
+        <div className={`fixed bottom-6 transition-all duration-500 z-[90] ${isSidebarOpen ? 'right-[20px] md:right-[470px]' : 'right-3 sm:right-6'
             }`}>
 
             {/* Ventana de Chat con Estética de Competición */}
             <div
-                className={`absolute bottom-20 right-0 mb-2 w-80 sm:w-96 bg-white dark:bg-brand-dark border-2 border-zinc-900 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
+                className={`absolute bottom-20 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 bg-white dark:bg-brand-dark border-2 border-zinc-900 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
                     }`}
             >
                 {/* Header Estilo Pit Wall */}

@@ -42,7 +42,7 @@ export default function RecuperarPassword() {
 
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center px-4 py-20 transition-colors">
-            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-12 text-center shadow-2xl relative">
+            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-6 sm:p-12 text-center shadow-2xl relative">
                 <Link to="/login" className="absolute top-6 left-6 text-zinc-500 hover:text-brand-orange transition-colors">
                     <ArrowLeft size={20} />
                 </Link>

@@ -11,7 +11,7 @@ export default function Terminos() {
             </header>
 
             <div className="max-w-[1000px] mx-auto px-6 py-20">
-                <div className="bg-zinc-50 dark:bg-[#111111] p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl">
+                <div className="bg-zinc-50 dark:bg-[#111111] p-5 sm:p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl">
                     <p className="text-sm font-black italic uppercase tracking-widest text-zinc-500 mb-12 border-b border-zinc-200 dark:border-white/10 pb-4">
                         Última actualización: Enero 2026
                     </p>

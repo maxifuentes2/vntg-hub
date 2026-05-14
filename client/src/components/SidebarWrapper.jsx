@@ -18,7 +18,7 @@ export default function SidebarWrapper({ isOpen, onClose, title, icon: Icon, chi
             <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[350px] sm:max-w-md bg-white dark:bg-brand-dark shadow-2xl transform transition-transform duration-500 ease-out border-zinc-200 dark:border-white/5 ${translateClass}`}>
                 <div className="h-full flex flex-col">
                     {/* Cabecera Unificada */}
-                    <div className="p-8 flex justify-between items-center border-b border-zinc-200 dark:border-white/5">
+                    <div className="p-4 sm:p-8 flex justify-between items-center border-b border-zinc-200 dark:border-white/5">
                         <div className="flex flex-col">
                             {side === 'left' && <span className="text-brand-orange font-black uppercase tracking-[0.3em] text-[10px] italic mb-1">Menu Principal</span>}
                             <h2 className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3">

@@ -133,7 +133,7 @@ export default function Inicio() {
                             <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
                             <Link
                                 to={`/categoria/${seccion.id}`}
-                                className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
+                                className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 sm:px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
                             >
                                 SHOP NOW <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
                             </Link>
@@ -162,7 +162,7 @@ export default function Inicio() {
                                         </div>
                                     </div>
 
-                                    <div className="p-8">
+                                    <div className="p-4 sm:p-8">
                                         <Link to={`/producto/${item.id}`}>
                                             <h3 className="text-xl font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
                                                 {item.title}

@@ -6,3 +6,18 @@
 html {
   scroll-behavior: smooth !important;
 }
+
+/* ========================================================
+   ADAPTACIÓN PARA PANTALLAS PEQUEÑAS (hasta 320px)
+   ======================================================== */
+@media (max-width: 360px) {
+  /* 
+    Escala muy sutil de la fuente base. 
+    15px en lugar de 16px (reduce el tamaño solo un ~6%).
+    Esto asegura que los elementos relativos (rem) se achiquen un poco 
+    para entrar en pantalla, sin que el texto pierda legibilidad.
+  */
+  html {
+    font-size: 15px !important; 
+  }
+}

@@ -57,7 +57,7 @@ export default function RestablecerPassword() {
 
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center px-4 py-20 transition-colors">
-            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-12 text-center shadow-2xl">
+            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-6 sm:p-12 text-center shadow-2xl">
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Nueva Contraseña</h1>
                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-8 italic tracking-[0.3em]">{email}</p>
 

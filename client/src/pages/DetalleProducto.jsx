@@ -118,7 +118,7 @@ const DetalleProducto = () => {
                         </div>
 
                         {fotosUnicas.length > 1 && (
-                            <div className="grid grid-cols-5 gap-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                                 {fotosUnicas.map((fotoUrl, idx) => (
                                     <button 
                                         key={idx}

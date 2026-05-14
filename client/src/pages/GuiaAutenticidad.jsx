@@ -11,13 +11,13 @@ export default function GuiaAutenticidad() {
             </header>
 
             <div className="max-w-[1200px] mx-auto px-6 py-20 space-y-16">
-                <div className="bg-zinc-50 dark:bg-[#111111] p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl">
+                <div className="bg-zinc-50 dark:bg-[#111111] p-5 sm:p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl">
                     <p className="text-lg md:text-xl font-medium text-zinc-700 dark:text-zinc-300 leading-relaxed mb-12">
                         En <span className="font-black italic text-brand-blue uppercase">VNTG HUB</span>, sabemos que el valor de un coleccionable reside en su autenticidad. Por eso, cada pieza que ingresa a nuestro catálogo pasa por un riguroso proceso de verificación.
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white dark:bg-[#1a1a1a] p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-blue transition-colors">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-blue transition-colors">
                             <Search className="text-brand-blue mb-6" size={40} />
                             <h3 className="text-2xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">1. Inspección Experta</h3>
                             <p className="text-zinc-600 dark:text-zinc-400 font-medium">
@@ -25,7 +25,7 @@ export default function GuiaAutenticidad() {
                             </p>
                         </div>
                         
-                        <div className="bg-white dark:bg-[#1a1a1a] p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-orange transition-colors">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-orange transition-colors">
                             <Award className="text-brand-orange mb-6" size={40} />
                             <h3 className="text-2xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">2. Agencias Oficiales</h3>
                             <p className="text-zinc-600 dark:text-zinc-400 font-medium">
@@ -33,7 +33,7 @@ export default function GuiaAutenticidad() {
                             </p>
                         </div>
 
-                        <div className="bg-white dark:bg-[#1a1a1a] p-8 border border-zinc-200 dark:border-white/5 md:col-span-2 group hover:border-green-500 transition-colors">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 md:col-span-2 group hover:border-green-500 transition-colors">
                             <FileText className="text-green-500 mb-6" size={40} />
                             <h3 className="text-2xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Certificado de Autenticidad (COA)</h3>
                             <p className="text-zinc-600 dark:text-zinc-400 font-medium">
@@ -43,7 +43,7 @@ export default function GuiaAutenticidad() {
                     </div>
                 </div>
 
-                <div className="bg-brand-blue text-white p-8 md:p-12 border-l-[10px] border-brand-orange shadow-2xl flex flex-col md:flex-row items-center gap-8">
+                <div className="bg-brand-blue text-white p-5 sm:p-8 md:p-12 border-l-[10px] border-brand-orange shadow-2xl flex flex-col md:flex-row items-center gap-8">
                     <ShieldCheck size={60} className="shrink-0 text-brand-orange" />
                     <div>
                         <h3 className="text-2xl font-black italic uppercase mb-2">Garantía del 100%</h3>

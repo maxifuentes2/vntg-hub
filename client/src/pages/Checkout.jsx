@@ -124,7 +124,7 @@ export default function Checkout() {
                     {error && <p className="mt-4 text-red-500 font-bold italic uppercase text-xs">{error}</p>}
                 </div>
 
-                <div className="bg-zinc-50 dark:bg-[#111] p-8 border border-zinc-200 dark:border-white/5 h-fit sticky top-32">
+                <div className="bg-zinc-50 dark:bg-[#111] p-4 sm:p-8 border border-zinc-200 dark:border-white/5 h-fit sticky top-32">
                     <h2 className="text-xl font-black italic uppercase tracking-tight mb-8 flex items-center gap-3">
                         <MapPin size={20} className="text-brand-orange" /> Resumen
                     </h2>

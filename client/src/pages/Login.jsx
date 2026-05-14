@@ -134,7 +134,7 @@ export default function Login() {
 
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors">
-            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-12 text-center relative shadow-2xl">
+            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-6 sm:p-12 text-center relative shadow-2xl">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange transform rotate-45 translate-x-12 -translate-y-12"></div>
 
                 {step === 1 ? (

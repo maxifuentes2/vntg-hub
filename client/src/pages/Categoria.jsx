@@ -155,7 +155,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                 </div>
                             </div>
-                            <div className="p-8">
+                            <div className="p-4 sm:p-8">
                                 <h3 className="text-xl font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
                                     {item.title}
                                 </h3>
@@ -187,7 +187,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
             <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${isFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
                 <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-brand-dark shadow-2xl transform transition-transform duration-500 ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="h-full flex flex-col p-8">
+                    <div className="h-full flex flex-col p-4 sm:p-8">
                         <div className="flex justify-between items-center border-b border-zinc-200 dark:border-white/5 pb-6 mb-8">
                             <h2 className="text-2xl font-black italic uppercase">Filtros</h2>
                             <button onClick={() => setIsFilterOpen(false)}><X size={28} /></button>

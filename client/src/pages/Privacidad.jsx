@@ -11,7 +11,7 @@ export default function Privacidad() {
             </header>
 
             <div className="max-w-[1000px] mx-auto px-6 py-20">
-                <div className="bg-zinc-50 dark:bg-[#111111] p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl">
+                <div className="bg-zinc-50 dark:bg-[#111111] p-5 sm:p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl">
                     
                     <p className="text-xl md:text-2xl font-black italic uppercase text-zinc-800 dark:text-zinc-200 border-l-4 border-brand-orange pl-6 mb-12">
                         En <span className="text-brand-blue">VNTG HUB</span> valoramos tu privacidad y nos comprometemos a proteger tus datos personales al máximo nivel.

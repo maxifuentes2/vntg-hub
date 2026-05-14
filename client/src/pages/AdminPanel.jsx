@@ -362,7 +362,7 @@ export default function AdminPanel() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Escala</label>
                                     <input type="text" value={productForm.escala} onChange={e => setProductForm({ ...productForm, escala: e.target.value })} placeholder="Ej: 1/6, 1:10" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
@@ -385,7 +385,7 @@ export default function AdminPanel() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Categoría</label>
                                     <select required value={productForm.categoryId} onChange={e => setProductForm({ ...productForm, categoryId: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white">
@@ -463,7 +463,7 @@ export default function AdminPanel() {
             {/* --- NUEVO: MODAL DE CONFIRMACIÓN ESTÉTICO --- */}
             {confirmDelete.isOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex justify-center items-start p-4 pt-24 md:pt-40 overflow-y-auto">
-                    <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden group">
+                    <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-4 sm:p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden group">
 
                         {/* Decoración estética de VNTG HUB */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange to-transparent opacity-50"></div>
@@ -485,7 +485,7 @@ export default function AdminPanel() {
                                 Esta acción es irreversible y afectará a la base de datos de VNTG HUB.
                             </p>
 
-                            <div className="grid grid-cols-2 gap-4 w-full">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                                 <button
                                     onClick={() => setConfirmDelete({ isOpen: false, id: null, title: '', type: '' })}
                                     className="px-6 py-4 bg-zinc-200 dark:bg-white/5 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-white/10 transition-all border border-transparent"

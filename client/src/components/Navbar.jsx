@@ -80,14 +80,14 @@ export default function Navbar() {
 
     return (
         <nav className="sticky top-0 z-[100] bg-white/80 dark:bg-brand-dark/80 backdrop-blur-md border-b border-zinc-200 dark:border-white/5 transition-colors duration-300">
-            <div className="max-w-[1700px] mx-auto px-4 h-20 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-6">
+            <div className="max-w-[1700px] mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-1 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-6">
                     {/* Botón de categorías conectado al contexto */}
                     <button onClick={openCategory} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white">
                         <Menu size={24} />
                     </button>
                     <Link to="/" className="flex items-center">
-                        <img src="/logo-texto-transparente.webp" alt="VNTG HUB Logo" className="h-10 md:h-12 w-auto object-contain" />
+                        <img src="/logo-texto-transparente.webp" alt="VNTG HUB Logo" className="h-8 sm:h-10 md:h-12 w-auto object-contain" />
                     </Link>
                 </div>
 
@@ -106,7 +106,7 @@ export default function Navbar() {
                     </form>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                     <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white">
                         {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                     </button>
@@ -160,6 +160,22 @@ export default function Navbar() {
                         )}
                     </button>
                 </div>
+            </div>
+
+            {/* Buscador Móvil */}
+            <div className="md:hidden px-4 pb-4">
+                <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent focus-within:border-brand-orange transition-all">
+                    <input 
+                        type="text" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar tesoros..." 
+                        className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-sm italic font-medium"
+                    />
+                    <button type="submit" className="px-6 text-zinc-400 hover:text-brand-orange transition-colors">
+                        <Search size={20} />
+                    </button>
+                </form>
             </div>
         </nav>
     );

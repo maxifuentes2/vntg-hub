@@ -25,7 +25,7 @@ export const ToastProvider = ({ children }) => {
             {/* Renderizado de los Toasts (Copiado de tu CartContext original) */}
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 items-end pointer-events-none">
                 {toasts.map((toast) => (
-                    <div key={toast.id} className={`pointer-events-auto bg-zinc-950 text-white border border-white/10 shadow-2xl flex items-center w-[340px] h-[85px] transition-all duration-500 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
+                    <div key={toast.id} className={`pointer-events-auto bg-zinc-950 text-white border border-white/10 shadow-2xl flex items-center w-[90vw] sm:w-[340px] h-[85px] transition-all duration-500 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
                         {toast.product && <div className="w-[85px] h-[85px] shrink-0 bg-zinc-800 border-r border-white/5"><img src={toast.product.images} className="w-full h-full object-cover opacity-80" alt="" /></div>}
                         <div className="flex-1 px-4 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">

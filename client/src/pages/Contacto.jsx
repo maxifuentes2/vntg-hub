@@ -51,21 +51,21 @@ export default function Contacto() {
                             <div className="bg-zinc-50 dark:bg-[#1a1a1a] p-5 border border-zinc-200 dark:border-white/5 group-hover:border-brand-blue transition-colors"><Mail size={28} className="text-brand-blue" /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Email</p>
-                                <p className="text-xl font-black italic uppercase">soportehubvntg@gmail.com</p>
+                                <p className="text-base sm:text-xl font-black italic uppercase break-all">soportehubvntg@gmail.com</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
                             <div className="bg-zinc-50 dark:bg-[#1a1a1a] p-5 border border-zinc-200 dark:border-white/5 group-hover:border-brand-orange transition-colors"><MapPin size={28} className="text-brand-orange" /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Showroom</p>
-                                <p className="text-xl font-black italic uppercase">Mendoza, ARG</p>
+                                <p className="text-base sm:text-xl font-black italic uppercase break-words sm:break-normal">Mendoza, ARG</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 {/* Formulario conectado con los estados */}
-                <form className="bg-zinc-50 dark:bg-[#111111] p-10 md:p-16 border border-zinc-200 dark:border-white/5 space-y-6 shadow-2xl" onSubmit={handleSubmit}>
+                <form className="bg-zinc-50 dark:bg-[#111111] p-5 sm:p-10 md:p-16 border border-zinc-200 dark:border-white/5 space-y-6 shadow-2xl" onSubmit={handleSubmit}>
                     <input 
                         type="text" 
                         name="nombre"
