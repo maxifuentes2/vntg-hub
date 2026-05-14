@@ -105,6 +105,43 @@ app.post("/api/auth/verify-code", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
+app.post("/api/auth/google", async (req, res) => {
+    const { token } = req.body;
+    try {
+        // 1. Verificamos el token con Google
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const { email, name, picture, sub: googleId } = payload;
+
+        // 2. Buscamos si el usuario ya existe
+        const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        
+        let user;
+        if (users.length === 0) {
+            // 3. Si no existe, lo creamos automáticamente
+            // Nota: Usamos el googleId como contraseña temporal o simplemente dejamos el pass nulo
+            await db.query(
+                "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+                [name, email, 'google-auth-user-' + googleId] 
+            );
+            const [newUser] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+            user = newUser[0];
+        } else {
+            user = users[0];
+        }
+
+        // 4. Devolvemos el usuario (sin datos sensibles)
+        const { password, ...userSinPass } = user;
+        res.json({ user: userSinPass });
+    } catch (error) {
+        console.error("Error en Google Auth:", error);
+        res.status(500).json({ error: "Error al autenticar con Google" });
+    }
+});
+
 // --- CHECKOUT CON PRECIOS DE IMAGEN Y ENVÍO GRATIS > 200k ---
 app.post("/api/checkout", async (req, res) => {
     const { user, cart, shipping, shippingType } = req.body;
