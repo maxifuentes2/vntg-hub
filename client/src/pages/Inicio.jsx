@@ -146,7 +146,7 @@ export default function Inicio() {
                     <div className="max-w-[1700px] mx-auto px-4 mt-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {seccion.items.map((item) => (
-                                <div key={item.id} className="group bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
+                                <div key={item.id} className={`group bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-60' : ''}`}>
                                     <div className="aspect-[16/10] bg-white dark:bg-brand-dark relative overflow-hidden flex items-center justify-center p-4 border-b border-zinc-200 dark:border-white/5">
                                         <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
                                             {item.images ? (
@@ -160,7 +160,7 @@ export default function Inicio() {
                                             )}
                                         </Link>
                                         <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
-                                            {item.estado || "MINT"}
+                                            {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                         </div>
                                     </div>
 
@@ -185,7 +185,8 @@ export default function Inicio() {
                                                 </button>
                                                 <button
                                                     onClick={() => addToCart(item)}
-                                                    className="bg-brand-blue text-white p-3.5 hover:bg-brand-orange transition-all duration-300 shadow-lg active:scale-95"
+                                                    disabled={item.stock === 0}
+                                                    className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
                                                 >
                                                     <ShoppingCart size={24} />
                                                 </button>

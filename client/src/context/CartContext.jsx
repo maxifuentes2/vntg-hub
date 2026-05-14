@@ -2,7 +2,6 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from './ToastContext'; // <-- LINK A NOTIFICACIONES
 
 const CartContext = createContext();
-const WishListContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const { addToast } = useToast(); // <-- IMPORTAMOS LA FUNCIÓN
@@ -23,6 +22,10 @@ export const CartProvider = ({ children }) => {
     }, [cart]);
 
     const addToCart = (product) => {
+        if (product.stock <= 0) {
+            addToast(product, "Producto sin stock", 'error');
+            return;
+        }
         const existingInCart = cart.find(item => item.id === product.id);
         const currentQty = existingInCart ? existingInCart.cantidad : 0;
         if (currentQty >= product.stock) {
@@ -74,44 +77,5 @@ export const CartProvider = ({ children }) => {
         </CartContext.Provider>
     );
 };
-
-export function WishListProvider({ children }) {
-    const { addToast } = useToast(); // <-- LINK A NOTIFICACIONES
-    const [wishListItems, setWishListItems] = useState(() => {
-        const saved = localStorage.getItem('vntg_wishlist');
-        return saved ? JSON.parse(saved) : [];
-    });
-
-    useEffect(() => {
-        localStorage.setItem('vntg_wishlist', JSON.stringify(wishListItems));
-    }, [wishListItems]);
-
-    const addToWishList = (product) => {
-        setWishListItems((prevItems) => {
-            if (prevItems.some(item => String(item.id) === String(product.id))) {
-                addToast(product, 'Ya está en favoritos', 'error');
-                return prevItems; 
-            }
-            addToast(product, '¡Añadido a favoritos!', 'success');
-            return [...prevItems, product];
-        });
-    };
-
-    const removeFromWishList = (id) => {
-        setWishListItems((prevItems) => prevItems.filter(item => String(item.id) !== String(id)));
-    };
-
-    const wishListCount = wishListItems.length;
-
-    return (
-        <WishListContext.Provider value={{ wishListItems, addToWishList, removeFromWishList, wishListCount }}>
-            {children}
-        </WishListContext.Provider>
-    );
-}
-
-export function useWishList() {
-    return useContext(WishListContext);
-}
 
 export const useCart = () => useContext(CartContext);

@@ -113,7 +113,7 @@ const DetalleProducto = () => {
                         >
                             <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain transition-transform duration-700 group-hover:scale-105" />
                             <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl">
-                                {producto.estado || "EXCLUSIVE STOCK"}
+                                {producto.stock === 0 ? "OUT OF STOCK" : (producto.estado || "EXCLUSIVE STOCK")}
                             </div>
                         </div>
 
@@ -143,20 +143,24 @@ const DetalleProducto = () => {
                             <div className="flex flex-col mt-4">
                                 <p className="text-4xl font-black italic text-brand-orange">${Number(producto.price).toLocaleString('es-AR')}</p>
                                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-2">
-                                    Stock Disponible: <span className="text-zinc-900 dark:text-white">{producto.stock ?? '0'}</span>
+                                    Stock Disponible: <span className={producto.stock === 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}>{producto.stock ?? '0'}</span>
                                 </p>
                             </div>
                         </div>
 
-                        <button onClick={() => addToCart(producto)} className="w-full bg-brand-orange text-white py-6 font-black uppercase italic text-lg tracking-[0.2em] hover:bg-zinc-900 transition-all flex items-center justify-center gap-4 mb-4 shadow-xl active:translate-y-1">
-                            <ShoppingCart size={24} /> Agregar al Carrito
+                        <button 
+                            onClick={() => addToCart(producto)} 
+                            disabled={producto.stock === 0}
+                            className={`w-full py-6 font-black uppercase italic text-lg tracking-[0.2em] transition-all flex items-center justify-center gap-4 mb-4 shadow-xl active:translate-y-1 ${producto.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-orange text-white hover:bg-zinc-900'}`}
+                        >
+                            <ShoppingCart size={24} /> {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
                         </button>
 
                         <button 
                             onClick={() => addToWishList(producto)} 
                             className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10"
                         >
-                            <Heart size={18} /> Agregar a la lista de deseos
+                            <Heart size={18} /> {producto.stock === 0 ? 'Avísame cuando haya stock' : 'Agregar a la lista de deseos'}
                         </button>
 
                         <div className="border-t border-white/10">
@@ -213,7 +217,11 @@ const DetalleProducto = () => {
                                         </Link>
                                         <div className="flex items-center justify-between border-t border-white/5 pt-4">
                                             <p className="text-xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
-                                            <button onClick={() => addToCart(item)} className="text-zinc-900 dark:text-white hover:text-brand-orange transition-colors">
+                                            <button 
+                                                onClick={() => addToCart(item)} 
+                                                disabled={item.stock === 0}
+                                                className={`transition-colors ${item.stock === 0 ? 'text-zinc-300 cursor-not-allowed' : 'text-zinc-900 dark:text-white hover:text-brand-orange'}`}
+                                            >
                                                 <ShoppingCart size={20} />
                                             </button>
                                         </div>

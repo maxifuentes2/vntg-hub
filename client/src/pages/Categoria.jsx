@@ -142,8 +142,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 {/* GRID DE PRODUCTOS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {productos.map((item) => (
-                        <div key={item.id} className="group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
-                            {/* CAMBIO AQUÍ: El fondo del contenedor de imagen ahora coincide con la card (zinc-50 / brand-dark) */}
+                        <div key={item.id} className={`group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-70' : ''}`}>
                             <div className="aspect-video bg-zinc-50 dark:bg-brand-dark flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
                                 <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
                                     <img 
@@ -153,7 +152,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     />
                                 </Link>
                                 <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
-                                    {item.estado || "MINT"}
+                                    {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                 </div>
                             </div>
                             <div className="p-8">
@@ -171,7 +170,8 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                         </button>
                                         <button 
                                             onClick={(e) => { e.preventDefault(); addToCart(item); }} 
-                                            className="bg-brand-blue text-white p-3.5 hover:bg-brand-orange transition-colors shadow-lg"
+                                            disabled={item.stock === 0}
+                                            className={`p-3.5 transition-colors shadow-lg ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
                                         >
                                             <ShoppingCart size={24} />
                                         </button>

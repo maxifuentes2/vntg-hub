@@ -23,7 +23,7 @@ app.use(express.json());
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q } = req.query;
-    let sql = "SELECT * FROM products WHERE stock > 0";
+    let sql = "SELECT * FROM products WHERE 1=1"; // Cambiado para mostrar todos
     const params = [];
     if (categoryId && categoryId !== 'all') { sql += " AND categoryId = ?"; params.push(categoryId); }
     if (q) {
@@ -31,6 +31,8 @@ app.get("/api/products", async (req, res) => {
         const searchTerm = `%${q}%`;
         params.push(searchTerm, searchTerm, searchTerm);
     }
+    // Ordenar: Los que tienen stock arriba, luego por ID
+    sql += " ORDER BY (stock > 0) DESC, id DESC";
     try {
         const [rows] = await db.query(sql, params);
         res.json(rows);
@@ -60,9 +62,32 @@ app.get("/api/products/:id", async (req, res) => {
 
 app.get("/api/categories", async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT DISTINCT c.* FROM categories c INNER JOIN products p ON c.id = p.categoryId WHERE p.stock > 0");
+        const [rows] = await db.query("SELECT DISTINCT c.* FROM categories c INNER JOIN products p ON c.id = p.categoryId");
         res.json(rows);
     } catch (error) { res.status(500).json({ error: "Error" }); }
+});
+
+// --- RUTAS DE WISHLIST (NUEVO) ---
+app.get("/api/wishlist/:userId", async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT p.* FROM wishlist w JOIN products p ON w.product_id = p.id WHERE w.user_id = ?", [req.params.userId]);
+        res.json(rows);
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+app.post("/api/wishlist", async (req, res) => {
+    const { userId, productId } = req.body;
+    try {
+        await db.query("INSERT IGNORE INTO wishlist (user_id, product_id) VALUES (?, ?)", [userId, productId]);
+        res.json({ message: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+app.delete("/api/wishlist/:userId/:productId", async (req, res) => {
+    try {
+        await db.query("DELETE FROM wishlist WHERE user_id = ? AND product_id = ?", [req.params.userId, req.params.productId]);
+        res.json({ message: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
 // --- PERFIL DE USUARIO ---
@@ -294,10 +319,26 @@ app.put("/api/admin/products/:id", async (req, res) => {
     const { title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
+        // Lógica de detección de stock para emails
+        const [prev] = await db.query("SELECT stock, title FROM products WHERE id = ?", [id]);
+        const stockPrevio = prev[0]?.stock || 0;
+
         await db.query(
             "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=? WHERE id=?",
             [title, description || '', franchise || '', categoryId, price, stock, images || '', gal, id]
         );
+
+        if (stockPrevio === 0 && stock > 0) {
+            const [interesados] = await db.query("SELECT u.email, u.name FROM wishlist w JOIN users u ON w.user_id = u.id WHERE w.product_id = ?", [id]);
+            for (let u of interesados) {
+                await transporter.sendMail({
+                    from: `"VNTG HUB" <${process.env.EMAIL_USER}>`,
+                    to: u.email,
+                    subject: `¡Stock disponible! ${prev[0].title}`,
+                    html: `<div style="font-family:sans-serif;background:#09090b;color:#fff;padding:40px;text-align:center;"><h1 style="color:#f97316;">¡VOLVIÓ A INGRESAR!</h1><p>Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible.</p><a href="https://vntg-hub.vercel.app/producto/${id}" style="background:#f97316;color:#fff;padding:15px;text-decoration:none;font-weight:bold;">COMPRAR AHORA</a></div>`
+                });
+            }
+        }
         res.json({ message: "Producto actualizado" });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
