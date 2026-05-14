@@ -2,6 +2,7 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import { CheckCircle, X, AlertCircle } from 'lucide-react';
 
 const CartContext = createContext();
+const WishlistContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(() => {
@@ -106,5 +107,47 @@ export const CartProvider = ({ children }) => {
         </CartContext.Provider>
     );
 };
+
+export function WishlistProvider({ children }) {
+    // Inicializar desde localStorage si hay datos, si no, array vacío
+    const [wishlistItems, setWishlistItems] = useState(() => {
+        const saved = localStorage.getItem('vntg_wishlist');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    // Guardar en localStorage cada vez que cambie la lista
+    useEffect(() => {
+        localStorage.setItem('vntg_wishlist', JSON.stringify(wishlistItems));
+    }, [wishlistItems]);
+
+    // Función para agregar (evitando duplicados)
+    const addToWishlist = (product) => {
+        setWishlistItems((prevItems) => {
+            if (prevItems.some(item => item.id === product.id)) {
+                return prevItems; // Ya está en la lista, no hacemos nada
+            }
+            return [...prevItems, product];
+        });
+    };
+
+    // Función para eliminar
+    const removeFromWishlist = (id) => {
+        setWishlistItems((prevItems) => prevItems.filter(item => item.id !== id));
+    };
+
+    // Calcular la cantidad de items
+    const wishlistCount = wishlistItems.length;
+
+    return (
+        <WishlistContext.Provider value={{ wishlistItems, addToWishlist, removeFromWishlist, wishlistCount }}>
+            {children}
+        </WishlistContext.Provider>
+    );
+}
+
+// Hook personalizado para usarlo fácilmente
+export function useWishlist() {
+    return useContext(WishlistContext);
+}
 
 export const useCart = () => useContext(CartContext);
