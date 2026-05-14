@@ -399,10 +399,20 @@ app.get("/api/admin/categories", async (req, res) => {
 });
 
 app.post("/api/admin/categories", async (req, res) => {
-    const { id, name } = req.body;
+    const { name } = req.body;
     try {
-        await db.query("INSERT INTO categories (id, name) VALUES (?, ?)", [id, name || id]);
+        // Ya no enviamos el ID, MySQL lo pone automáticamente
+        await db.query("INSERT INTO categories (name) VALUES (?)", [name]);
         res.json({ message: "Categoría creada" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.put("/api/admin/categories/:id", async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    try {
+        await db.query("UPDATE categories SET name = ? WHERE id = ?", [name, id]);
+        res.json({ message: "Categoría actualizada" });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 

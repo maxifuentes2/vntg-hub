@@ -121,16 +121,28 @@ export default function AdminPanel() {
     };
 
     // --- MANEJO DE CATEGORÍAS ---
-    const handleOpenCategoryModal = () => {
-        setCategoryForm({ id: '', name: '' });
+    const handleOpenCategoryModal = (category = null) => {
+        if (category) {
+            // Si pasamos una categoría, la cargamos para editar
+            setCategoryForm({ id: category.id, name: category.name || category.id });
+        } else {
+            // Si no, vaciamos el form para crear una nueva
+            setCategoryForm({ id: '', name: '' });
+        }
         setIsCategoryModalOpen(true);
     };
 
     const handleSaveCategory = async (e) => {
         e.preventDefault();
+        // Si hay ID, es PUT (editar). Si no, es POST (crear)
+        const method = categoryForm.id ? 'PUT' : 'POST';
+        const url = categoryForm.id 
+            ? `${API_URL}/api/admin/categories/${categoryForm.id}` 
+            : `${API_URL}/api/admin/categories`;
+
         try {
-            await fetch(`${API_URL}/api/admin/categories`, {
-                method: 'POST',
+            await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(categoryForm)
             });
@@ -244,9 +256,14 @@ export default function AdminPanel() {
                                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">{c.name || c.id}</h3>
                                         <p className="text-[10px] text-zinc-500 uppercase mt-1">ID: {c.id}</p>
                                     </div>
-                                    <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all">
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleOpenCategoryModal(c)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded hover:bg-brand-orange hover:text-white transition-colors">
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -419,20 +436,24 @@ export default function AdminPanel() {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl w-full max-w-sm">
                         <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-white/5">
-                            <h2 className="text-xl font-black italic uppercase text-brand-orange">Nueva Categoría</h2>
+                            <h2 className="text-xl font-black italic uppercase text-brand-orange">
+                                {categoryForm.id ? 'Editar Categoría' : 'Nueva Categoría'}
+                            </h2>
                             <button onClick={() => setIsCategoryModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={24} /></button>
                         </div>
                         <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Ej: 123)</label>
-                                <input type="text" required value={categoryForm.id} onChange={e => setCategoryForm({ ...categoryForm, id: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                            </div>
+                            {categoryForm.id && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Auto)</label>
+                                    <input type="text" disabled value={categoryForm.id} className="w-full bg-zinc-200 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white/50 cursor-not-allowed" />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Nombre Visible (Ej: Remeras Oversize)</label>
                                 <input type="text" required value={categoryForm.name} onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                             </div>
                             <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded mt-4 hover:bg-orange-600 transition-colors">
-                                Crear Categoría
+                                {categoryForm.id ? 'Guardar Cambios' : 'Crear Categoría'}
                             </button>
                         </form>
                     </div>
