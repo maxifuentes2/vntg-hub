@@ -113,13 +113,28 @@ app.post("/api/auth/register", async (req, res) => {
 });
 
 app.post("/api/auth/login/local", async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, deviceToken } = req.body; // Recibimos el token desde el front
     try {
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
         if (!users[0] || !users[0].password) return res.status(401).json({ error: "Credenciales" });
         const valid = await bcrypt.compare(password, users[0].password);
         if (!valid) return res.status(401).json({ error: "Credenciales" });
         
+        // --- LÓGICA DE DISPOSITIVO DE CONFIANZA ---
+        if (deviceToken) {
+            const [trusted] = await db.query(
+                "SELECT * FROM trusted_devices WHERE user_id = ? AND device_token = ? AND expires_at > NOW()",
+                [users[0].id, deviceToken]
+            );
+            
+            if (trusted.length > 0) {
+                // Si el dispositivo es conocido y no expiró, entramos directo
+                const { password, verification_code, verification_expires, ...userSinPass } = users[0];
+                return res.json({ message: "Inicio rápido", user: userSinPass, skipCode: true });
+            }
+        }
+
+        // Si no hay token o no es válido, procedemos con el código de siempre
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         await db.query("UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?", [code, users[0].id]);
 
@@ -139,14 +154,31 @@ app.post("/api/auth/login/local", async (req, res) => {
 });
 
 app.post("/api/auth/verify-code", async (req, res) => {
-    const { email, code } = req.body;
+    const { email, code, rememberDevice } = req.body; // Recibimos el flag de recordar
     try {
         const [rows] = await db.query("SELECT * FROM users WHERE email = ? AND verification_code = ? AND verification_expires > NOW()", [email, code]);
         if (rows.length === 0) return res.status(401).json({ error: "Inválido" });
+        
         const user = rows[0];
+        let newToken = null;
+
+        // --- LÓGICA PARA GUARDAR DISPOSITIVO ---
+        if (rememberDevice) {
+            newToken = uuidv4();
+            await db.query(
+                "INSERT INTO trusted_devices (user_id, device_token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))",
+                [user.id, newToken]
+            );
+        }
+
         await db.query("UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?", [user.id]);
-        const { password, ...userSinPass } = user;
-        res.json({ message: "Éxito", user: userSinPass });
+        const { password, verification_code, verification_expires, ...userSinPass } = user;
+        
+        res.json({ 
+            message: "Éxito", 
+            user: userSinPass, 
+            deviceToken: newToken // Enviamos el token de vuelta al front si se creó
+        });
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
@@ -246,7 +278,6 @@ app.get("/api/admin/products", async (req, res) => {
 });
 
 app.post("/api/admin/products", async (req, res) => {
-    // CORRECCIÓN: Se añade 'images' para guardar la foto principal
     const { id, title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
@@ -260,7 +291,6 @@ app.post("/api/admin/products", async (req, res) => {
 
 app.put("/api/admin/products/:id", async (req, res) => {
     const { id } = req.params;
-    // CORRECCIÓN: Se añade 'images' para actualizar la foto principal
     const { title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
@@ -339,9 +369,9 @@ app.post("/api/contact", async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`, // El servidor original lo envía
-            to: "soportehubvntg@gmail.com", // <--- CAMBIO: AHORA LLEGA A ESTE CORREO
-            replyTo: email, // Si le das a responder, le contestas al cliente
+            from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`, 
+            to: "soportehubvntg@gmail.com", 
+            replyTo: email, 
             subject: `NUEVA TRANSMISIÓN de ${nombre} - Pista de Contacto`,
             html: `
                 <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 20px;">
