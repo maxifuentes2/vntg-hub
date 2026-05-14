@@ -1,26 +1,26 @@
 import { X, HeartCrack, Trash2, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useWishlist } from '../context/WishlistContext'; // <-- Importamos el contexto real
+import { useWishList } from '../context/WishListContext'; // <-- Importamos el contexto real con L mayúscula
 import { useCart } from '../context/CartContext'; // <-- Para poder pasarlos al carrito después
 
-export default function WishlistSidebar({ isOpen, onClose }) {
-    // 1. Usamos los datos reales y funciones del Contexto Global
-    const { wishlistItems, removeFromWishlist } = useWishlist();
+export default function WishListSidebar({ isOpen, onClose }) { // <-- L mayúscula
+    // 1. Usamos los datos reales y funciones del Contexto Global con L mayúscula
+    const { wishListItems, removeFromWishList } = useWishList();
     const { addToCart } = useCart();
 
-const handleMoveToCart = (e, item) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // 1. Primero borramos el producto de la wishlist
-    removeFromWishlist(item.id);
-    
-    // 2. Le damos a React 50 milisegundos para que actualice la UI
-    // y luego lo metemos al carrito. Esto evita que los estados choquen.
-    setTimeout(() => {
-        addToCart(item);
-    }, 50);
-};
+    const handleMoveToCart = (e, item) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 1. Primero borramos el producto de la wishlist
+        removeFromWishList(item.id);
+        
+        // 2. Le damos a React 50 milisegundos para que actualice la UI
+        // y luego lo metemos al carrito. Esto evita que los estados choquen.
+        setTimeout(() => {
+            addToCart(item);
+        }, 50);
+    };
 
     return (
         <>
@@ -52,7 +52,7 @@ const handleMoveToCart = (e, item) => {
                 {/* Contenido */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {/* 2. Verificamos si la lista real está vacía */}
-                    {wishlistItems.length === 0 ? (
+                    {wishListItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center">
                             <HeartCrack size={48} className="text-zinc-300 dark:text-zinc-600 mb-4" />
                             <h3 className="text-lg font-bold mb-2">Tu lista está vacía</h3>
@@ -69,7 +69,7 @@ const handleMoveToCart = (e, item) => {
                     ) : (
                         <div className="flex flex-col gap-4">
                             {/* 3. Mapeamos los productos guardados reales */}
-                            {wishlistItems.map((item) => (
+                            {wishListItems.map((item) => (
                                 <div key={item.id} className="flex gap-4 bg-zinc-50 dark:bg-[#1a1a1a] p-3 rounded-2xl border border-zinc-200 dark:border-white/5 relative">
                                     
                                     {/* Imagen miniatura */}
@@ -102,7 +102,7 @@ const handleMoveToCart = (e, item) => {
                                     {/* Acciones (Borrar y Carrito) */}
                                     <div className="flex flex-col items-end justify-between ml-2">
                                         <button 
-                                            onClick={() => removeFromWishlist(item.id)}
+                                            onClick={() => removeFromWishList(item.id)}
                                             className="text-zinc-400 hover:text-red-500 transition-colors p-1"
                                         >
                                             <Trash2 size={16} />

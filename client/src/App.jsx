@@ -17,35 +17,35 @@ import Privacidad from './pages/Privacidad';
 import NotFound from './pages/NotFound'; 
 import CartSidebar from './components/CartSidebar'; 
 import { CartProvider } from './context/CartContext';
-import { WishlistProvider } from './context/WishlistContext'; // <-- 1. NUEVA IMPORTACIÓN DEL CONTEXTO
+import { WishListProvider } from './context/WishListContext'; // <-- Corregido con L mayúscula
 
 // IMPORTACIONES DE AUTENTICACIÓN, CHECKOUT Y SIDEBARS
 import Checkout from './pages/Checkout';
 import RecuperarPassword from './pages/RecuperarPassword';
 import RestablecerPassword from './pages/RestablecerPassword';
 import MiCuenta from './pages/MiCuenta'; 
-import WishlistSidebar from './components/WishlistSidebar'; 
+import WishListSidebar from './components/WishListSidebar'; // <-- Corregido con L mayúscula
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [isWishListOpen, setIsWishListOpen] = useState(false); // <-- Estado con L mayúscula
 
   return (
     <CartProvider>
-      <WishlistProvider> {/* <-- 2. ENVUELVE LA APP AQUÍ */}
+      <WishListProvider> {/* <-- Provider con L mayúscula */}
         <Router>
           <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
             
             {/* Le pasamos ambas funciones a la Navbar */}
             <Navbar 
               onOpenCart={() => setIsCartOpen(true)} 
-              onOpenWishlist={() => setIsWishlistOpen(true)} 
+              onOpenWishList={() => setIsWishListOpen(true)} // <-- Prop con L mayúscula
             />
             
             {/* PANELES LATERALES (SIDEBARS) */}
             <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-            <WishlistSidebar isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+            <WishListSidebar isOpen={isWishListOpen} onClose={() => setIsWishListOpen(false)} /> {/* <-- Componente con L mayúscula */}
 
             <main className="flex-grow">
               <Routes>
@@ -91,10 +91,10 @@ function App() {
 
             <ScrollToTop />
 
-            <Chatbot isSidebarOpen={isCartOpen || isFilterOpen || isWishlistOpen} />
+            <Chatbot isSidebarOpen={isCartOpen || isFilterOpen || isWishListOpen} /> {/* <-- Estado con L mayúscula */}
           </div>
         </Router>
-      </WishlistProvider> {/* <-- 3. CIERRA AQUÍ */}
+      </WishListProvider>
     </CartProvider>
   );
 }

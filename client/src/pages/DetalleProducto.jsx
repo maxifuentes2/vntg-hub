@@ -5,7 +5,7 @@ import {
     Tag, ArrowRight, Plus, Minus, Heart, ShieldCheck 
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useWishlist } from '../context/WishlistContext'; // <-- 1. NUEVA IMPORTACIÓN
+import { useWishList } from '../context/WishListContext'; // <-- L mayúscula
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -30,7 +30,7 @@ const DetalleProducto = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { addToWishlist } = useWishlist(); // <-- 2. LLAMADA AL HOOK DE WISHLIST
+    const { addToWishList } = useWishList(); // <-- L mayúscula en ambas
     
     const [producto, setProducto] = useState(null);
     const [relacionados, setRelacionados] = useState([]);
@@ -39,6 +39,9 @@ const DetalleProducto = () => {
     const [openSection, setOpenSection] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
+    
+    // ESTADO PARA LA NOTIFICACIÓN
+    const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
         const fetchDatos = async () => {
@@ -76,6 +79,16 @@ const DetalleProducto = () => {
         setZoomLevel(prev => Math.min(Math.max(1, prev + delta), 4));
     };
 
+    // FUNCIÓN PARA AGREGAR Y MOSTRAR TOAST (Con L mayúscula)
+    const handleAddToWishList = () => {
+        addToWishList(producto);
+        setShowToast(true);
+        
+        setTimeout(() => {
+            setShowToast(false);
+        }, 3000);
+    };
+
     if (loading || !producto) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark font-black italic uppercase tracking-widest text-zinc-400">Catalogando Pieza...</div>;
 
     const fotosUnicas = Array.from(new Set([
@@ -84,7 +97,28 @@ const DetalleProducto = () => {
     ])).filter(img => img && typeof img === 'string' && img.trim() !== '');
 
     return (
-        <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans py-20 px-4 transition-colors">
+        <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans py-20 px-4 transition-colors relative overflow-hidden">
+            
+            {/* --- TOAST DE NOTIFICACIÓN --- */}
+            <div className={`fixed top-24 right-4 z-[999] bg-[#111111] border border-white/5 shadow-2xl flex items-center p-3 pr-8 gap-4 w-[360px] transition-all duration-500 ease-out transform ${showToast ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
+                <div className="w-16 h-16 bg-[#1a1a1a] relative flex-shrink-0">
+                    <img src={imgPrincipal} alt="WishList" className="w-full h-full object-contain p-1" />
+                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-emerald-500"></div>
+                </div>
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    <div className="flex items-center gap-1.5 mb-1">
+                        <ShieldCheck size={12} className="text-emerald-500" />
+                        <span className="text-[9px] font-black uppercase text-emerald-500 tracking-widest">Éxito</span>
+                    </div>
+                    <p className="text-xs font-black uppercase italic text-white truncate">{producto.title}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mt-1">¡Añadido a favoritos!</p>
+                </div>
+                <button onClick={() => setShowToast(false)} className="absolute top-3 right-3 text-zinc-600 hover:text-white transition-colors">
+                    <X size={14} />
+                </button>
+            </div>
+            {/* ----------------------------------------------- */}
+
             <div className="max-w-[1400px] mx-auto">
                 
                 <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-400 hover:text-brand-orange mb-8 font-black text-[10px] uppercase tracking-[0.3em] transition-colors">
@@ -132,9 +166,9 @@ const DetalleProducto = () => {
                             <ShoppingCart size={24} /> Agregar al Carrito
                         </button>
 
-                        {/* <-- 3. BOTÓN CONECTADO AL ESTADO GLOBAL --> */}
+                        {/* BOTÓN CONECTADO A LA FUNCIÓN DEL TOAST */}
                         <button 
-                            onClick={() => addToWishlist(producto)} 
+                            onClick={handleAddToWishList} 
                             className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10"
                         >
                             <Heart size={18} /> Agregar a la lista de deseos
