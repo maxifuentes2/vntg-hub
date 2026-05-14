@@ -147,8 +147,14 @@ export default function MiCuenta() {
                                     </div>
                                     <div className="flex items-center gap-6">
                                         <div className="text-right">
-                                            <span className="text-[10px] font-black uppercase italic bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full">
-                                                {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'Preparando' : order.status === 'shipped' ? 'Enviado' : 'Entregado'}
+                                            <span className={`text-[10px] font-black uppercase italic px-3 py-1 rounded-full ${
+                                                order.status === 'approved' ? 'bg-green-500/10 text-green-500' :
+                                                order.status === 'preparing' ? 'bg-brand-orange/10 text-brand-orange' :
+                                                order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500' :
+                                                order.status === 'delivered' ? 'bg-purple-500/10 text-purple-500' :
+                                                'bg-zinc-500/10 text-zinc-500'
+                                            }`}>
+                                                {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'En Preparación' : order.status === 'shipped' ? 'Enviado' : 'Entregado'}
                                             </span>
                                             <p className="text-xl font-black italic mt-1">${parseFloat(order.total).toLocaleString('es-AR')}</p>
                                         </div>
