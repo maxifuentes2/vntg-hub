@@ -104,6 +104,40 @@ app.post("/api/auth/login/local", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
+app.post("/api/auth/verify-code", async (req, res) => {
+    const { email, code } = req.body;
+    try {
+        // Buscamos al usuario que coincida con el email, el código y que no haya expirado
+        const [rows] = await db.query(
+            "SELECT * FROM users WHERE email = ? AND verification_code = ? AND verification_expires > NOW()",
+            [email, code]
+        );
+
+        if (rows.length === 0) {
+            return res.status(401).json({ error: "Código incorrecto o expirado" });
+        }
+
+        const user = rows[0];
+
+        // Limpiamos el código de la base de datos para que no se use de nuevo
+        await db.query(
+            "UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?",
+            [user.id]
+        );
+
+        // Quitamos la contraseña y datos sensibles antes de enviar al frontend
+        const { password, verification_code, verification_expires, ...userSinPass } = user;
+        
+        res.json({ 
+            message: "Verificación exitosa", 
+            user: userSinPass 
+        });
+    } catch (error) {
+        console.error("Error en verify-code:", error);
+        res.status(500).json({ error: "Error en el servidor" });
+    }
+});
+
 app.post("/api/checkout", async (req, res) => {
     const { user, cart, shipping } = req.body;
     try {
