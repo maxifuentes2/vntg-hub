@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown } from 'lucide-react';
+import { Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown, AlertTriangle } from 'lucide-react'; // Añadido AlertTriangle
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -16,7 +16,15 @@ export default function AdminPanel() {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null); 
 
-    // Formularios (Añadido el campo 'images' para la persistencia en DB)
+    // NUEVO: Estado para el Modal de Confirmación Estético
+    const [confirmDelete, setConfirmDelete] = useState({
+        isOpen: false,
+        id: null,
+        title: '',
+        type: '' // 'product' o 'category'
+    });
+
+    // Formularios
     const [productForm, setProductForm] = useState({ 
         id: '', title: '', description: '', franchise: '', 
         categoryId: '', price: 0, stock: 0, images: '', gallery: '' 
@@ -63,7 +71,6 @@ export default function AdminPanel() {
             else if (typeof galStr === 'string' && galStr.startsWith('[')) {
                 try { galStr = JSON.parse(galStr).join(', '); } catch(e){}
             }
-            // Mapeo de datos al editar
             setProductForm({ 
                 ...product, 
                 gallery: galStr || '', 
@@ -93,10 +100,17 @@ export default function AdminPanel() {
         } catch (error) { console.error("Error al guardar:", error); }
     };
 
-    const handleDeleteProduct = async (id) => {
-        if (!window.confirm("¿Seguro que quieres eliminar este producto?")) return;
+    // --- MANEJO DE ELIMINACIÓN ESTÉTICA ---
+    const openConfirmDelete = (id, title, type) => {
+        setConfirmDelete({ isOpen: true, id, title, type });
+    };
+
+    const executeDelete = async () => {
+        const { id, type } = confirmDelete;
+        const endpoint = type === 'product' ? 'products' : 'categories';
         try {
-            await fetch(`${API_URL}/api/admin/products/${id}`, { method: 'DELETE' });
+            await fetch(`${API_URL}/api/admin/${endpoint}/${id}`, { method: 'DELETE' });
+            setConfirmDelete({ isOpen: false, id: null, title: '', type: '' });
             fetchData();
         } catch (error) { console.error("Error al eliminar:", error); }
     };
@@ -118,14 +132,6 @@ export default function AdminPanel() {
             setIsCategoryModalOpen(false);
             fetchData();
         } catch (error) { console.error("Error al guardar categoría:", error); }
-    };
-
-    const handleDeleteCategory = async (id) => {
-        if (!window.confirm("¿Seguro que quieres eliminar esta categoría?")) return;
-        try {
-            await fetch(`${API_URL}/api/admin/categories/${id}`, { method: 'DELETE' });
-            fetchData();
-        } catch (error) { console.error("Error al eliminar:", error); }
     };
 
     // --- MANEJO DE ÓRDENES ---
@@ -206,7 +212,7 @@ export default function AdminPanel() {
                                             <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded hover:bg-brand-orange hover:text-white transition-colors">
                                                 <Edit2 size={14} />
                                             </button>
-                                            <button onClick={() => handleDeleteProduct(p.id)} className="p-2 bg-red-500/10 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors">
+                                            <button onClick={() => openConfirmDelete(p.id, p.title, 'product')} className="p-2 bg-red-500/10 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors">
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
@@ -233,7 +239,7 @@ export default function AdminPanel() {
                                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">{c.name || c.id}</h3>
                                         <p className="text-[10px] text-zinc-500 uppercase mt-1">ID: {c.id}</p>
                                     </div>
-                                    <button onClick={() => handleDeleteCategory(c.id)} className="p-2 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all">
+                                    <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -341,7 +347,6 @@ export default function AdminPanel() {
                                 </div>
                             </div>
 
-                            {/* CAMPO DE IMAGEN PRINCIPAL (Añadido para funcionalidad total) */}
                             <div>
                                 <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Imagen Principal (URL)</label>
                                 <input type="text" required value={productForm.images} onChange={e => setProductForm({...productForm, images: e.target.value})} placeholder="https://vntg-hub.com/img.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
@@ -391,6 +396,50 @@ export default function AdminPanel() {
                                 Crear Categoría
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* --- NUEVO: MODAL DE CONFIRMACIÓN ESTÉTICO --- */}
+            {confirmDelete.isOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden group">
+                        
+                        {/* Decoración estética de VNTG HUB */}
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange to-transparent opacity-50"></div>
+                        
+                        <div className="flex flex-col items-center text-center">
+                            <div className="bg-brand-orange/10 p-4 rounded-full mb-6">
+                                <AlertTriangle className="text-brand-orange" size={40} />
+                            </div>
+                            
+                            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">
+                                ¿Confirmar Eliminación?
+                            </h3>
+                            
+                            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
+                                Estás a punto de eliminar permanentemente: <br/>
+                                <span className="text-brand-orange font-black not-italic uppercase block mt-2 text-base">
+                                    "{confirmDelete.title}"
+                                </span>
+                                Esta acción es irreversible y afectará a la base de datos de VNTG HUB.
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-4 w-full">
+                                <button 
+                                    onClick={() => setConfirmDelete({ isOpen: false, id: null, title: '', type: '' })}
+                                    className="px-6 py-4 bg-zinc-200 dark:bg-white/5 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-white/10 transition-all border border-transparent"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={executeDelete}
+                                    className="px-6 py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-900 transition-all shadow-lg active:scale-95"
+                                >
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
