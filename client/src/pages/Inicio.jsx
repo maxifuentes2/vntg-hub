@@ -89,7 +89,7 @@ export default function Inicio() {
                         VNTG <span className="text-brand-orange">HUB</span>
                     </h1>
                     <p className="text-lg md:text-xl font-bold italic text-zinc-600 dark:text-zinc-500 uppercase tracking-[0.4em]">
-                        Coleccionismo de Alto Nivel
+                        Coleccionismo de Alto Nivel (el povolo no hizo nada)
                     </p>
                 </div>
 
