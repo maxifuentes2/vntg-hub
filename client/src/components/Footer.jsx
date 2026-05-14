@@ -38,7 +38,7 @@ export default function Footer() {
 
                         {/* X (TWITTER) */}
                         <a 
-                            href="https://x.com/frabigol" 
+                            href="https://x.com/LoboLocura33" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-blue hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg flex items-center justify-center"
