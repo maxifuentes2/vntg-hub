@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react'; // Añadidos Eye y EyeOff
+import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'; // <-- Añadido Loader2 para el spinner
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -15,9 +15,11 @@ export default function Login() {
     const [error, setError] = useState('');
     const [mensaje, setMensaje] = useState('');
     
-    // Nuevos estados para la contraseña
     const [showPassword, setShowPassword] = useState(false);
     const [capsLock, setCapsLock] = useState(false);
+    
+    // --- NUEVO ESTADO PARA EVITAR EL DOBLE ENVÍO ---
+    const [isLoading, setIsLoading] = useState(false);
 
     const checkCapsLock = (e) => {
         setCapsLock(e.getModifierState('CapsLock'));
@@ -46,6 +48,11 @@ export default function Login() {
 
     const handleLocalLogin = async (e) => {
         e.preventDefault();
+        
+        // Si ya está cargando, bloqueamos cualquier otro intento (evita doble clic)
+        if (isLoading) return; 
+        
+        setIsLoading(true); // Encendemos el estado de carga
         setError('');
         setMensaje('');
 
@@ -66,11 +73,17 @@ export default function Login() {
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
+        } finally {
+            setIsLoading(false); // Apagamos el estado de carga sin importar qué pase
         }
     };
 
     const handleVerifyCode = async (e) => {
         e.preventDefault();
+        
+        if (isLoading) return; // Evita el doble clic aquí también
+        
+        setIsLoading(true);
         setError('');
 
         try {
@@ -91,6 +104,8 @@ export default function Login() {
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -117,8 +132,8 @@ export default function Login() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                // Usamos placeholder:uppercase para que lo tipeado sea normal
-                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none"
+                                disabled={isLoading} // Deshabilitar si está cargando
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50"
                             />
                             
                             <div>
@@ -130,12 +145,14 @@ export default function Login() {
                                         onChange={(e) => setPassword(e.target.value)}
                                         onKeyUp={checkCapsLock}
                                         required
-                                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none"
+                                        disabled={isLoading} // Deshabilitar si está cargando
+                                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50"
                                     />
                                     <button 
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-orange transition-colors"
+                                        disabled={isLoading}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-brand-orange transition-colors disabled:opacity-50"
                                     >
                                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
@@ -143,8 +160,13 @@ export default function Login() {
                                 {capsLock && <p className="text-brand-orange text-[10px] font-bold uppercase italic mt-1 ml-1">⚠️ Mayúsculas activadas</p>}
                             </div>
 
-                            <button type="submit" className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest hover:bg-brand-orange transition-all mt-4 shadow-lg shadow-blue-900/20">
-                                Entrar
+                            {/* BOTÓN PROTEGIDO */}
+                            <button 
+                                type="submit" 
+                                disabled={isLoading}
+                                className={`w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest transition-all mt-4 flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange'}`}
+                            >
+                                {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar'}
                             </button>
                             <Link to="/recuperar-password" className="block mt-4 text-right text-[10px] font-bold uppercase italic text-zinc-500 hover:text-brand-orange transition-colors">
                                 ¿Olvidaste tu contraseña?
@@ -167,7 +189,8 @@ export default function Login() {
                     <>
                         <button
                             onClick={() => setStep(1)}
-                            className="absolute top-6 left-6 text-zinc-500 hover:text-brand-orange transition-colors"
+                            disabled={isLoading}
+                            className="absolute top-6 left-6 text-zinc-500 hover:text-brand-orange transition-colors disabled:opacity-50"
                         >
                             <ArrowLeft size={20} />
                         </button>
@@ -193,10 +216,17 @@ export default function Login() {
                                 onChange={(e) => setCode(e.target.value)}
                                 maxLength={6}
                                 required
-                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none"
+                                disabled={isLoading}
+                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none disabled:opacity-50"
                             />
-                            <button type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all mt-4 flex justify-center items-center gap-2">
-                                Confirmar <ShieldCheck size={18} />
+                            
+                            {/* BOTÓN DE VERIFICAR PROTEGIDO */}
+                            <button 
+                                type="submit" 
+                                disabled={isLoading}
+                                className={`w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest transition-all mt-4 flex justify-center items-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark'}`}
+                            >
+                                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <>Confirmar <ShieldCheck size={18} /></>}
                             </button>
                         </form>
                     </>
