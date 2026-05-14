@@ -38,6 +38,16 @@ export default function Chatbot({ isSidebarOpen }) {
     const [messages, setMessages] = useState(getInitialMessages);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+
+    // Reducir el contador de enfriamiento cada segundo
+    useEffect(() => {
+        let timer;
+        if (cooldown > 0) {
+            timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [cooldown]);
 
     // 2. Guardar mensajes en localStorage cada vez que cambian
     useEffect(() => {
@@ -54,8 +64,9 @@ export default function Chatbot({ isSidebarOpen }) {
         const userMsg = input;
         
         // 3. Preparar el historial para enviarlo a Gemini (formato que espera la API)
-        // Omitimos el mensaje inicial de bienvenida para no confundir a la IA si no tiene contexto
-        const historyForGemini = messages.slice(1).map(m => ({
+        // Omitimos el mensaje inicial de bienvenida y recortamos a los últimos 6 mensajes (3 pares)
+        // Esto optimiza el uso de tokens y previene el límite de "Too Many Requests" por tamaño de contexto
+        const historyForGemini = messages.slice(1).slice(-6).map(m => ({
             role: m.isBot ? "model" : "user",
             parts: [{ text: m.text }]
         }));
@@ -97,6 +108,7 @@ export default function Chatbot({ isSidebarOpen }) {
             setMessages(prev => [...prev, { text: "Error de conexión con boxes. Intenta de nuevo.", isBot: true }]);
         } finally {
             setIsLoading(false);
+            setCooldown(4); // 4 segundos de enfriamiento para no saturar la API de Gemini (15 RPM limite)
         }
     };
 
@@ -162,16 +174,17 @@ export default function Chatbot({ isSidebarOpen }) {
                 <div className="p-4 bg-white dark:bg-brand-dark border-t dark:border-white/5 flex gap-2">
                     <input
                         type="text"
-                        placeholder="Escribir al equipo..."
+                        placeholder={cooldown > 0 ? `Enfriando motor... (${cooldown}s)` : "Escribir al equipo..."}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none px-4 py-3 text-xs font-bold italic focus:outline-none dark:text-white"
+                        onKeyDown={(e) => e.key === 'Enter' && !cooldown && handleSend()}
+                        disabled={cooldown > 0 || isLoading}
+                        className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none px-4 py-3 text-xs font-bold italic focus:outline-none dark:text-white disabled:opacity-50"
                     />
                     <button
                         onClick={handleSend}
-                        disabled={isLoading}
-                        className={`bg-brand-orange text-white px-4 transition-opacity ${isLoading ? 'opacity-50' : 'hover:bg-orange-600'}`}
+                        disabled={isLoading || cooldown > 0}
+                        className={`bg-brand-orange text-white px-4 transition-opacity ${(isLoading || cooldown > 0) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-600'}`}
                     >
                         <Send size={16} />
                     </button>

@@ -598,7 +598,13 @@ app.post("/api/chat", async (req, res) => {
         res.json({ reply: response, finished });
     } catch (error) {
         console.error("Error en Gemini API:", error);
-        res.status(500).json({ error: "Error de conexión en boxes" });
+        
+        // Manejar específicamente errores de cuota (429 Too Many Requests)
+        if (error.status === 429 || (error.message && error.message.includes('429'))) {
+            return res.status(429).json({ reply: "Estoy recibiendo muchos mensajes ahora mismo. Por favor, espera unos segundos e intenta de nuevo. ⏳" });
+        }
+
+        res.status(500).json({ reply: "Avería en boxes. Intenta de nuevo más tarde." });
     }
 });
 
