@@ -65,27 +65,19 @@ app.get("/api/categories", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- PERFIL DE USUARIO (Ruta que faltaba) ---
+// --- PERFIL DE USUARIO ---
 app.put("/api/auth/update-profile", async (req, res) => {
     const { userId, field, value } = req.body;
-
-    // Lista de campos permitidos por seguridad
     const allowedFields = ['address', 'city', 'province', 'zip_code', 'phone'];
     if (!allowedFields.includes(field)) {
         return res.status(400).json({ error: "Campo no permitido" });
     }
-
     try {
-        // Actualizamos solo el campo específico
         await db.query(`UPDATE users SET ${field} = ? WHERE id = ?`, [value, userId]);
-
-        // Obtenemos el usuario actualizado para devolverlo al frontend
         const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
-        
         if (rows.length === 0) {
             return res.status(404).json({ error: "Usuario no encontrado" });
         }
-
         const { password, verification_code, verification_expires, ...userSinPass } = rows[0];
         res.json({ message: "Perfil actualizado correctamente", user: userSinPass });
     } catch (error) {
@@ -95,6 +87,31 @@ app.put("/api/auth/update-profile", async (req, res) => {
 });
 
 // --- AUTENTICACIÓN ---
+
+app.post("/api/auth/register", async (req, res) => {
+    const { name, email, password } = req.body;
+
+    try {
+        const [existingUsers] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ error: "El correo ya está registrado" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        await db.query(
+            "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+            [name, email, hashedPassword]
+        );
+
+        res.status(201).json({ message: "Usuario registrado exitosamente" });
+    } catch (error) {
+        console.error("Error al registrar usuario:", error);
+        res.status(500).json({ error: "Error interno del servidor al registrar" });
+    }
+});
+
 app.post("/api/auth/login/local", async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -142,9 +159,7 @@ app.post("/api/auth/google", async (req, res) => {
         });
         const payload = ticket.getPayload();
         const { email, name, picture, sub: googleId } = payload;
-
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
-        
         let user;
         if (users.length === 0) {
             await db.query(
@@ -156,7 +171,6 @@ app.post("/api/auth/google", async (req, res) => {
         } else {
             user = users[0];
         }
-
         const { password, ...userSinPass } = user;
         res.json({ user: userSinPass });
     } catch (error) {
@@ -165,7 +179,7 @@ app.post("/api/auth/google", async (req, res) => {
     }
 });
 
-// --- HISTORIAL DE ÓRDENES (Para que MiCuenta no dé error 404) ---
+// --- HISTORIAL DE ÓRDENES (Usuario normal) ---
 app.get("/api/orders/:userId", async (req, res) => {
     const { userId } = req.params;
     try {
@@ -180,7 +194,7 @@ app.get("/api/orders/:userId", async (req, res) => {
     }
 });
 
-// --- CHECKOUT CON PRECIOS DE IMAGEN Y ENVÍO GRATIS > 200k ---
+// --- CHECKOUT ---
 app.post("/api/checkout", async (req, res) => {
     const { user, cart, shipping, shippingType } = req.body;
     try {
@@ -192,21 +206,17 @@ app.post("/api/checkout", async (req, res) => {
             if (!prod[0] || prod[0].stock < item.cantidad) return res.status(400).json({ error: "Sin stock" });
             subtotal += prod[0].price * item.cantidad;
         }
-
         let shippingCost = 0;
         if (subtotal < 200000) { 
             if (shippingType === 'normal') shippingCost = 9426.05;
             else if (shippingType === 'prioritario') shippingCost = 17276.99;
         }
-
         const totalFinal = subtotal + shippingCost;
         await db.query("INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))", [orderId, user.id, totalFinal, JSON.stringify(shipping)]);
-        
         for (let item of cart) {
             await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad, item.price]);
             await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad, item.id]);
         }
-
         const preference = new Preference(mpClient);
         const response = await preference.create({
             body: {
@@ -221,6 +231,102 @@ app.post("/api/checkout", async (req, res) => {
         res.json({ init_point: response.init_point });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
+
+
+// ==========================================
+// --- RUTAS DE ADMINISTRACIÓN (CRUD y Órdenes) ---
+// ==========================================
+
+// Productos
+app.get("/api/admin/products", async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM products ORDER BY id DESC");
+        res.json(rows);
+    } catch (error) { res.status(500).json({ error: "Error al cargar productos" }); }
+});
+
+app.post("/api/admin/products", async (req, res) => {
+    const { id, title, description, franchise, categoryId, price, stock, gallery } = req.body;
+    const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
+    try {
+        await db.query(
+            "INSERT INTO products (id, title, description, franchise, categoryId, price, stock, gallery) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [id, title, description || '', franchise || '', categoryId, price, stock, gal]
+        );
+        res.json({ message: "Producto creado exitosamente" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.put("/api/admin/products/:id", async (req, res) => {
+    const { id } = req.params;
+    const { title, description, franchise, categoryId, price, stock, gallery } = req.body;
+    const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
+    try {
+        await db.query(
+            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, gallery=? WHERE id=?",
+            [title, description || '', franchise || '', categoryId, price, stock, gal, id]
+        );
+        res.json({ message: "Producto actualizado" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete("/api/admin/products/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("DELETE FROM products WHERE id=?", [id]);
+        res.json({ message: "Producto eliminado" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Categorías
+app.get("/api/admin/categories", async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM categories");
+        res.json(rows);
+    } catch (error) { res.status(500).json({ error: "Error al cargar categorías" }); }
+});
+
+app.post("/api/admin/categories", async (req, res) => {
+    const { id, name } = req.body;
+    try {
+        await db.query("INSERT INTO categories (id, name) VALUES (?, ?)", [id, name || id]);
+        res.json({ message: "Categoría creada" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete("/api/admin/categories/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("DELETE FROM categories WHERE id=?", [id]);
+        res.json({ message: "Categoría eliminada" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Órdenes (Administrador)
+app.get("/api/admin/orders", async (req, res) => {
+    try {
+        // Traemos las órdenes y cruzamos datos para ver el email y nombre del cliente
+        const [rows] = await db.query(`
+            SELECT o.*, u.email as user_email, u.name as user_name 
+            FROM orders o 
+            LEFT JOIN users u ON o.user_id = u.id 
+            ORDER BY o.created_at DESC
+        `);
+        res.json(rows);
+    } catch (error) { res.status(500).json({ error: "Error al cargar órdenes" }); }
+});
+
+app.put("/api/admin/orders/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body; 
+    try {
+        await db.query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
+        res.json({ message: "Estado de orden actualizado" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// ==========================================
+
 
 // --- PURGA AFK ---
 setInterval(async () => {

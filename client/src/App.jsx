@@ -16,9 +16,12 @@ import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import NotFound from './pages/NotFound'; 
 import CartSidebar from './components/CartSidebar'; 
+import AdminPanel from './pages/AdminPanel';
+
+// IMPORTACIONES DE CONTEXTOS
 import { CartProvider } from './context/CartContext';
-import { WishListProvider } from './context/WishListContext'; 
-import { ToastProvider } from './context/ToastContext'; // <-- IMPORTACIÓN DEL NUEVO SISTEMA
+import { WishListProvider } from './context/WishListContext';
+import { ToastProvider } from './context/ToastContext'; // <-- 1. RECUPERAMOS EL CONTEXTO DE TU AMIGO
 
 // IMPORTACIONES DE AUTENTICACIÓN, CHECKOUT Y SIDEBARS
 import Checkout from './pages/Checkout';
@@ -33,65 +36,58 @@ function App() {
   const [isWishListOpen, setIsWishListOpen] = useState(false); 
 
   return (
-    <ToastProvider> {/* <-- 1. ENVUELVE TODO PARA MANEJAR LAS NOTIFICACIONES */}
+    <ToastProvider> {/* <-- 2. ENVOLVEMOS LA APP CON EL TOAST DE TU AMIGO */}
       <CartProvider>
         <WishListProvider> 
           <Router>
             <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
               
-              {/* Le pasamos ambas funciones a la Navbar */}
               <Navbar 
                 onOpenCart={() => setIsCartOpen(true)} 
                 onOpenWishList={() => setIsWishListOpen(true)} 
               />
               
-              {/* PANELES LATERALES (SIDEBARS) */}
               <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-              <WishListSidebar isOpen={isWishListOpen} onClose={() => setIsWishListOpen(false)} />
+              <WishListSidebar isOpen={isWishListOpen} onClose={() => setIsWishListOpen(false)} /> 
 
-              <main className="flex-grow">
-                <Routes>
-                  {/* RUTA PRINCIPAL */}
-                  <Route path="/" element={<Inicio />} />
-                  
-                  {/* PRODUCTOS Y CATEGORÍAS */}
-                  <Route path="/producto/:id" element={<DetalleProducto />} />
-                  <Route 
-                    path="/categoria/:id" 
-                    element={
-                      <Categoria 
-                        isFilterOpen={isFilterOpen} 
-                        setIsFilterOpen={setIsFilterOpen} 
-                      />
-                    } 
-                  />
+                <main className="flex-grow">
+                  <Routes>
+                    <Route path="/" element={<Inicio />} />
+                    
+                    <Route path="/producto/:id" element={<DetalleProducto />} />
+                    <Route 
+                      path="/categoria/:id" 
+                      element={
+                        <Categoria 
+                          isFilterOpen={isFilterOpen} 
+                          setIsFilterOpen={setIsFilterOpen} 
+                        />
+                      } 
+                    />
 
-                  {/* FLUJO DE PAGO */}
                   <Route path="/checkout" element={<Checkout />} />
                   
-                  {/* USUARIO Y SESIÓN */}
                   <Route path="/mi-cuenta" element={<MiCuenta />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Registro />} />
                   <Route path="/recuperar-password" element={<RecuperarPassword />} />
                   <Route path="/reset-password" element={<RestablecerPassword />} />
                   
-                  {/* PÁGINAS DE INFORMACIÓN */}
+                  {/* 3. RECUPERAMOS TU RUTA DE ADMINISTRADOR QUE SE HABÍA BORRADO */}
+                  <Route path="/admin" element={<AdminPanel />} />
+                  
                   <Route path="/guia-autenticidad" element={<GuiaAutenticidad />} />
                   <Route path="/envios" element={<EnviosSeguros />} />
                   <Route path="/contacto" element={<Contacto />} />
                   <Route path="/terminos" element={<Terminos />} />
                   <Route path="/privacidad" element={<Privacidad />} />
                   
-                  {/* ERROR 404 */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
               
               <Footer />
-
               <ScrollToTop />
-
               <Chatbot isSidebarOpen={isCartOpen || isFilterOpen || isWishListOpen} /> 
             </div>
           </Router>
