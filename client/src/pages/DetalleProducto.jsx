@@ -40,6 +40,18 @@ const DetalleProducto = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
 
+    // NUEVO: Escuchar la tecla ESC para cerrar el modal
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isModalOpen) {
+                setIsModalOpen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isModalOpen]);
+
     useEffect(() => {
         const fetchDatos = async () => {
             try {
@@ -126,7 +138,14 @@ const DetalleProducto = () => {
                                 {producto.franchise || "VNTG SERIES"}
                             </span>
                             <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 leading-[0.9]">{producto.title}</h1>
-                            <p className="text-4xl font-black italic text-brand-orange mt-4">${Number(producto.price).toLocaleString('es-AR')}</p>
+                            
+                            {/* PRECIO Y STOCK */}
+                            <div className="flex flex-col mt-4">
+                                <p className="text-4xl font-black italic text-brand-orange">${Number(producto.price).toLocaleString('es-AR')}</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-2">
+                                    Stock Disponible: <span className="text-zinc-900 dark:text-white">{producto.stock ?? '0'}</span>
+                                </p>
+                            </div>
                         </div>
 
                         <button onClick={() => addToCart(producto)} className="w-full bg-brand-orange text-white py-6 font-black uppercase italic text-lg tracking-[0.2em] hover:bg-zinc-900 transition-all flex items-center justify-center gap-4 mb-4 shadow-xl active:translate-y-1">
@@ -206,13 +225,37 @@ const DetalleProducto = () => {
                 )}
             </div>
 
+            {/* MODAL CORREGIDO */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-md flex flex-col items-center justify-center p-4" onWheel={handleWheel} onClick={() => setIsModalOpen(false)}>
-                    <button className="absolute top-8 right-8 text-white/50 hover:text-brand-orange transition-all"><X size={40} /></button>
-                    <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <img src={imgPrincipal} style={{ transform: `scale(${zoomLevel})` }} className="max-w-full max-h-full object-contain transition-transform shadow-2xl" alt="Zoom" />
+                <div 
+                    className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-md flex flex-col items-center justify-center p-4" 
+                    onWheel={handleWheel} 
+                    onClick={() => setIsModalOpen(false)}
+                >
+                    {/* Añadido onClick al botón y un z-50 para que no sea tapado */}
+                    <button 
+                        onClick={() => setIsModalOpen(false)}
+                        className="absolute top-8 right-8 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer"
+                    >
+                        <X size={40} />
+                    </button>
+
+                    {/* Removido el stopPropagation de este div para que el clic al fondo funcione */}
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        {/* Movido el stopPropagation a la imagen directamente */}
+                        <img 
+                            src={imgPrincipal} 
+                            style={{ transform: `scale(${zoomLevel})` }} 
+                            className="max-w-full max-h-full object-contain transition-transform shadow-2xl" 
+                            alt="Zoom" 
+                            onClick={(e) => e.stopPropagation()}
+                        />
                     </div>
-                    <div className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-white/10 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+                    
+                    <div 
+                        className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-white/10 backdrop-blur-xl z-50" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <button onClick={() => setZoomLevel(Math.max(1, zoomLevel - 0.5))} className="text-white hover:text-brand-orange"><ZoomOut size={24}/></button>
                         <span className="text-white font-black italic text-sm w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
                         <button onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.5))} className="text-white hover:text-brand-orange"><ZoomIn size={24}/></button>
