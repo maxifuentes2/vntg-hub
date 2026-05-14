@@ -7,9 +7,11 @@ import {
     SlidersHorizontal, 
     CircleDollarSign,
     Tag,
-    Loader2
+    Loader2,
+    Heart
 } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
+import { useWishList } from '../context/WishListContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -17,6 +19,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const { id } = useParams();
     const location = useLocation(); 
     const { addToCart } = useCart(); 
+    const { addToWishList } = useWishList();
     
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -37,7 +40,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
         const fetchDatos = async () => {
             setLoading(true);
             try {
-                // 1. Obtener productos de la categoría (id puede ser 'all')
                 let url = `${API_URL}/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
                 if (franquiciaSeleccionada) url += `&franchise=${franquiciaSeleccionada}`;
                 if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
@@ -51,7 +53,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 
                 setProductos(productosOrdenados);
 
-                // 2. Obtener info de la categoría (banners y nombres reales)
                 const resCats = await fetch(`${API_URL}/api/categories`);
                 const cats = await resCats.json();
                 const catActual = cats.find(c => String(c.id) === String(id));
@@ -62,7 +63,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                     setCategoriaInfo(null);
                 }
 
-                // 3. Franquicias para el filtro
                 if (listaFranquicias.length === 0 && productosOrdenados.length > 0) {
                     const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
                     setListaFranquicias(unicas);
@@ -93,7 +93,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
         return "COLECCIÓN"; 
     };
 
-    // Determinamos la imagen del banner
     const bannerImg = id === 'all' 
         ? "/wallpaper.webp" 
         : (categoriaInfo?.banner_url || "/wallpaper.webp");
@@ -109,11 +108,10 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     return (
         <div className="w-full bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white transition-colors duration-300">
 
-            {/* BANNER DINÁMICO ESTILO INICIO */}
             <section className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-b border-zinc-200 dark:border-white/5">
                 <img 
                     src={bannerImg} 
-                    className="w-full h-full object-cover opacity-60 dark:opacity-40 group-hover:scale-105 transition-transform duration-[2000ms]" 
+                    className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]" 
                     alt={renderTitulo()}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-white dark:from-brand-dark via-white/50 dark:via-brand-dark/30 to-transparent"></div>
@@ -141,33 +139,43 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* GRID DE PRODUCTOS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {productos.map((item) => (
-                        <div key={item.id} className="group bg-zinc-50 dark:bg-[#1a1a1a]/40 border border-zinc-200 dark:border-white/5 hover:border-brand-orange transition-all duration-500">
-                            <div className="aspect-[4/5] bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center overflow-hidden relative">
-                                <Link to={`/producto/${item.id}`} className="w-full h-full">
+                        <div key={item.id} className="group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
+                            {/* CAMBIO AQUÍ: El fondo del contenedor de imagen ahora coincide con la card (zinc-50 / brand-dark) */}
+                            <div className="aspect-video bg-zinc-50 dark:bg-brand-dark flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
+                                <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
                                     <img 
                                         src={item.images} 
-                                        className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-all duration-700" 
+                                        className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" 
                                         alt={item.title} 
                                     />
                                 </Link>
-                                <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest">
+                                <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
                                     {item.estado || "MINT"}
                                 </div>
                             </div>
-                            <div className="p-6">
-                                <h3 className="text-lg font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
+                            <div className="p-8">
+                                <h3 className="text-xl font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
                                     {item.title}
                                 </h3>
-                                <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-4">
-                                    <p className="text-2xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
-                                    <button 
-                                        onClick={(e) => { e.preventDefault(); addToCart(item); }} 
-                                        className="bg-brand-blue text-white p-3 hover:bg-brand-orange transition-colors shadow-lg"
-                                    >
-                                        <ShoppingCart size={22} />
-                                    </button>
+                                <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-6">
+                                    <p className="text-3xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
+                                    <div className="flex items-center gap-4">
+                                        <button 
+                                            onClick={(e) => { e.preventDefault(); addToWishList(item); }} 
+                                            className="text-zinc-400 hover:text-brand-orange transition-colors"
+                                        >
+                                            <Heart size={24} />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.preventDefault(); addToCart(item); }} 
+                                            className="bg-brand-blue text-white p-3.5 hover:bg-brand-orange transition-colors shadow-lg"
+                                        >
+                                            <ShoppingCart size={24} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -186,7 +194,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                         </div>
                         
                         <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-10 custom-scrollbar pr-2">
-                            {/* Ordenar */}
                             <div>
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
                                     <Tag size={14} className="text-brand-orange" /> Ordenar
@@ -200,7 +207,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                 </div>
                             </div>
 
-                            {/* Rango de Precio */}
                             <div>
                                 <div className="flex justify-between items-center mb-6">
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
@@ -224,7 +230,6 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                 </div>
                             </div>
 
-                            {/* Franquicia */}
                             <div>
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
                                     <Box size={14} className="text-brand-orange" /> Franquicia
