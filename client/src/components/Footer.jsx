@@ -1,11 +1,8 @@
 import { Link } from 'react-router-dom';
-// Importamos todo el objeto de iconos para evitar errores de exportación de Vite
 import * as Lucide from 'lucide-react';
 
 export default function Footer() {
-    // Extraemos los iconos del objeto Lucide de forma segura
-    const Instagram = Lucide.Instagram;
-    const Twitter = Lucide.Twitter;
+    // Mantenemos Mail y MapPin de Lucide ya que suelen cargar bien para información
     const Mail = Lucide.Mail;
     const MapPin = Lucide.MapPin;
 
@@ -18,19 +15,37 @@ export default function Footer() {
                     <img 
                         src="/logo-texto-transparente.webp" 
                         alt="VNTG HUB" 
-                        /* Eliminamos dark:invert para que el logo naranja no se vea amarillo */
                         className="h-12 mb-6 object-contain" 
                     />
                     <p className="text-zinc-500 dark:text-zinc-400 max-w-sm italic font-medium leading-relaxed">
                         La plataforma definitiva para el coleccionista de élite. 
                         Autenticidad, exclusividad y velocidad en cada entrega.
                     </p>
+                    
+                    {/* REDES SOCIALES CON SVG DIRECTO */}
                     <div className="flex gap-4 mt-8">
-                        <a href="#" className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-orange hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg">
-                            {Instagram && <Instagram size={20} />}
+                        {/* INSTAGRAM */}
+                        <a 
+                            href="https://www.instagram.com" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-orange hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg flex items-center justify-center"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                            </svg>
                         </a>
-                        <a href="#" className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-blue hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg">
-                            {Twitter && <Twitter size={20} />}
+
+                        {/* X (TWITTER) */}
+                        <a 
+                            href="https://x.com/home" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-blue hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg flex items-center justify-center"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" />
+                            </svg>
                         </a>
                     </div>
                 </div>
