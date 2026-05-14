@@ -16,8 +16,11 @@ export default function AdminPanel() {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null); 
 
-    // Formularios
-    const [productForm, setProductForm] = useState({ id: '', title: '', description: '', franchise: '', categoryId: '', price: 0, stock: 0, gallery: '' });
+    // Formularios (Añadido el campo 'images' para la persistencia en DB)
+    const [productForm, setProductForm] = useState({ 
+        id: '', title: '', description: '', franchise: '', 
+        categoryId: '', price: 0, stock: 0, images: '', gallery: '' 
+    });
     const [categoryForm, setCategoryForm] = useState({ id: '', name: '' });
 
     useEffect(() => {
@@ -45,7 +48,6 @@ export default function AdminPanel() {
             .then(data => setCategories(data))
             .catch(err => console.error(err));
 
-        // Obtener órdenes
         fetch(`${API_URL}/api/admin/orders`)
             .then(res => res.json())
             .then(data => setOrders(data))
@@ -61,10 +63,15 @@ export default function AdminPanel() {
             else if (typeof galStr === 'string' && galStr.startsWith('[')) {
                 try { galStr = JSON.parse(galStr).join(', '); } catch(e){}
             }
-            setProductForm({ ...product, gallery: galStr || '' });
+            // Mapeo de datos al editar
+            setProductForm({ 
+                ...product, 
+                gallery: galStr || '', 
+                images: product.images || '' 
+            });
         } else {
             setEditingItem(null);
-            setProductForm({ id: '', title: '', description: '', franchise: '', categoryId: '', price: 0, stock: 0, gallery: '' });
+            setProductForm({ id: '', title: '', description: '', franchise: '', categoryId: '', price: 0, stock: 0, images: '', gallery: '' });
         }
         setIsProductModalOpen(true);
     };
@@ -195,7 +202,7 @@ export default function AdminPanel() {
                                                 <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-black uppercase">Stock: {p.stock}</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex gap-2">
                                             <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded hover:bg-brand-orange hover:text-white transition-colors">
                                                 <Edit2 size={14} />
                                             </button>
@@ -226,7 +233,7 @@ export default function AdminPanel() {
                                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">{c.name || c.id}</h3>
                                         <p className="text-[10px] text-zinc-500 uppercase mt-1">ID: {c.id}</p>
                                     </div>
-                                    <button onClick={() => handleDeleteCategory(c.id)} className="p-2 text-red-500 hover:bg-red-500 hover:text-white rounded opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
+                                    <button onClick={() => handleDeleteCategory(c.id)} className="p-2 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -307,7 +314,7 @@ export default function AdminPanel() {
                         <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Slug, ej: remera-kanye)</label>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Slug Único)</label>
                                     <input type="text" required disabled={!!editingItem} value={productForm.id} onChange={e => setProductForm({...productForm, id: e.target.value})} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                                 </div>
                                 <div>
@@ -334,6 +341,12 @@ export default function AdminPanel() {
                                 </div>
                             </div>
 
+                            {/* CAMPO DE IMAGEN PRINCIPAL (Añadido para funcionalidad total) */}
+                            <div>
+                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Imagen Principal (URL)</label>
+                                <input type="text" required value={productForm.images} onChange={e => setProductForm({...productForm, images: e.target.value})} placeholder="https://vntg-hub.com/img.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                            </div>
+
                             <div>
                                 <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Franquicia (Ej: Marvel, Star Wars)</label>
                                 <input type="text" value={productForm.franchise} onChange={e => setProductForm({...productForm, franchise: e.target.value})} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
@@ -345,7 +358,7 @@ export default function AdminPanel() {
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Galería (URLs de imágenes separadas por coma)</label>
+                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Galería (URLs separadas por coma)</label>
                                 <textarea rows="2" value={productForm.gallery} onChange={e => setProductForm({...productForm, gallery: e.target.value})} placeholder="https://img1.jpg, https://img2.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                             </div>
 
