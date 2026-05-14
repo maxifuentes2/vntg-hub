@@ -15,7 +15,7 @@ export default function Contacto() {
                             <div className="bg-zinc-50 dark:bg-[#1a1a1a] p-5 border border-zinc-200 dark:border-white/5 group-hover:border-brand-blue transition-colors"><Mail size={28} className="text-brand-blue" /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Email</p>
-                                <p className="text-xl font-black italic uppercase">hubvntg@gmail.com</p>
+                                <p className="text-xl font-black italic uppercase">soportehubvntg@gmail.com</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
