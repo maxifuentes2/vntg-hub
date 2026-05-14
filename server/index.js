@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -29,7 +30,7 @@ const sendVntgEmail = async (to, subject, title, message, buttonText, buttonUrl)
             ${buttonText ? `<a href="${buttonUrl}" style="background: #f97316; color: #fff; padding: 15px 25px; text-decoration: none; font-weight: bold; display: inline-block; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">${buttonText}</a>` : ''}
             <p style="color: #52525b; font-size: 10px; margin-top: 30px; text-transform: uppercase;">Este es un correo automático, por favor no lo respondas.</p>
         </div>`;
-    
+
     return transporter.sendMail({ from: `"VNTG HUB" <${process.env.EMAIL_USER}>`, to, subject, html });
 };
 
@@ -39,7 +40,7 @@ app.use(express.json());
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q } = req.query;
-    let sql = "SELECT * FROM products WHERE 1=1"; 
+    let sql = "SELECT * FROM products WHERE 1=1";
     const params = [];
     if (categoryId && categoryId !== 'all') { sql += " AND categoryId = ?"; params.push(categoryId); }
     if (q) {
@@ -60,7 +61,7 @@ app.get("/api/products/:id", async (req, res) => {
     try {
         const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
         if (rows.length === 0) return res.status(404).json({ error: "No encontrado" });
-        
+
         const producto = rows[0];
         if (producto.gallery) {
             if (typeof producto.gallery === 'string') {
@@ -71,7 +72,7 @@ app.get("/api/products/:id", async (req, res) => {
                 }
             }
         } else { producto.gallery = []; }
-        
+
         res.json(producto);
     } catch (error) { res.status(500).json({ error: "Error en el servidor" }); }
 });
@@ -154,20 +155,20 @@ app.post("/api/auth/register", async (req, res) => {
 });
 
 app.post("/api/auth/login/local", async (req, res) => {
-    const { email, password, deviceToken } = req.body; 
+    const { email, password, deviceToken } = req.body;
     try {
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
         if (!users[0] || !users[0].password) return res.status(401).json({ error: "Credenciales" });
         const valid = await bcrypt.compare(password, users[0].password);
         if (!valid) return res.status(401).json({ error: "Credenciales" });
-        
+
         // --- LÓGICA DE DISPOSITIVO DE CONFIANZA ---
         if (deviceToken) {
             const [trusted] = await db.query(
                 "SELECT * FROM trusted_devices WHERE user_id = ? AND device_token = ? AND expires_at > NOW()",
                 [users[0].id, deviceToken]
             );
-            
+
             if (trusted.length > 0) {
                 // Si el dispositivo es conocido y no expiró, entramos directo
                 const { password, verification_code, verification_expires, ...userSinPass } = users[0];
@@ -195,11 +196,11 @@ app.post("/api/auth/login/local", async (req, res) => {
 });
 
 app.post("/api/auth/verify-code", async (req, res) => {
-    const { email, code, rememberDevice } = req.body; 
+    const { email, code, rememberDevice } = req.body;
     try {
         const [rows] = await db.query("SELECT * FROM users WHERE email = ? AND verification_code = ? AND verification_expires > NOW()", [email, code]);
         if (rows.length === 0) return res.status(401).json({ error: "Inválido" });
-        
+
         const user = rows[0];
         let newToken = null;
 
@@ -213,10 +214,10 @@ app.post("/api/auth/verify-code", async (req, res) => {
 
         await db.query("UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?", [user.id]);
         const { password, verification_code, verification_expires, ...userSinPass } = user;
-        
-        res.json({ 
-            message: "Éxito", 
-            user: userSinPass, 
+
+        res.json({
+            message: "Éxito",
+            user: userSinPass,
             deviceToken: newToken
         });
     } catch (error) { res.status(500).json({ error: "Error" }); }
@@ -236,7 +237,7 @@ app.post("/api/auth/google", async (req, res) => {
         if (users.length === 0) {
             await db.query(
                 "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-                [name, email, 'google-auth-user-' + googleId] 
+                [name, email, 'google-auth-user-' + googleId]
             );
             const [newUser] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
             user = newUser[0];
@@ -257,14 +258,14 @@ app.get("/api/orders/detail/:id", async (req, res) => {
     try {
         const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [id]);
         if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
-        
+
         const [items] = await db.query(`
             SELECT oi.*, p.title, p.images 
             FROM order_items oi 
             JOIN products p ON oi.product_id = p.id 
             WHERE oi.order_id = ?
         `, [id]);
-        
+
         res.json({ ...orders[0], items });
     } catch (error) {
         console.error(error);
@@ -301,7 +302,7 @@ app.post("/api/checkout", async (req, res) => {
             subtotal += prod[0].price * item.cantidad;
         }
         let shippingCost = 0;
-        if (subtotal < 200000) { 
+        if (subtotal < 200000) {
             if (shippingType === 'normal') shippingCost = 9426.05;
             else if (shippingType === 'prioritario') shippingCost = 17276.99;
         }
@@ -368,11 +369,11 @@ app.put("/api/admin/products/:id", async (req, res) => {
             const [interesados] = await db.query("SELECT u.email, u.name FROM wishlist w JOIN users u ON w.user_id = u.id WHERE w.product_id = ?", [id]);
             for (let u of interesados) {
                 await sendVntgEmail(
-                    u.email, 
-                    `¡Stock disponible! ${prev[0].title}`, 
-                    "¡VOLVIÓ A INGRESAR!", 
-                    `Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible para su compra inmediata.`, 
-                    "Comprar ahora", 
+                    u.email,
+                    `¡Stock disponible! ${prev[0].title}`,
+                    "¡VOLVIÓ A INGRESAR!",
+                    `Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible para su compra inmediata.`,
+                    "Comprar ahora",
                     `https://vntg-hub.vercel.app/producto/${id}`
                 );
             }
@@ -428,7 +429,7 @@ app.get("/api/admin/orders", async (req, res) => {
 
 app.put("/api/admin/orders/:id/status", async (req, res) => {
     const { id } = req.params;
-    const { status, trackingNumber } = req.body; 
+    const { status, trackingNumber } = req.body;
     try {
         const [orderData] = await db.query(`
             SELECT o.*, u.email, u.name 
@@ -443,30 +444,30 @@ app.put("/api/admin/orders/:id/status", async (req, res) => {
 
         let subject = "", title = "", message = "", btnText = "", btnUrl = "";
 
-        switch(status) {
+        switch (status) {
             case 'approved':
                 subject = "¡Tu pago ha sido aprobado!";
                 title = "Compra Confirmada";
-                message = `Hola ${order.name}, ¡tu pago por la orden #${id.slice(0,8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`;
+                message = `Hola ${order.name}, ¡tu pago por la orden #${id.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`;
                 btnText = "Ver mi pedido";
                 btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case 'preparing':
                 subject = "Estamos preparando tu pedido";
                 title = "En Preparación";
-                message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0,8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
+                message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0, 8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
                 break;
             case 'shipped':
                 subject = "¡Tu pedido va en camino!";
                 title = "Pedido Enviado";
-                message = `¡Tu colección está en viaje! Tu orden #${id.slice(0,8)} ha sido despachada. ${trackingNumber ? `Puedes seguirlo con el código: <b>${trackingNumber}</b>` : ''}`;
+                message = `¡Tu colección está en viaje! Tu orden #${id.slice(0, 8)} ha sido despachada. ${trackingNumber ? `Puedes seguirlo con el código: <b>${trackingNumber}</b>` : ''}`;
                 btnText = "Seguir Envío";
                 btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case 'delivered':
                 subject = "Tu pedido ha sido entregado";
                 title = "¡Entrega Exitosa!";
-                message = `Hola ${order.name}, según nuestros registros el pedido #${id.slice(0,8)} ya está en tus manos. ¡Esperamos que disfrutes tus nuevas piezas!`;
+                message = `Hola ${order.name}, según nuestros registros el pedido #${id.slice(0, 8)} ya está en tus manos. ¡Esperamos que disfrutes tus nuevas piezas!`;
                 break;
         }
 
@@ -481,6 +482,42 @@ app.put("/api/admin/orders/:id/status", async (req, res) => {
 // ==========================================
 
 
+// --- CHATBOT IA (GEMINI) ---
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+app.post("/api/chat", async (req, res) => {
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: "Mensaje vacío" });
+
+    try {
+        // 1. Extraemos el catálogo de la Base de Datos (solo los que tienen stock)
+        const [productos] = await db.query("SELECT title, franchise, price, stock FROM products WHERE stock > 0");
+        
+        // 2. Armamos una lista de texto legible para la IA
+        const catalogo = productos.map(p => `- ${p.title} (Franquicia: ${p.franchise}): $${p.price}`).join('\n');
+
+        // 3. Le inyectamos el catálogo a su cerebro
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            systemInstruction: `Eres el asistente virtual de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, conciso y usas un estilo 'racing/automovilismo' ocasionalmente. 
+            Ayudas a los clientes con dudas sobre envíos (normal $9426, prioritario $17276), medios de pago y estado de órdenes. Respuestas cortas y directas.
+
+            IMPORTANTE: Tu memoria está conectada al depósito. Este es tu catálogo ACTUAL de productos disponibles. Si el cliente busca algo, revisa estrictamente esta lista:
+            ${catalogo}
+            
+            Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en boxes de ese artículo.`
+        });
+
+        const result = await model.generateContent(message);
+        const response = result.response.text();
+
+        res.json({ reply: response });
+    } catch (error) {
+        console.error("Error en Gemini API:", error);
+        res.status(500).json({ error: "Error de conexión en boxes" });
+    }
+});
+
 // --- RUTA DE CONTACTO ---
 app.post("/api/contact", async (req, res) => {
     const { nombre, email, mensaje } = req.body;
@@ -491,9 +528,9 @@ app.post("/api/contact", async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`, 
-            to: "soportehubvntg@gmail.com", 
-            replyTo: email, 
+            from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`,
+            to: "soportehubvntg@gmail.com",
+            replyTo: email,
             subject: `Nuevo Correo de ${nombre} - VNTG HUB`,
             html: `
                 <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 20px;">
