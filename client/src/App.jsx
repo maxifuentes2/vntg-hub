@@ -6,6 +6,7 @@ import ScrollToTop from './components/ScrollTotop';
 import Chatbot from './components/Chatbot'; 
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
+import PedidoDetalle from './pages/PedidoDetalle';
 import DetalleProducto from './pages/DetalleProducto';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
@@ -80,6 +81,7 @@ function App() {
                     />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/mi-cuenta" element={<MiCuenta />} />
+                    <Route path="/pedido/:id" element={<PedidoDetalle />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Registro />} />
                     <Route path="/recuperar-password" element={<RecuperarPassword />} />

@@ -17,6 +17,22 @@ const transporter = nodemailer.createTransport({
     auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
 });
 
+// FUNCIÓN AUXILIAR PARA DISEÑO DE CORREOS VNTG HUB
+const sendVntgEmail = async (to, subject, title, message, buttonText, buttonUrl) => {
+    const html = `
+        <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 40px; text-align: center; max-width: 600px; margin: auto; border: 1px solid #27272a;">
+            <h1 style="color: #f97316; font-size: 32px; font-style: italic; text-transform: uppercase; margin-bottom: 20px;">VNTG HUB</h1>
+            <h2 style="text-transform: uppercase; font-size: 18px; letter-spacing: 2px;">${title}</h2>
+            <div style="background: #111; padding: 30px; border: 1px solid #27272a; margin: 20px 0; text-align: left;">
+                <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6;">${message}</p>
+            </div>
+            ${buttonText ? `<a href="${buttonUrl}" style="background: #f97316; color: #fff; padding: 15px 25px; text-decoration: none; font-weight: bold; display: inline-block; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">${buttonText}</a>` : ''}
+            <p style="color: #52525b; font-size: 10px; margin-top: 30px; text-transform: uppercase;">Este es un correo automático, por favor no lo respondas.</p>
+        </div>`;
+    
+    return transporter.sendMail({ from: `"VNTG HUB" <${process.env.EMAIL_USER}>`, to, subject, html });
+};
+
 app.use(cors({ origin: ["http://localhost:5173", "https://vntg-hub.vercel.app"], credentials: true }));
 app.use(express.json());
 
@@ -236,6 +252,27 @@ app.post("/api/auth/google", async (req, res) => {
     }
 });
 
+// --- DETALLE DE ORDEN ESPECÍFICA ---
+app.get("/api/orders/detail/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [id]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+        
+        const [items] = await db.query(`
+            SELECT oi.*, p.title, p.images 
+            FROM order_items oi 
+            JOIN products p ON oi.product_id = p.id 
+            WHERE oi.order_id = ?
+        `, [id]);
+        
+        res.json({ ...orders[0], items });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error interno" });
+    }
+});
+
 // --- HISTORIAL DE ÓRDENES (Usuario normal) ---
 app.get("/api/orders/:userId", async (req, res) => {
     const { userId } = req.params;
@@ -331,12 +368,14 @@ app.put("/api/admin/products/:id", async (req, res) => {
         if (stockPrevio === 0 && stock > 0) {
             const [interesados] = await db.query("SELECT u.email, u.name FROM wishlist w JOIN users u ON w.user_id = u.id WHERE w.product_id = ?", [id]);
             for (let u of interesados) {
-                await transporter.sendMail({
-                    from: `"VNTG HUB" <${process.env.EMAIL_USER}>`,
-                    to: u.email,
-                    subject: `¡Stock disponible! ${prev[0].title}`,
-                    html: `<div style="font-family:sans-serif;background:#09090b;color:#fff;padding:40px;text-align:center;"><h1 style="color:#f97316;">¡VOLVIÓ A INGRESAR!</h1><p>Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible.</p><a href="https://vntg-hub.vercel.app/producto/${id}" style="background:#f97316;color:#fff;padding:15px;text-decoration:none;font-weight:bold;">COMPRAR AHORA</a></div>`
-                });
+                await sendVntgEmail(
+                    u.email, 
+                    `¡Stock disponible! ${prev[0].title}`, 
+                    "¡VOLVIÓ A INGRESAR!", 
+                    `Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible para su compra inmediata.`, 
+                    "Comprar ahora", 
+                    `https://vntg-hub.vercel.app/producto/${id}`
+                );
             }
         }
         res.json({ message: "Producto actualizado" });
@@ -390,10 +429,55 @@ app.get("/api/admin/orders", async (req, res) => {
 
 app.put("/api/admin/orders/:id/status", async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body; 
+    const { status, trackingNumber } = req.body; // Se agregó trackingNumber para envíos
     try {
+        // Obtenemos info del usuario y de la orden antes de actualizar
+        const [orderData] = await db.query(`
+            SELECT o.*, u.email, u.name 
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            WHERE o.id = ?`, [id]);
+
+        if (orderData.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+        const order = orderData[0];
+
         await db.query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
-        res.json({ message: "Estado de orden actualizado" });
+
+        // Lógica de correos según el nuevo estado
+        let subject = "", title = "", message = "", btnText = "", btnUrl = "";
+
+        switch(status) {
+            case 'approved':
+                subject = "¡Tu pago ha sido aprobado!";
+                title = "Compra Confirmada";
+                message = `Hola ${order.name}, ¡tu pago por la orden #${id.slice(0,8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`;
+                btnText = "Ver mi pedido";
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                break;
+            case 'preparing':
+                subject = "Estamos preparando tu pedido";
+                title = "En Preparación";
+                message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0,8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
+                break;
+            case 'shipped':
+                subject = "¡Tu pedido va en camino!";
+                title = "Pedido Enviado";
+                message = `¡Tu colección está en viaje! Tu orden #${id.slice(0,8)} ha sido despachada. ${trackingNumber ? `Puedes seguirlo con el código: <b>${trackingNumber}</b>` : ''}`;
+                btnText = "Seguir Envío";
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                break;
+            case 'delivered':
+                subject = "Tu pedido ha sido entregado";
+                title = "¡Entrega Exitosa!";
+                message = `Hola ${order.name}, según nuestros registros el pedido #${id.slice(0,8)} ya está en tus manos. ¡Esperamos que disfrutes tus nuevas piezas!`;
+                break;
+        }
+
+        if (subject) {
+            await sendVntgEmail(order.email, subject, title, message, btnText, btnUrl);
+        }
+
+        res.json({ message: "Estado de orden actualizado y correo enviado" });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 

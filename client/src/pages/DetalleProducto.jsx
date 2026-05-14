@@ -233,14 +233,12 @@ const DetalleProducto = () => {
                 )}
             </div>
 
-            {/* MODAL CORREGIDO */}
             {isModalOpen && (
                 <div 
                     className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-md flex flex-col items-center justify-center p-4" 
                     onWheel={handleWheel} 
                     onClick={() => setIsModalOpen(false)}
                 >
-                    {/* Añadido onClick al botón y un z-50 para que no sea tapado */}
                     <button 
                         onClick={() => setIsModalOpen(false)}
                         className="absolute top-8 right-8 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer"
@@ -248,9 +246,7 @@ const DetalleProducto = () => {
                         <X size={40} />
                     </button>
 
-                    {/* Removido el stopPropagation de este div para que el clic al fondo funcione */}
                     <div className="relative w-full h-full flex items-center justify-center">
-                        {/* Movido el stopPropagation a la imagen directamente */}
                         <img 
                             src={imgPrincipal} 
                             style={{ transform: `scale(${zoomLevel})` }} 

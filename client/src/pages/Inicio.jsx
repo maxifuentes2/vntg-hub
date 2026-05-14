@@ -130,9 +130,7 @@ export default function Inicio() {
                             <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
                                 Colección Oficial
                             </span>
-                            <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">
-                                {seccion.nombre}
-                            </h2>
+                            <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
                             <Link
                                 to={`/categoria/${seccion.id}`}
                                 className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
@@ -177,14 +175,14 @@ export default function Inicio() {
                                             </p>
                                             <div className="flex items-center gap-4">
                                                 <button
-                                                    onClick={() => addToWishList(item)}
-                                                    className="text-zinc-400 hover:text-brand-orange transition-colors duration-300"
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToWishList(item); }}
+                                                    className="text-zinc-400 hover:text-brand-orange transition-colors duration-300 p-2"
                                                     title="Añadir a deseados"
                                                 >
                                                     <Heart size={24} />
                                                 </button>
                                                 <button
-                                                    onClick={() => addToCart(item)}
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }}
                                                     disabled={item.stock === 0}
                                                     className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
                                                 >

@@ -163,13 +163,13 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     <p className="text-3xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
                                     <div className="flex items-center gap-4">
                                         <button 
-                                            onClick={(e) => { e.preventDefault(); addToWishList(item); }} 
-                                            className="text-zinc-400 hover:text-brand-orange transition-colors"
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToWishList(item); }} 
+                                            className="text-zinc-400 hover:text-brand-orange transition-colors p-2"
                                         >
                                             <Heart size={24} />
                                         </button>
                                         <button 
-                                            onClick={(e) => { e.preventDefault(); addToCart(item); }} 
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }} 
                                             disabled={item.stock === 0}
                                             className={`p-3.5 transition-colors shadow-lg ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
                                         >

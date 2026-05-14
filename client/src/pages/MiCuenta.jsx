@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -39,7 +39,6 @@ export default function MiCuenta() {
         setTempValue('');
     };
 
-    // ESTA ES LA FUNCIÓN QUE FALTABA PARA EL TICK VERDE
     const saveEdit = async (field) => {
         try {
             const updatedUser = { ...user, [field]: tempValue };
@@ -56,7 +55,6 @@ export default function MiCuenta() {
             
             if (res.ok) {
                 const data = await res.json();
-                // Actualizamos el storage para que el Checkout vea los cambios
                 localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
                 setUser(updatedUser);
                 setEditField(null);
@@ -136,18 +134,27 @@ export default function MiCuenta() {
                     ) : (
                         <div className="space-y-4">
                             {orders.length > 0 ? orders.map(order => (
-                                <div key={order.id} className="bg-white dark:bg-[#1a1a1a] p-6 border border-zinc-200 dark:border-white/5 rounded-xl flex justify-between items-center hover:border-brand-orange/30 transition-all">
+                                <Link 
+                                    to={`/pedido/${order.id}`} 
+                                    key={order.id} 
+                                    className="bg-white dark:bg-[#1a1a1a] p-6 border border-zinc-200 dark:border-white/5 rounded-xl flex justify-between items-center hover:border-brand-orange/50 transition-all cursor-pointer group"
+                                >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">
                                             <Calendar size={12}/> {new Date(order.created_at).toLocaleDateString()}
                                         </div>
-                                        <p className="font-bold italic uppercase text-sm">Orden #{order.id.slice(0,8)}</p>
+                                        <p className="font-bold italic uppercase text-sm group-hover:text-brand-orange transition-colors">Orden #{order.id.slice(0,8)}</p>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-[10px] font-black uppercase italic bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full">Aprobado</span>
-                                        <p className="text-xl font-black italic mt-1">${parseFloat(order.total).toLocaleString('es-AR')}</p>
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-black uppercase italic bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full">
+                                                {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'Preparando' : order.status === 'shipped' ? 'Enviado' : 'Entregado'}
+                                            </span>
+                                            <p className="text-xl font-black italic mt-1">${parseFloat(order.total).toLocaleString('es-AR')}</p>
+                                        </div>
+                                        <ChevronRight className="text-zinc-300 dark:text-zinc-600 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
                                     </div>
-                                </div>
+                                </Link>
                             )) : (
                                 <div className="text-center py-20 border-2 border-dashed border-zinc-200 dark:border-white/5 text-zinc-500 font-bold italic text-sm">
                                     Aún no has realizado ninguna compra con éxito.
