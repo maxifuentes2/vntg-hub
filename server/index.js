@@ -573,5 +573,6 @@ setInterval(async () => {
     } catch (e) { console.error("Error purga"); }
 }, 60000);
 
-const PORT = 5000;
-app.listen(PORT, "0.0.0.0", () => { console.log(`🚀 VNTG HUB activo en ${PORT}`); });
+// const PORT = 5000;
+// app.listen(PORT, "0.0.0.0", () => { console.log(`🚀 VNTG HUB activo en ${PORT}`); });
+module.exports = app;
