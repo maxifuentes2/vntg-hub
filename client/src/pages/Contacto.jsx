@@ -45,13 +45,13 @@ export default function Contacto() {
             </header>
             <div className="max-w-[1400px] mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-20">
                 <div className="space-y-12 flex flex-col justify-center">
-                    <h2 className="text-5xl font-black italic uppercase tracking-tighter text-zinc-900 dark:text-white">Dudas en <span className="text-brand-orange">pista?</span></h2>
+                    <h2 className="text-5xl font-black italic uppercase tracking-tighter text-zinc-900 dark:text-white">Tienes alguna <span className="text-brand-orange">duda?</span></h2>
                     <div className="space-y-8 pt-8 border-t border-zinc-200 dark:border-white/10">
                         <div className="flex items-center gap-6 group">
                             <div className="bg-zinc-50 dark:bg-[#1a1a1a] p-5 border border-zinc-200 dark:border-white/5 group-hover:border-brand-blue transition-colors"><Mail size={28} className="text-brand-blue" /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Email</p>
-                                <p className="text-xl font-black italic uppercase">hubvntg@gmail.com</p>
+                                <p className="text-xl font-black italic uppercase">soportehubvntg@gmail.com</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
@@ -100,9 +100,9 @@ export default function Contacto() {
                         className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {estadoEnviando === 'loading' ? 'ENVIANDO...' : 
-                         estadoEnviando === 'success' ? 'TRANSMISIÓN EXITOSA' : 
+                         estadoEnviando === 'success' ? 'CORREO ENVIADO' : 
                          estadoEnviando === 'error' ? 'ERROR AL ENVIAR' : 
-                         <>Enviar Transmisión <Send size={20} /></>}
+                         <>Enviar Correo  <Send size={20} /></>}
                     </button>
                 </form>
             </div>
