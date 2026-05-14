@@ -573,6 +573,8 @@ setInterval(async () => {
     } catch (e) { console.error("Error purga"); }
 }, 60000);
 
-// const PORT = 5000;
-// app.listen(PORT, "0.0.0.0", () => { console.log(`🚀 VNTG HUB activo en ${PORT}`); });
-module.exports = app;
+// Usamos process.env.PORT para que Render le asigne el puerto correctamente
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => { 
+    console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`); 
+});
