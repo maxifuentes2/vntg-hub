@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -8,6 +8,9 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function CartSidebar({ isOpen, onClose }) {
     const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
     const subtotal = cart.reduce((acc, p) => acc + (p.price * p.cantidad), 0);
+    
+    // ESTADO PARA EL TIPO DE ENTREGA (Visual, listo para el backend)
+    const [tipoEnvio, setTipoEnvio] = useState('normal'); 
 
     const handleEmptyCart = async () => {
         const storedUser = localStorage.getItem('vntg_user');
@@ -15,7 +18,6 @@ export default function CartSidebar({ isOpen, onClose }) {
         if (storedUser) {
             const user = JSON.parse(storedUser);
             try {
-                // Sincronizar con el backend para liberar stock y cancelar pendientes
                 await fetch(`${API_URL}/api/orders/cancel-pending`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -78,11 +80,62 @@ export default function CartSidebar({ isOpen, onClose }) {
                     </div>
 
                     {cart.length > 0 && (
-                        <div className="p-8 bg-zinc-50 dark:bg-black/20 border-t border-zinc-200 dark:border-white/5">
+                        <div className="p-6 bg-zinc-50 dark:bg-black/20 border-t border-zinc-200 dark:border-white/5">
+                            
+                            <div className="mb-6 space-y-3">
+                                <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Método de Entrega</span>
+                                <div className="flex flex-col gap-2">
+                                    
+                                    {/* Opción 1: Envío Normal */}
+                                    <button
+                                        onClick={() => setTipoEnvio('normal')}
+                                        className={`p-3 border transition-all text-left flex flex-col justify-center ${
+                                            tipoEnvio === 'normal' 
+                                            ? 'border-brand-orange bg-brand-orange/5' 
+                                            : 'border-zinc-200 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20'
+                                        }`}
+                                    >
+                                        <span className={`text-xs font-black uppercase italic ${tipoEnvio === 'normal' ? 'text-brand-orange' : 'text-zinc-900 dark:text-white'}`}>Envío Normal</span>
+                                        <span className="text-[9px] font-bold uppercase text-zinc-500 mt-1">Estándar a domicilio</span>
+                                    </button>
+
+                                    {/* Opción 2: Envío Prioritario (AQUÍ AGREGAMOS EL 5%) */}
+                                    <button
+                                        onClick={() => setTipoEnvio('prioritario')}
+                                        className={`p-3 border transition-all text-left flex flex-col justify-center ${
+                                            tipoEnvio === 'prioritario' 
+                                            ? 'border-brand-orange bg-brand-orange/5' 
+                                            : 'border-zinc-200 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20'
+                                        }`}
+                                    >
+                                        <span className={`text-xs font-black uppercase italic ${tipoEnvio === 'prioritario' ? 'text-brand-orange' : 'text-zinc-900 dark:text-white'}`}>Envío Prioritario</span>
+                                        {/* Texto actualizado con el color naranja si está seleccionado para resaltarlo */}
+                                        <span className={`text-[9px] font-bold uppercase mt-1 ${tipoEnvio === 'prioritario' ? 'text-brand-orange' : 'text-zinc-500'}`}>
+                                            Despacho express (+5% al finalizar)
+                                        </span>
+                                    </button>
+
+                                    {/* Opción 3: Retirar en Sucursal */}
+                                    <button
+                                        onClick={() => setTipoEnvio('retiro')}
+                                        className={`p-3 border transition-all text-left flex flex-col justify-center ${
+                                            tipoEnvio === 'retiro' 
+                                            ? 'border-brand-orange bg-brand-orange/5' 
+                                            : 'border-zinc-200 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20'
+                                        }`}
+                                    >
+                                        <span className={`text-xs font-black uppercase italic ${tipoEnvio === 'retiro' ? 'text-brand-orange' : 'text-zinc-900 dark:text-white'}`}>Retirar en Sucursal</span>
+                                        <span className="text-[9px] font-bold uppercase text-zinc-500 mt-1">Gratis en nuestro local</span>
+                                    </button>
+
+                                </div>
+                            </div>
+
                             <div className="flex justify-between items-end mb-6">
                                 <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Total Estimado</span>
                                 <span className="text-3xl font-black italic text-zinc-900 dark:text-white">${subtotal.toLocaleString('es-AR')}</span>
                             </div>
+                            
                             <Link
                                 to="/checkout"
                                 onClick={onClose}
