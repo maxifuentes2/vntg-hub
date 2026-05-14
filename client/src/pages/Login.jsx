@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'; // <-- Añadido Loader2 para el spinner
+import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -17,9 +17,10 @@ export default function Login() {
     
     const [showPassword, setShowPassword] = useState(false);
     const [capsLock, setCapsLock] = useState(false);
-    
-    // --- NUEVO ESTADO PARA EVITAR EL DOBLE ENVÍO ---
     const [isLoading, setIsLoading] = useState(false);
+
+    // --- NUEVO ESTADO PARA RECORDAR DISPOSITIVO ---
+    const [rememberDevice, setRememberDevice] = useState(false);
 
     const checkCapsLock = (e) => {
         setCapsLock(e.getModifierState('CapsLock'));
@@ -49,24 +50,38 @@ export default function Login() {
     const handleLocalLogin = async (e) => {
         e.preventDefault();
         
-        // Si ya está cargando, bloqueamos cualquier otro intento (evita doble clic)
         if (isLoading) return; 
         
-        setIsLoading(true); // Encendemos el estado de carga
+        setIsLoading(true);
         setError('');
         setMensaje('');
 
         try {
+            // Recuperamos el token del dispositivo si existe en el navegador
+            const storedToken = localStorage.getItem('vntg_device_token');
+
             const response = await fetch(`${API_URL}/api/auth/login/local`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ 
+                    email, 
+                    password, 
+                    deviceToken: storedToken 
+                })
             });
             const data = await response.json();
 
-            if (response.ok && data.requireCode) {
-                setStep(2); 
-                setMensaje("Revisa tu bandeja de entrada o spam.");
+            if (response.ok) {
+                if (data.skipCode) {
+                    // Si el dispositivo es de confianza, entramos directo
+                    localStorage.setItem('vntg_user', JSON.stringify(data.user));
+                    navigate('/');
+                    window.location.reload();
+                } else if (data.requireCode) {
+                    // Si no, procedemos a la verificación por código
+                    setStep(2); 
+                    setMensaje("Revisa tu bandeja de entrada o spam.");
+                }
             } else {
                 setError(data.error || "Error al iniciar sesión");
             }
@@ -74,14 +89,14 @@ export default function Login() {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
         } finally {
-            setIsLoading(false); // Apagamos el estado de carga sin importar qué pase
+            setIsLoading(false);
         }
     };
 
     const handleVerifyCode = async (e) => {
         e.preventDefault();
         
-        if (isLoading) return; // Evita el doble clic aquí también
+        if (isLoading) return; 
         
         setIsLoading(true);
         setError('');
@@ -90,11 +105,19 @@ export default function Login() {
             const response = await fetch(`${API_URL}/api/auth/verify-code`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, code })
+                body: JSON.stringify({ 
+                    email, 
+                    code, 
+                    rememberDevice // Enviamos si el usuario quiere recordar el dispositivo
+                })
             });
             const data = await response.json();
 
             if (response.ok) {
+                // Si el servidor generó un token de confianza, lo guardamos localmente
+                if (data.deviceToken) {
+                    localStorage.setItem('vntg_device_token', data.deviceToken);
+                }
                 localStorage.setItem('vntg_user', JSON.stringify(data.user));
                 navigate('/');
                 window.location.reload();
@@ -132,7 +155,7 @@ export default function Login() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                disabled={isLoading} // Deshabilitar si está cargando
+                                disabled={isLoading}
                                 className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50"
                             />
                             
@@ -145,7 +168,7 @@ export default function Login() {
                                         onChange={(e) => setPassword(e.target.value)}
                                         onKeyUp={checkCapsLock}
                                         required
-                                        disabled={isLoading} // Deshabilitar si está cargando
+                                        disabled={isLoading}
                                         className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50"
                                     />
                                     <button 
@@ -160,14 +183,29 @@ export default function Login() {
                                 {capsLock && <p className="text-brand-orange text-[10px] font-bold uppercase italic mt-1 ml-1">⚠️ Mayúsculas activadas</p>}
                             </div>
 
-                            {/* BOTÓN PROTEGIDO */}
+                            {/* CHECKBOX RECORDAR DISPOSITIVO */}
+                            <div className="flex items-center gap-2 py-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="remember"
+                                    checked={rememberDevice}
+                                    onChange={(e) => setRememberDevice(e.target.checked)}
+                                    disabled={isLoading}
+                                    className="w-4 h-4 accent-brand-blue cursor-pointer"
+                                />
+                                <label htmlFor="remember" className="text-[10px] font-bold uppercase italic text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+                                    Recordar este dispositivo
+                                </label>
+                            </div>
+
                             <button 
                                 type="submit" 
                                 disabled={isLoading}
-                                className={`w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest transition-all mt-4 flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange'}`}
+                                className={`w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest transition-all mt-2 flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange'}`}
                             >
                                 {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar'}
                             </button>
+                            
                             <Link to="/recuperar-password" className="block mt-4 text-right text-[10px] font-bold uppercase italic text-zinc-500 hover:text-brand-orange transition-colors">
                                 ¿Olvidaste tu contraseña?
                             </Link>
@@ -220,7 +258,6 @@ export default function Login() {
                                 className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none disabled:opacity-50"
                             />
                             
-                            {/* BOTÓN DE VERIFICAR PROTEGIDO */}
                             <button 
                                 type="submit" 
                                 disabled={isLoading}
