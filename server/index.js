@@ -518,7 +518,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post("/api/chat", async (req, res) => {
-    const { message, history } = req.body;
+    const { message, history, userId, userEmail } = req.body;
     if (!message) return res.status(400).json({ error: "Mensaje vacío" });
 
     try {
@@ -528,21 +528,38 @@ app.post("/api/chat", async (req, res) => {
         // 2. Armamos una lista de texto legible para la IA
         const catalogo = productos.map(p => `- ${p.title} (Franquicia: ${p.franchise}): $${p.price}`).join('\n');
 
-        // 3. Le inyectamos el catálogo a su cerebro
+        // 3. Obtenemos el historial de órdenes si hay un usuario logueado
+        let orderContext = "El usuario actual no ha iniciado sesión o es un invitado. No tienes acceso a su historial de compras.";
+        if (userId) {
+            const [orders] = await db.query("SELECT id, status, total, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 5", [userId]);
+            if (orders.length > 0) {
+                orderContext = "HISTORIAL DE COMPRAS RECIENTES DEL USUARIO ACTUAL:\n" + orders.map(o => `- Orden #${o.id} | Estado: ${o.status} | Total: $${o.total} | Fecha: ${o.created_at}`).join('\n');
+            } else {
+                orderContext = "El usuario está registrado pero aún no ha realizado ninguna compra.";
+            }
+        }
+
+        // 4. Le inyectamos el catálogo y contexto al cerebro
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-flash",
-            systemInstruction: `Eres el asistente virtual de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, conciso y usas un estilo 'racing/automovilismo' ocasionalmente. 
+            systemInstruction: `Eres el agente de soporte oficial de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, profesional y resolutivo. Usas un estilo 'racing/automovilismo' ocasionalmente.
             Ayudas a los clientes con dudas sobre envíos (normal $9426, prioritario $17276), medios de pago y estado de órdenes. Respuestas cortas y directas.
 
-            IMPORTANTE: Tu memoria está conectada al depósito. Este es tu catálogo ACTUAL de productos disponibles. Si el cliente busca algo, revisa estrictamente esta lista:
+            CONTEXTO DEL USUARIO ACTUAL:
+            ${orderContext}
+            Si el usuario pregunta por el estado de sus pedidos o compras recientes, usa estrictamente esta información para responderle. (Ej: si el estado es 'pending', dile que estamos esperando acreditación; si es 'shipped', dile que ya está en camino).
+
+            CATÁLOGO ACTUAL DE PRODUCTOS:
             ${catalogo}
-            
             Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en boxes de ese artículo.
+
+            DERIVACIÓN A SOPORTE HUMANO:
+            Si el problema es complejo (devoluciones, quejas severas, reembolsos) indica al usuario que debe enviar un correo a soportehubvntg@gmail.com para que un humano del equipo de boxes lo asista.
             
             DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`
         });
 
-        // 4. Iniciamos el chat con el historial previo
+        // 5. Iniciamos el chat con el historial previo
         const chat = model.startChat({
             history: history || []
         });
@@ -550,11 +567,32 @@ app.post("/api/chat", async (req, res) => {
         const result = await chat.sendMessage(message);
         let response = result.response.text();
         
-        // 5. Verificamos si el bot decidió terminar la charla
+        // 6. Verificamos si el bot decidió terminar la charla
         let finished = false;
         if (response.includes('[CHAT_FINISHED]')) {
             finished = true;
             response = response.replace('[CHAT_FINISHED]', '').trim();
+
+            // Si tenemos el email del usuario, generamos y enviamos un resumen
+            if (userEmail) {
+                try {
+                    const summaryModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                    const summaryPrompt = `Resume brevemente esta conversación de soporte técnico en 1 o 2 párrafos concisos para enviársela al cliente por correo electrónico como un comprobante de su consulta. No uses formato markdown complejo, solo texto claro y formal:\n\nHistorial:\n${JSON.stringify(history)}\n\nCliente: ${message}\nSoporte: ${response}`;
+                    const summaryResult = await summaryModel.generateContent(summaryPrompt);
+                    const summaryText = summaryResult.response.text();
+
+                    await sendVntgEmail(
+                        userEmail,
+                        "Resumen de tu consulta - Soporte VNTG HUB",
+                        "Registro de tu consulta reciente",
+                        summaryText,
+                        "Volver a la Tienda",
+                        "https://vntg-hub.vercel.app"
+                    );
+                } catch (summaryError) {
+                    console.error("Error al generar/enviar resumen del chat:", summaryError);
+                }
+            }
         }
 
         res.json({ reply: response, finished });

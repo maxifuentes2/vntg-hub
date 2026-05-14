@@ -60,6 +60,17 @@ export default function Chatbot({ isSidebarOpen }) {
             parts: [{ text: m.text }]
         }));
 
+        let userId = null;
+        let userEmail = null;
+        try {
+            const userStr = localStorage.getItem('vntg_user');
+            if (userStr) {
+                const userObj = JSON.parse(userStr);
+                userId = userObj.id;
+                userEmail = userObj.email;
+            }
+        } catch (e) {}
+
         setMessages(prev => [...prev, { text: userMsg, isBot: false }]);
         setInput('');
         setIsLoading(true);
@@ -68,7 +79,7 @@ export default function Chatbot({ isSidebarOpen }) {
             const res = await fetch(`${API_URL}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userMsg, history: historyForGemini })
+                body: JSON.stringify({ message: userMsg, history: historyForGemini, userId, userEmail })
             });
             const data = await res.json();
             
