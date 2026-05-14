@@ -39,7 +39,7 @@ app.use(express.json());
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q } = req.query;
-    let sql = "SELECT * FROM products WHERE 1=1"; // Cambiado para mostrar todos
+    let sql = "SELECT * FROM products WHERE 1=1"; 
     const params = [];
     if (categoryId && categoryId !== 'all') { sql += " AND categoryId = ?"; params.push(categoryId); }
     if (q) {
@@ -83,7 +83,7 @@ app.get("/api/categories", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- RUTAS DE WISHLIST (NUEVO) ---
+// --- RUTAS DE WISHLIST ---
 app.get("/api/wishlist/:userId", async (req, res) => {
     try {
         const [rows] = await db.query("SELECT p.* FROM wishlist w JOIN products p ON w.product_id = p.id WHERE w.user_id = ?", [req.params.userId]);
@@ -154,7 +154,7 @@ app.post("/api/auth/register", async (req, res) => {
 });
 
 app.post("/api/auth/login/local", async (req, res) => {
-    const { email, password, deviceToken } = req.body; // Recibimos el token desde el front
+    const { email, password, deviceToken } = req.body; 
     try {
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
         if (!users[0] || !users[0].password) return res.status(401).json({ error: "Credenciales" });
@@ -195,7 +195,7 @@ app.post("/api/auth/login/local", async (req, res) => {
 });
 
 app.post("/api/auth/verify-code", async (req, res) => {
-    const { email, code, rememberDevice } = req.body; // Recibimos el flag de recordar
+    const { email, code, rememberDevice } = req.body; 
     try {
         const [rows] = await db.query("SELECT * FROM users WHERE email = ? AND verification_code = ? AND verification_expires > NOW()", [email, code]);
         if (rows.length === 0) return res.status(401).json({ error: "Inválido" });
@@ -203,7 +203,6 @@ app.post("/api/auth/verify-code", async (req, res) => {
         const user = rows[0];
         let newToken = null;
 
-        // --- LÓGICA PARA GUARDAR DISPOSITIVO ---
         if (rememberDevice) {
             newToken = uuidv4();
             await db.query(
@@ -218,7 +217,7 @@ app.post("/api/auth/verify-code", async (req, res) => {
         res.json({ 
             message: "Éxito", 
             user: userSinPass, 
-            deviceToken: newToken // Enviamos el token de vuelta al front si se creó
+            deviceToken: newToken
         });
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
@@ -277,8 +276,9 @@ app.get("/api/orders/detail/:id", async (req, res) => {
 app.get("/api/orders/:userId", async (req, res) => {
     const { userId } = req.params;
     try {
+        // CORRECCIÓN APLICADA AQUÍ: Se añadieron todos los estados válidos
         const [rows] = await db.query(
-            "SELECT * FROM orders WHERE user_id = ? AND status = 'approved' ORDER BY created_at DESC",
+            "SELECT * FROM orders WHERE user_id = ? AND status IN ('approved', 'preparing', 'shipped', 'delivered') ORDER BY created_at DESC",
             [userId]
         );
         res.json(rows);
@@ -356,7 +356,6 @@ app.put("/api/admin/products/:id", async (req, res) => {
     const { title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
-        // Lógica de detección de stock para emails
         const [prev] = await db.query("SELECT stock, title FROM products WHERE id = ?", [id]);
         const stockPrevio = prev[0]?.stock || 0;
 
@@ -429,9 +428,8 @@ app.get("/api/admin/orders", async (req, res) => {
 
 app.put("/api/admin/orders/:id/status", async (req, res) => {
     const { id } = req.params;
-    const { status, trackingNumber } = req.body; // Se agregó trackingNumber para envíos
+    const { status, trackingNumber } = req.body; 
     try {
-        // Obtenemos info del usuario y de la orden antes de actualizar
         const [orderData] = await db.query(`
             SELECT o.*, u.email, u.name 
             FROM orders o 
@@ -443,7 +441,6 @@ app.put("/api/admin/orders/:id/status", async (req, res) => {
 
         await db.query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
 
-        // Lógica de correos según el nuevo estado
         let subject = "", title = "", message = "", btnText = "", btnUrl = "";
 
         switch(status) {
