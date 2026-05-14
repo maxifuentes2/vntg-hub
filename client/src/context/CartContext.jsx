@@ -9,7 +9,13 @@ export const CartProvider = ({ children }) => {
         return savedCart ? JSON.parse(savedCart) : [];
     });
 
+    const [shippingType, setShippingType] = useState('normal');
     const [toasts, setToasts] = useState([]);
+
+    // Configuración de envíos
+    const FREE_SHIPPING_THRESHOLD = 200000;
+    const COSTO_NORMAL = 9426.05;
+    const COSTO_PRIO = 17276.99;
 
     useEffect(() => {
         localStorage.setItem('vntg_cart', JSON.stringify(cart));
@@ -27,44 +33,28 @@ export const CartProvider = ({ children }) => {
         setTimeout(() => setToasts((prev) => prev.filter((toast) => toast.id !== id)), 400); 
     };
 
-    // VERSIÓN CORREGIDA: Carrito 100% local sin llamar a /api/reserve
     const addToCart = (product) => {
-        try {
-            const existingInCart = cart.find(item => item.id === product.id);
-            const currentQty = existingInCart ? existingInCart.cantidad : 0;
-
-            // Verificamos si supera el stock disponible
-            if (currentQty >= product.stock) {
-                addToast(product, `Máximo ${product.stock} unidades`, 'error');
-                return;
-            }
-
-            // Actualizamos el carrito localmente
-            setCart((prevCart) => {
-                const existingItem = prevCart.find(item => item.id === product.id);
-                if (existingItem) {
-                    return prevCart.map(item =>
-                        item.id === product.id ? { ...item, cantidad: item.cantidad + 1 } : item
-                    );
-                }
-                return [...prevCart, { ...product, cantidad: 1 }];
-            });
-
-            addToast(product, '¡Añadido con éxito!', 'success');
-
-        } catch (error) {
-            console.error("Error al añadir al carrito:", error);
-            addToast(product, "Error al procesar", 'error');
+        const existingInCart = cart.find(item => item.id === product.id);
+        const currentQty = existingInCart ? existingInCart.cantidad : 0;
+        if (currentQty >= product.stock) {
+            addToast(product, `Máximo ${product.stock} unidades`, 'error');
+            return;
         }
+        setCart(prev => {
+            const existing = prev.find(item => item.id === product.id);
+            if (existing) return prev.map(item => item.id === product.id ? { ...item, cantidad: item.cantidad + 1 } : item);
+            return [...prev, { ...product, cantidad: 1 }];
+        });
+        addToast(product, '¡Añadido con éxito!', 'success');
     };
 
     const updateQuantity = (productId, amount) => {
-        setCart(prevCart => prevCart.map(item => {
+        setCart(prev => prev.map(item => {
             if (item.id === productId) {
                 const newQty = item.cantidad + amount;
                 if (newQty > item.stock) {
                     addToast(item, "Límite alcanzado", 'error');
-                    return item; 
+                    return item;
                 }
                 return { ...item, cantidad: Math.max(1, Math.min(newQty, item.stock)) };
             }
@@ -72,99 +62,47 @@ export const CartProvider = ({ children }) => {
         }));
     };
 
-    const removeFromCart = (productId) => setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    const removeFromCart = (productId) => setCart(prev => prev.filter(item => item.id !== productId));
     const clearCart = () => setCart([]);
     
-    const cartCount = cart.reduce((total, item) => total + item.cantidad, 0);
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.cantidad), 0);
+    
+    // Lógica de costo de envío dinámico
+    const getShippingCost = () => {
+        if (cartTotal >= FREE_SHIPPING_THRESHOLD) return 0;
+        if (shippingType === 'normal') return COSTO_NORMAL;
+        if (shippingType === 'prioritario') return COSTO_PRIO;
+        return 0; // Retiro gratis
+    };
+
+    const finalTotal = cartTotal + getShippingCost();
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal }}>
+        <CartContext.Provider value={{ 
+            cart, addToCart, removeFromCart, updateQuantity, clearCart, 
+            cartTotal, shippingType, setShippingType, finalTotal, getShippingCost,
+            FREE_SHIPPING_THRESHOLD 
+        }}>
             {children}
-            
-            {/* CONTENEDOR DE NOTIFICACIONES */}
+            {/* Sistema de Toasts (No se pierde) */}
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 items-end pointer-events-none">
                 {toasts.map((toast) => (
-                    <div 
-                        key={toast.id}
-                        className={`pointer-events-auto bg-zinc-950 text-white border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center w-[340px] h-[85px] overflow-hidden transition-all duration-500 ${
-                            toast.isExiting ? 'toast-exit' : 'toast-enter'
-                        }`}
-                    >
-                        {/* Imagen - Tamaño fijo */}
-                        {toast.product && (
-                            <div className="w-[85px] h-[85px] shrink-0 bg-zinc-800 border-r border-white/5">
-                                <img 
-                                    src={toast.product.images} 
-                                    alt={toast.product.title} 
-                                    className="w-full h-full object-cover opacity-80" 
-                                />
-                            </div>
-                        )}
-
-                        {/* Contenido - Truncado y colores actualizados */}
+                    <div key={toast.id} className={`pointer-events-auto bg-zinc-950 text-white border border-white/10 shadow-2xl flex items-center w-[340px] h-[85px] transition-all duration-500 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
+                        {toast.product && <div className="w-[85px] h-[85px] shrink-0 bg-zinc-800 border-r border-white/5"><img src={toast.product.images} className="w-full h-full object-cover opacity-80" alt="" /></div>}
                         <div className="flex-1 px-4 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                                {toast.type === 'error' ? (
-                                    <AlertCircle size={12} className="text-red-500 shrink-0" />
-                                ) : (
-                                    <CheckCircle size={12} className="text-emerald-500 shrink-0" />
-                                )}
-                                <span className={`text-[8px] font-black uppercase tracking-[0.2em] truncate ${
-                                    toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'
-                                }`}>
-                                    {toast.type === 'error' ? 'System Error' : 'Success Acquisition'}
-                                </span>
+                                {toast.type === 'error' ? <AlertCircle size={12} className="text-red-500" /> : <CheckCircle size={12} className="text-emerald-500" />}
+                                <span className="text-[8px] font-black uppercase tracking-widest">{toast.type === 'error' ? 'Error' : 'Éxito'}</span>
                             </div>
-                            
-                            <p className="text-[11px] font-black uppercase italic leading-tight truncate mb-0.5">
-                                {toast.product?.title || 'Notificación'}
-                            </p>
-                            
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate">
-                                {toast.message}
-                            </p>
+                            <p className="text-[11px] font-black uppercase italic truncate">{toast.product?.title}</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">{toast.message}</p>
                         </div>
-
-                        {/* Botón cerrar */}
-                        <button 
-                            onClick={() => removeToast(toast.id)}
-                            className="h-full px-4 text-zinc-600 hover:text-white transition-colors border-l border-white/5"
-                        >
-                            <X size={16} />
-                        </button>
-
-                        {/* Barra de progreso con color dinámico */}
-                        <div className={`absolute bottom-0 left-0 h-[2px] animate-progress ${
-                            toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'
-                        }`} />
+                        <button onClick={() => removeToast(toast.id)} className="h-full px-4 text-zinc-600 hover:text-white transition-colors border-l border-white/5"><X size={16} /></button>
+                        <div className={`absolute bottom-0 left-0 h-[2px] animate-progress ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`} />
                     </div>
                 ))}
             </div>
-
-            <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes slideInRight {
-                    from { transform: translateX(100%) skewX(-5deg); opacity: 0; }
-                    to { transform: translateX(0) skewX(0deg); opacity: 1; }
-                }
-                @keyframes fadeOutRight {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(120%); opacity: 0; }
-                }
-                @keyframes progress {
-                    from { width: 100%; }
-                    to { width: 0%; }
-                }
-                .toast-enter {
-                    animation: slideInRight 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-                }
-                .toast-exit {
-                    animation: fadeOutRight 0.4s ease-in forwards;
-                }
-                .animate-progress {
-                    animation: progress 3.5s linear forwards;
-                }
-            `}} />
+            <style dangerouslySetInnerHTML={{ __html: `.toast-enter { animation: slideInRight 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards; } .toast-exit { animation: fadeOutRight 0.4s ease-in forwards; } .animate-progress { animation: progress 3.5s linear forwards; } @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes fadeOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } } @keyframes progress { from { width: 100%; } to { width: 0%; } }` }} />
         </CartContext.Provider>
     );
 };
