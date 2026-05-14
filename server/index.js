@@ -20,7 +20,7 @@ const transporter = nodemailer.createTransport({
 app.use(cors({ origin: ["http://localhost:5173", "https://vntg-hub.vercel.app"], credentials: true }));
 app.use(express.json());
 
-// --- PRODUCTOS Y CATEGORÍAS ---
+// --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q } = req.query;
     let sql = "SELECT * FROM products WHERE stock > 0";
@@ -34,10 +34,10 @@ app.get("/api/products", async (req, res) => {
     try {
         const [rows] = await db.query(sql, params);
         res.json(rows);
-    } catch (error) { res.status(500).json({ error: "Error" }); }
+    } catch (error) { res.status(500).json({ error: "Error al obtener productos" }); }
 });
 
-// NUEVA RUTA: OBTENER UN PRODUCTO POR ID (Soluciona el error 404 en DetalleProducto)
+// DETALLE: Trae todos los campos de TiDB y procesa la galería
 app.get("/api/products/:id", async (req, res) => {
     const { id } = req.params;
     try {
@@ -45,12 +45,18 @@ app.get("/api/products/:id", async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ error: "No encontrado" });
         
         const producto = rows[0];
-        // Parseamos la galería si viene como string de la base de datos
-        if (producto.gallery && typeof producto.gallery === 'string') {
-            try { producto.gallery = JSON.parse(producto.gallery); } catch (e) { producto.gallery = []; }
-        }
+        if (producto.gallery) {
+            if (typeof producto.gallery === 'string') {
+                try {
+                    producto.gallery = JSON.parse(producto.gallery);
+                } catch (e) {
+                    producto.gallery = producto.gallery.split(',').map(img => img.trim());
+                }
+            }
+        } else { producto.gallery = []; }
+        
         res.json(producto);
-    } catch (error) { res.status(500).json({ error: "Error" }); }
+    } catch (error) { res.status(500).json({ error: "Error en el servidor" }); }
 });
 
 app.get("/api/categories", async (req, res) => {
@@ -60,7 +66,7 @@ app.get("/api/categories", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- AUTH: LOGIN Y VERIFICACIÓN ---
+// --- AUTENTICACIÓN CON DISEÑO DE CORREO PROFESIONAL ---
 app.post("/api/auth/login/local", async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -68,11 +74,22 @@ app.post("/api/auth/login/local", async (req, res) => {
         if (!users[0] || !users[0].password) return res.status(401).json({ error: "Credenciales" });
         const valid = await bcrypt.compare(password, users[0].password);
         if (!valid) return res.status(401).json({ error: "Credenciales" });
+        
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         await db.query("UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?", [code, users[0].id]);
-        const html = `<div style="font-family:sans-serif;background:#09090b;color:#fff;padding:40px;text-align:center;"><h1 style="color:#f97316;">VNTG HUB</h1><div style="background:#111;padding:30px;border:1px solid #27272a;border-radius:4px;"><h2 style="text-transform:uppercase;">Código:</h2><div style="background:#f97316;color:#fff;font-size:42px;font-weight:900;padding:15px;">${code}</div></div></div>`;
+
+        const html = `
+        <div style="font-family:sans-serif;background:#09090b;color:#fff;padding:40px;text-align:center;">
+            <h1 style="color:#f97316;font-size:32px;font-style:italic;text-transform:uppercase;">VNTG HUB</h1>
+            <div style="background:#111;padding:30px;border:1px solid #27272a;display:inline-block;min-width:300px;">
+                <h2 style="text-transform:uppercase;font-size:18px;">Código de Verificación</h2>
+                <div style="background:#f97316;color:#fff;font-size:42px;font-weight:900;padding:15px;margin:20px 0;">${code}</div>
+                <p style="color:#a1a1aa;font-size:12px;">Válido por 5 minutos.</p>
+            </div>
+        </div>`;
+
         await transporter.sendMail({ from: `"VNTG HUB" <${process.env.EMAIL_USER}>`, to: email, subject: `${code} es tu código - VNTG HUB`, html });
-        res.json({ message: "Enviado", requireCode: true, email });
+        res.json({ message: "Código enviado", requireCode: true, email });
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
@@ -83,12 +100,12 @@ app.post("/api/auth/verify-code", async (req, res) => {
         if (rows.length === 0) return res.status(401).json({ error: "Inválido" });
         const user = rows[0];
         await db.query("UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?", [user.id]);
-        const { password, verification_code, verification_expires, ...userSinPass } = user;
+        const { password, ...userSinPass } = user;
         res.json({ message: "Éxito", user: userSinPass });
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- CHECKOUT CON ENVÍO GRATIS DINÁMICO ---
+// --- CHECKOUT CON PRECIOS DE IMAGEN Y ENVÍO GRATIS > 200k ---
 app.post("/api/checkout", async (req, res) => {
     const { user, cart, shipping, shippingType } = req.body;
     try {
@@ -101,7 +118,6 @@ app.post("/api/checkout", async (req, res) => {
             subtotal += prod[0].price * item.cantidad;
         }
 
-        // Seguridad: Cálculo de envío en backend basado en umbral de $200k
         let shippingCost = 0;
         if (subtotal < 200000) { 
             if (shippingType === 'normal') shippingCost = 9426.05;
