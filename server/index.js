@@ -341,12 +341,12 @@ app.get("/api/admin/products", async (req, res) => {
 });
 
 app.post("/api/admin/products", async (req, res) => {
-    const { id, title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
+    const { id, title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         await db.query(
-            "INSERT INTO products (id, title, description, franchise, categoryId, price, stock, images, gallery) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [id, title, description || '', franchise || '', categoryId, price, stock, images || '', gal]
+            "INSERT INTO products (id, title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [id, title, description || '', franchise || '', categoryId, price, stock, images || '', gal, escala || '', fabricante || '', anio || '', material || '', estado || '']
         );
         res.json({ message: "Producto creado exitosamente" });
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -354,15 +354,15 @@ app.post("/api/admin/products", async (req, res) => {
 
 app.put("/api/admin/products/:id", async (req, res) => {
     const { id } = req.params;
-    const { title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
+    const { title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         const [prev] = await db.query("SELECT stock, title FROM products WHERE id = ?", [id]);
         const stockPrevio = prev[0]?.stock || 0;
 
         await db.query(
-            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=? WHERE id=?",
-            [title, description || '', franchise || '', categoryId, price, stock, images || '', gal, id]
+            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=?, escala=?, fabricante=?, anio=?, material=?, estado=? WHERE id=?",
+            [title, description || '', franchise || '', categoryId, price, stock, images || '', gal, escala || '', fabricante || '', anio || '', material || '', estado || '', id]
         );
 
         if (stockPrevio === 0 && stock > 0) {
@@ -370,7 +370,7 @@ app.put("/api/admin/products/:id", async (req, res) => {
             for (let u of interesados) {
                 await sendVntgEmail(
                     u.email,
-                    `¡Stock disponible! ${prev[0].title}`,
+                    `¡Stock disponible! ${title}`,
                     "¡VOLVIÓ A INGRESAR!",
                     `Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible para su compra inmediata.`,
                     "Comprar ahora",

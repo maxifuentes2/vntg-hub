@@ -27,7 +27,8 @@ export default function AdminPanel() {
     // Formularios
     const [productForm, setProductForm] = useState({ 
         id: '', title: '', description: '', franchise: '', 
-        categoryId: '', price: 0, stock: 0, images: '', gallery: '' 
+        categoryId: '', price: 0, stock: 0, images: '', gallery: '',
+        escala: '', fabricante: '', anio: '', material: '', estado: '' 
     });
     const [categoryForm, setCategoryForm] = useState({ id: '', name: '' });
 
@@ -78,7 +79,11 @@ export default function AdminPanel() {
             });
         } else {
             setEditingItem(null);
-            setProductForm({ id: '', title: '', description: '', franchise: '', categoryId: '', price: 0, stock: 0, images: '', gallery: '' });
+            setProductForm({ 
+                id: '', title: '', description: '', franchise: '', 
+                categoryId: '', price: 0, stock: 0, images: '', gallery: '',
+                escala: '', fabricante: '', anio: '', material: '', estado: '' 
+            });
         }
         setIsProductModalOpen(true);
     };
@@ -150,7 +155,7 @@ export default function AdminPanel() {
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] p-4 md:p-8">
-            <div className="max-w-7xl mx-auto pt-6">
+            <div className="max-w-7xl mx-auto pt-24 md:pt-28">
                 
                 {/* HEADER Y PESTAÑAS */}
                 <div className="flex flex-col xl:flex-row justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
@@ -317,8 +322,8 @@ export default function AdminPanel() {
 
             {/* MODAL DE PRODUCTOS */}
             {isProductModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
+                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-white/5 sticky top-0 bg-white dark:bg-[#111] z-10">
                             <h2 className="text-xl font-black italic uppercase text-brand-orange">
                                 {editingItem ? 'Editar Producto' : 'Nuevo Producto'}
@@ -326,14 +331,26 @@ export default function AdminPanel() {
                             <button onClick={() => setIsProductModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={24} /></button>
                         </div>
                         <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Slug Único)</label>
-                                    <input type="text" required disabled={!!editingItem} value={productForm.id} onChange={e => setProductForm({...productForm, id: e.target.value})} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Escala</label>
+                                    <input type="text" value={productForm.escala} onChange={e => setProductForm({...productForm, escala: e.target.value})} placeholder="Ej: 1/6, 1:10" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Título</label>
-                                    <input type="text" required value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Fabricante</label>
+                                    <input type="text" value={productForm.fabricante} onChange={e => setProductForm({...productForm, fabricante: e.target.value})} placeholder="Ej: Hot Toys, Hasbro" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Año</label>
+                                    <input type="text" value={productForm.anio} onChange={e => setProductForm({...productForm, anio: e.target.value})} placeholder="Ej: 2024" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Material</label>
+                                    <input type="text" value={productForm.material} onChange={e => setProductForm({...productForm, material: e.target.value})} placeholder="Ej: PVC, Resina" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Estado</label>
+                                    <input type="text" value={productForm.estado} onChange={e => setProductForm({...productForm, estado: e.target.value})} placeholder="Ej: Mint, Loose, Nuevo" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                                 </div>
                             </div>
                             
@@ -410,7 +427,7 @@ export default function AdminPanel() {
 
             {/* --- NUEVO: MODAL DE CONFIRMACIÓN ESTÉTICO --- */}
             {confirmDelete.isOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex justify-center items-start p-4 pt-24 md:pt-40 overflow-y-auto">
                     <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden group">
                         
                         {/* Decoración estética de VNTG HUB */}
