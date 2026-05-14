@@ -8,14 +8,16 @@ import {
     Moon, 
     User,
     LogOut,
-    Settings
+    Settings,
+    Heart // <-- 1. Importamos el ícono del corazón
 } from 'lucide-react'; 
 import CategorySidebar from './CategorySidebar';
 import { useCart } from '../context/CartContext';
+import { useWishList } from '../context/WishListContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-export default function Navbar({ onOpenCart }) {
+export default function Navbar({ onOpenCart, onOpenWishList }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
     const [dbCategories, setDbCategories] = useState([]); 
@@ -25,6 +27,10 @@ export default function Navbar({ onOpenCart }) {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [user, setUser] = useState(null);
     const userMenuRef = useRef(null);
+    
+    // --- ESTADO TEMPORAL PARA LA WISHLIST ---
+    // (A futuro lo puedes cambiar por algo como: const { wishListCount } = useWishList() )
+    const { wishListCount } = useWishList();
     
     const { cartCount } = useCart();
     const navigate = useNavigate(); 
@@ -188,9 +194,24 @@ export default function Navbar({ onOpenCart }) {
                         </div>
                         {/* --- FIN MENÚ DE USUARIO --- */}
 
+                        {/* --- BOTÓN DE WISHLIST SIDEBAR --- */}
+                        <button 
+                            onClick={onOpenWishList}
+                            className="relative p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group"
+                            aria-label="Abrir Lista de Deseos"
+                        >
+                            <Heart size={22} className="group-hover:text-brand-orange transition-colors" />
+                            {wishListCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-brand-dark">
+                                    {wishListCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* BOTÓN DEL CARRITO */}
                         <button 
                             onClick={onOpenCart} 
-                            className="relative p-2 bg-brand-orange text-white rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all"
+                            className="relative p-2 bg-brand-orange text-white rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all ml-1"
                         >
                             <ShoppingCart size={22} />
                             {cartCount > 0 && (
