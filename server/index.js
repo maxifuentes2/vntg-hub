@@ -246,12 +246,13 @@ app.get("/api/admin/products", async (req, res) => {
 });
 
 app.post("/api/admin/products", async (req, res) => {
-    const { id, title, description, franchise, categoryId, price, stock, gallery } = req.body;
+    // CORRECCIÓN: Se añade 'images' para guardar la foto principal
+    const { id, title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         await db.query(
-            "INSERT INTO products (id, title, description, franchise, categoryId, price, stock, gallery) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [id, title, description || '', franchise || '', categoryId, price, stock, gal]
+            "INSERT INTO products (id, title, description, franchise, categoryId, price, stock, images, gallery) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [id, title, description || '', franchise || '', categoryId, price, stock, images || '', gal]
         );
         res.json({ message: "Producto creado exitosamente" });
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -259,12 +260,13 @@ app.post("/api/admin/products", async (req, res) => {
 
 app.put("/api/admin/products/:id", async (req, res) => {
     const { id } = req.params;
-    const { title, description, franchise, categoryId, price, stock, gallery } = req.body;
+    // CORRECCIÓN: Se añade 'images' para actualizar la foto principal
+    const { title, description, franchise, categoryId, price, stock, images, gallery } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         await db.query(
-            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, gallery=? WHERE id=?",
-            [title, description || '', franchise || '', categoryId, price, stock, gal, id]
+            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=? WHERE id=?",
+            [title, description || '', franchise || '', categoryId, price, stock, images || '', gal, id]
         );
         res.json({ message: "Producto actualizado" });
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -305,7 +307,6 @@ app.delete("/api/admin/categories/:id", async (req, res) => {
 // Órdenes (Administrador)
 app.get("/api/admin/orders", async (req, res) => {
     try {
-        // Traemos las órdenes y cruzamos datos para ver el email y nombre del cliente
         const [rows] = await db.query(`
             SELECT o.*, u.email as user_email, u.name as user_name 
             FROM orders o 
