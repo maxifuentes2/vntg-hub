@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // Corregido: El import debe ser de lucide-react
 import { MessageCircle, X, Send, Bot, Zap } from 'lucide-react';
 
@@ -6,16 +6,60 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Chatbot({ isSidebarOpen }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState([
-        { text: "Bienvenido al Hub, piloto. ¿Buscás una pieza histórica o asistencia técnica con un envío?", isBot: true }
-    ]);
+    // 1. Inicializar mensajes desde localStorage
+    const getStorageKey = () => {
+        const userStr = localStorage.getItem('vntg_user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                return `vntg_chat_${user.id}`;
+            } catch(e) {}
+        }
+        return 'vntg_chat_guest';
+    };
+
+    const getInitialMessages = () => {
+        const key = getStorageKey();
+        const saved = localStorage.getItem(key);
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                // Si pasaron más de 7 días de inactividad, limpiar
+                if (Date.now() - data.lastActivity > 7 * 24 * 60 * 60 * 1000) {
+                    localStorage.removeItem(key);
+                } else {
+                    return data.messages;
+                }
+            } catch(e) {}
+        }
+        return [{ text: "Bienvenido al Hub, piloto. ¿Buscás una pieza histórica o asistencia técnica con un envío?", isBot: true }];
+    };
+
+    const [messages, setMessages] = useState(getInitialMessages);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // 2. Guardar mensajes en localStorage cada vez que cambian
+    useEffect(() => {
+        const key = getStorageKey();
+        localStorage.setItem(key, JSON.stringify({
+            messages,
+            lastActivity: Date.now()
+        }));
+    }, [messages]);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
 
         const userMsg = input;
+        
+        // 3. Preparar el historial para enviarlo a Gemini (formato que espera la API)
+        // Omitimos el mensaje inicial de bienvenida para no confundir a la IA si no tiene contexto
+        const historyForGemini = messages.slice(1).map(m => ({
+            role: m.isBot ? "model" : "user",
+            parts: [{ text: m.text }]
+        }));
+
         setMessages(prev => [...prev, { text: userMsg, isBot: false }]);
         setInput('');
         setIsLoading(true);
@@ -24,10 +68,20 @@ export default function Chatbot({ isSidebarOpen }) {
             const res = await fetch(`${API_URL}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userMsg })
+                body: JSON.stringify({ message: userMsg, history: historyForGemini })
             });
             const data = await res.json();
+            
+            // 4. Agregar la respuesta del bot
             setMessages(prev => [...prev, { text: data.reply || "Avería en boxes: " + data.error, isBot: true }]);
+            
+            // 5. Si el bot indica que el chat terminó, limpiamos para la próxima vez
+            if (data.finished) {
+                // Al poner setTimeout permitimos que el usuario vea el mensaje final antes de que se borre si recarga
+                setTimeout(() => {
+                    localStorage.removeItem(getStorageKey());
+                }, 2000);
+            }
         } catch (error) {
             setMessages(prev => [...prev, { text: "Error de conexión con boxes. Intenta de nuevo.", isBot: true }]);
         } finally {

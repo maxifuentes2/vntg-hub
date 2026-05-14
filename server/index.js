@@ -518,7 +518,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post("/api/chat", async (req, res) => {
-    const { message } = req.body;
+    const { message, history } = req.body;
     if (!message) return res.status(400).json({ error: "Mensaje vacío" });
 
     try {
@@ -537,13 +537,27 @@ app.post("/api/chat", async (req, res) => {
             IMPORTANTE: Tu memoria está conectada al depósito. Este es tu catálogo ACTUAL de productos disponibles. Si el cliente busca algo, revisa estrictamente esta lista:
             ${catalogo}
             
-            Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en boxes de ese artículo.`
+            Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en boxes de ese artículo.
+            
+            DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`
         });
 
-        const result = await model.generateContent(message);
-        const response = result.response.text();
+        // 4. Iniciamos el chat con el historial previo
+        const chat = model.startChat({
+            history: history || []
+        });
 
-        res.json({ reply: response });
+        const result = await chat.sendMessage(message);
+        let response = result.response.text();
+        
+        // 5. Verificamos si el bot decidió terminar la charla
+        let finished = false;
+        if (response.includes('[CHAT_FINISHED]')) {
+            finished = true;
+            response = response.replace('[CHAT_FINISHED]', '').trim();
+        }
+
+        res.json({ reply: response, finished });
     } catch (error) {
         console.error("Error en Gemini API:", error);
         res.status(500).json({ error: "Error de conexión en boxes" });
