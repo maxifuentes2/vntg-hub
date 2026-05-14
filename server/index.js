@@ -372,11 +372,11 @@ app.post("/api/contact", async (req, res) => {
             from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`, 
             to: "soportehubvntg@gmail.com", 
             replyTo: email, 
-            subject: `NUEVA TRANSMISIÓN de ${nombre} - Pista de Contacto`,
+            subject: `Nuevo Correo de ${nombre} - VNTG HUB`,
             html: `
                 <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 20px;">
                     <h2 style="color: #f97316;">Nuevo mensaje desde la web</h2>
-                    <p><strong>Corredor/a:</strong> ${nombre}</p>
+                    <p><strong>Nombre:</strong> ${nombre}</p>
                     <p><strong>Email de contacto:</strong> ${email}</p>
                     <hr style="border: 1px solid #27272a; margin: 20px 0;">
                     <p><strong>Mensaje:</strong></p>
@@ -384,10 +384,10 @@ app.post("/api/contact", async (req, res) => {
                 </div>
             `
         });
-        res.json({ message: "Transmisión enviada con éxito" });
+        res.json({ message: "Correo enviado con éxito" });
     } catch (error) {
-        console.error("Error enviando mensaje de contacto:", error);
-        res.status(500).json({ error: "Error al enviar el mensaje" });
+        console.error("Error al enviar el correo:", error);
+        res.status(500).json({ error: "Error al enviar el correo" });
     }
 });
 
