@@ -410,7 +410,7 @@ export default function AdminPanel() {
                         </div>
                         <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Ej: remeras)</label>
+                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Ej: 123)</label>
                                 <input type="text" required value={categoryForm.id} onChange={e => setCategoryForm({...categoryForm, id: e.target.value})} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                             </div>
                             <div>
