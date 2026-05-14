@@ -95,13 +95,56 @@ app.post("/api/auth/login/local", async (req, res) => {
     try {
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
         if (!users[0] || !users[0].password) return res.status(401).json({ error: "Credenciales" });
+        
         const valid = await bcrypt.compare(password, users[0].password);
         if (!valid) return res.status(401).json({ error: "Credenciales" });
+        
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         await db.query("UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?", [code, users[0].id]);
-        await transporter.sendMail({ from: process.env.EMAIL_USER, to: email, subject: "Código", html: `<h1>${code}</h1>` });
+
+        // --- DISEÑO DEL CORREO ---
+        const htmlContent = `
+        <div style="font-family: sans-serif; background-color: #09090b; color: #ffffff; padding: 40px; text-align: center; border-radius: 8px;">
+            <div style="margin-bottom: 20px;">
+                <h1 style="color: #f97316; font-size: 32px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -1px; margin: 0;">VNTG HUB</h1>
+                <p style="color: #71717a; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px;">Tu destino para tesoros vintage</p>
+            </div>
+            
+            <div style="background-color: #111111; border: 1px solid #27272a; padding: 30px; border-radius: 4px; display: inline-block; min-width: 300px;">
+                <h2 style="font-size: 18px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">Código de Verificación</h2>
+                <div style="background-color: #f97316; color: #ffffff; font-size: 42px; font-weight: 900; letter-spacing: 10px; padding: 15px; margin-bottom: 20px; font-style: italic;">
+                    ${code}
+                </div>
+                <p style="color: #a1a1aa; font-size: 12px; line-height: 1.5;">
+                    Este código expirará en <strong>5 minutos</strong> por motivos de seguridad.<br>
+                    Si no intentaste iniciar sesión, ignora este mensaje.
+                </p>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 1px solid #27272a; padding-top: 20px;">
+                <p style="color: #71717a; font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">
+                    Explora nuestra colección de indumentaria vintage, streetwear y accesorios únicos.
+                </p>
+                <div style="margin-top: 15px;">
+                    <a href="https://vntg-hub.vercel.app" style="color: #3b82f6; text-decoration: none; font-size: 12px; font-weight: bold; text-transform: uppercase; margin: 0 10px;">Tienda</a>
+                    <a href="https://vntg-hub.vercel.app/register" style="color: #3b82f6; text-decoration: none; font-size: 12px; font-weight: bold; text-transform: uppercase; margin: 0 10px;">Soporte</a>
+                </div>
+            </div>
+        </div>
+        `;
+
+        await transporter.sendMail({ 
+            from: `"VNTG HUB" <${process.env.EMAIL_USER}>`, 
+            to: email, 
+            subject: `${code} es tu código de acceso - VNTG HUB`, 
+            html: htmlContent 
+        });
+
         res.json({ message: "Enviado", requireCode: true, email });
-    } catch (error) { res.status(500).json({ error: "Error" }); }
+    } catch (error) { 
+        console.error(error);
+        res.status(500).json({ error: "Error al enviar el código" }); 
+    }
 });
 
 app.post("/api/auth/verify-code", async (req, res) => {
