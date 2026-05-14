@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Añadido useRef
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishList } from '../context/WishListContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -10,6 +11,15 @@ export default function Inicio() {
     const [dbCategories, setDbCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const { addToCart } = useCart();
+    const { addToWishList } = useWishList();
+
+    // Referencia para la primera sección de categorías
+    const firstCategoryRef = useRef(null);
+
+    // Función para scroll suave
+    const scrollToContent = () => {
+        firstCategoryRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -43,7 +53,7 @@ export default function Inicio() {
             id: cat.id,
             nombre: cat.name,
             banner: cat.banner_url || "/wallpaper.webp",
-            items: filtrados.slice(0, 4)
+            items: filtrados.slice(0, 3) 
         };
     }).filter(seccion => seccion.items.length > 0);
 
@@ -72,7 +82,6 @@ export default function Inicio() {
                     />
                 </div>
 
-                {/* Capas de degradado para fundir con el fondo oscuro */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-brand-dark via-transparent to-transparent"></div>
 
                 <div className="relative z-10 text-center px-4">
@@ -84,19 +93,25 @@ export default function Inicio() {
                     </p>
                 </div>
 
-                {/* 👇 NUEVO: Indicador de Scroll Centrado Perfecto 👇 */}
-                <div className="absolute bottom-10 w-full flex flex-col items-center justify-center animate-bounce z-20 text-zinc-900 dark:text-white opacity-70">
-                    <ChevronDown size={36} className="mb-1" />
-                    <span className="text-xs font-black italic uppercase tracking-[0.3em] pl-[0.3em]">
+                {/* BOTÓN SIGUE EXPLORANDO (ACCESIBILIDAD MEJORADA) */}
+                <button 
+                    onClick={scrollToContent}
+                    className="absolute bottom-10 w-full flex flex-col items-center justify-center animate-bounce z-20 text-zinc-900 dark:text-white opacity-70 hover:opacity-100 transition-all cursor-pointer group"
+                >
+                    <ChevronDown size={36} className="mb-1 group-hover:text-brand-orange transition-colors" />
+                    <span className="text-xs font-black italic uppercase tracking-[0.3em] pl-[0.3em] group-hover:text-brand-orange transition-colors">
                         Sigue Explorando
                     </span>
-                </div>
-                {/* 👆 FIN Indicador de Scroll 👆 */}
+                </button>
             </section>
 
             {/* SECCIONES DINÁMICAS */}
-            {secciones.map((seccion) => (
-                <section key={seccion.id} className="w-full pb-20">
+            {secciones.map((seccion, index) => (
+                <section 
+                    key={seccion.id} 
+                    ref={index === 0 ? firstCategoryRef : null} // Asignar ref a la primera categoría
+                    className="w-full pb-20"
+                >
 
                     {/* BANNER DE CATEGORÍA */}
                     <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-y border-zinc-200 dark:border-white/5">
@@ -129,43 +144,52 @@ export default function Inicio() {
 
                     {/* GRID DE PRODUCTOS */}
                     <div className="max-w-[1700px] mx-auto px-4 mt-12">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {seccion.items.map((item) => (
-                                <div key={item.id} className="group bg-white dark:bg-[#1a1a1a]/40 border border-zinc-200 dark:border-white/5 hover:border-brand-orange transition-all duration-500">
-                                    <div className="aspect-[4/5] bg-zinc-100 dark:bg-zinc-900/50 relative overflow-hidden flex items-center justify-center">
-                                        <Link to={`/producto/${item.id}`} className="w-full h-full">
+                                <div key={item.id} className="group bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
+                                    <div className="aspect-[16/10] bg-white dark:bg-brand-dark relative overflow-hidden flex items-center justify-center p-4 border-b border-zinc-200 dark:border-white/5">
+                                        <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
                                             {item.images ? (
                                                 <img
                                                     src={item.images}
                                                     alt={item.title}
-                                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
+                                                    className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300"
                                                 />
                                             ) : (
                                                 <Box size={40} className="text-zinc-300 dark:text-white/5" />
                                             )}
                                         </Link>
-                                        <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest">
+                                        <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
                                             {item.estado || "MINT"}
                                         </div>
                                     </div>
 
-                                    <div className="p-6">
+                                    <div className="p-8">
                                         <Link to={`/producto/${item.id}`}>
-                                            <h3 className="text-lg font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
+                                            <h3 className="text-xl font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
                                                 {item.title}
                                             </h3>
                                         </Link>
 
                                         <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-6">
-                                            <p className="text-2xl font-black text-zinc-900 dark:text-white italic">
+                                            <p className="text-3xl font-black text-zinc-900 dark:text-white italic">
                                                 ${Number(item.price).toLocaleString('es-AR')}
                                             </p>
-                                            <button
-                                                onClick={() => addToCart(item)}
-                                                className="bg-brand-blue text-white p-3 hover:bg-brand-orange transition-all duration-300 shadow-lg active:scale-95"
-                                            >
-                                                <ShoppingCart size={22} />
-                                            </button>
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    onClick={() => addToWishList(item)}
+                                                    className="text-zinc-400 hover:text-brand-orange transition-colors duration-300"
+                                                    title="Añadir a deseados"
+                                                >
+                                                    <Heart size={24} />
+                                                </button>
+                                                <button
+                                                    onClick={() => addToCart(item)}
+                                                    className="bg-brand-blue text-white p-3.5 hover:bg-brand-orange transition-all duration-300 shadow-lg active:scale-95"
+                                                >
+                                                    <ShoppingCart size={24} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

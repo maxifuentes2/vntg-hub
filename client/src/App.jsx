@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // <-- Reintegrado useEffect para categorías
+import { useState, useEffect } from 'react'; 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -16,6 +16,9 @@ import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import NotFound from './pages/NotFound'; 
 import AdminPanel from './pages/AdminPanel';
+
+// NUEVA IMPORTACIÓN PARA EL RESET DE SCROLL
+import ScrollToTopOnNavigation from './components/ScrollToTopOnNavigation';
 
 // IMPORTACIONES DE SIDEBARS
 import CartSidebar from './components/CartSidebar'; 
@@ -36,7 +39,7 @@ import MiCuenta from './pages/MiCuenta';
 
 function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false); 
-  const [categories, setCategories] = useState([]); // <-- Estado para las categorías globales
+  const [categories, setCategories] = useState([]); 
 
   // Carga de categorías para el CategorySidebar
   useEffect(() => {
@@ -53,11 +56,13 @@ function App() {
         <CartProvider>
           <WishListProvider> 
             <Router>
+              {/* COMPONENTE LÓGICO DE SCROLL: Asegura que cada navegación empiece desde arriba */}
+              <ScrollToTopOnNavigation />
+
               <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
                 <Navbar /> 
                 <CartSidebar />
                 <WishListSidebar />
-                {/* Pasamos las categorías al sidebar para que se vean */}
                 <CategorySidebar categories={categories} />
 
                 <main className="flex-grow">
