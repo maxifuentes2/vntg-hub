@@ -61,7 +61,8 @@ export default function PedidoDetalle() {
                 </div>
 
                 {/* MAPA DE ESTADO (TIMELINE) */}
-                <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-8 rounded-xl shadow-xl mb-8">
+                {/* NOTA: Se cambió p-8 por px-8 pt-8 pb-12 para dar más espacio inferior a las etiquetas */}
+                <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 px-8 pt-8 pb-14 rounded-xl shadow-xl mb-8">
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-brand-orange mb-8">Estado del Envío</h2>
                     
                     <div className="relative flex justify-between items-center">
