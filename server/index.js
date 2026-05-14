@@ -329,6 +329,38 @@ app.put("/api/admin/orders/:id/status", async (req, res) => {
 // ==========================================
 
 
+// --- RUTA DE CONTACTO ---
+app.post("/api/contact", async (req, res) => {
+    const { nombre, email, mensaje } = req.body;
+
+    if (!nombre || !email || !mensaje) {
+        return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+
+    try {
+        await transporter.sendMail({
+            from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`, // El servidor original lo envía
+            to: "soportehubvntg@gmail.com", // <--- CAMBIO: AHORA LLEGA A ESTE CORREO
+            replyTo: email, // Si le das a responder, le contestas al cliente
+            subject: `NUEVA TRANSMISIÓN de ${nombre} - Pista de Contacto`,
+            html: `
+                <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 20px;">
+                    <h2 style="color: #f97316;">Nuevo mensaje desde la web</h2>
+                    <p><strong>Corredor/a:</strong> ${nombre}</p>
+                    <p><strong>Email de contacto:</strong> ${email}</p>
+                    <hr style="border: 1px solid #27272a; margin: 20px 0;">
+                    <p><strong>Mensaje:</strong></p>
+                    <p style="background: #111; padding: 15px; border-radius: 5px;">${mensaje}</p>
+                </div>
+            `
+        });
+        res.json({ message: "Transmisión enviada con éxito" });
+    } catch (error) {
+        console.error("Error enviando mensaje de contacto:", error);
+        res.status(500).json({ error: "Error al enviar el mensaje" });
+    }
+});
+
 // --- PURGA AFK ---
 setInterval(async () => {
     try {
