@@ -148,7 +148,7 @@ export default function Navbar({ onOpenCart, onOpenWishList }) {
                                         <>
                                             <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 mb-2 bg-zinc-50 dark:bg-white/5">
                                                 <p className="text-[9px] font-black uppercase italic tracking-widest text-brand-orange">Bienvenido</p>
-                                                <p className="text-sm font-bold truncate text-zinc-900 dark:text-white">{user.name}</p>
+                                                <p className="text-sm font-bold truncate text-zinc-900 dark:text-white capitalize">{user.name}</p>
                                                 <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
                                             </div>
 

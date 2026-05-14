@@ -11,9 +11,9 @@ export default function Checkout() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    
-    const [shipping, setShipping] = useState({ 
-        nombre: '', direccion: '', ciudad: '', provincia: '', codigoPostal: '', telefono: '' 
+
+    const [shipping, setShipping] = useState({
+        nombre: '', direccion: '', ciudad: '', provincia: '', codigoPostal: '', telefono: ''
     });
 
     useEffect(() => {
@@ -22,18 +22,18 @@ export default function Checkout() {
             navigate('/login');
             return;
         }
-        
+
         const parsed = JSON.parse(storedUser);
         setUser(parsed);
-        
+
         // Carga inicial de datos para autocompletar
-        setShipping({ 
-            nombre: parsed.name || '', 
-            direccion: parsed.address || '', 
-            ciudad: parsed.city || '', 
-            provincia: parsed.province || '', 
-            codigoPostal: parsed.zip_code || '', 
-            telefono: parsed.phone || '' 
+        setShipping({
+            nombre: parsed.name || '',
+            direccion: parsed.address || '',
+            ciudad: parsed.city || '',
+            provincia: parsed.province || '',
+            codigoPostal: parsed.zip_code || '',
+            telefono: parsed.phone || ''
         });
 
         if (cart.length === 0) navigate('/');
@@ -48,26 +48,26 @@ export default function Checkout() {
             const res = await fetch(`${API_URL}/api/checkout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user, 
-                    cart, 
-                    shipping, 
+                body: JSON.stringify({
+                    user,
+                    cart,
+                    shipping,
                     shippingType,
-                    total: finalTotal 
-                }) 
+                    total: finalTotal
+                })
             });
-            
+
             const data = await res.json();
-            
+
             if (res.ok && data.init_point) {
-                clearCart(); 
-                window.location.href = data.init_point; 
+                clearCart();
+                window.location.href = data.init_point;
             } else {
                 setError(data.error || "Error al procesar el pago");
                 setLoading(false);
             }
-        } catch (err) { 
-            setError("Error de conexión con el servidor"); 
+        } catch (err) {
+            setError("Error de conexión con el servidor");
             setLoading(false);
         }
     };
@@ -89,35 +89,35 @@ export default function Checkout() {
                 <div>
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 mb-6 text-xs font-bold uppercase italic"><ArrowLeft size={16} /> Volver</button>
                     <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">{esRetiro ? 'Retiro' : 'Envío'}</h1>
-                    
+
                     <form id="checkout-form" onSubmit={handleCheckout} className="space-y-4">
-                        <input 
-                            type="text" 
-                            placeholder="NOMBRE COMPLETO" 
-                            value={shipping.nombre} 
-                            onChange={e => setShipping({...shipping, nombre: e.target.value})} 
-                            required 
-                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold italic focus:border-brand-orange outline-none" 
+                        <input
+                            type="text"
+                            placeholder="NOMBRE COMPLETO"
+                            value={shipping.nombre}
+                            onChange={e => setShipping({ ...shipping, nombre: e.target.value })}
+                            required
+                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold italic focus:border-brand-orange outline-none capitalize"
                         />
                         {!esRetiro && (
                             <div className="space-y-4">
                                 <div className="flex gap-4">
-                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({...shipping, direccion: e.target.value})} required className="w-2/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
-                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({...shipping, codigoPostal: e.target.value})} required className="w-1/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
+                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
+                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
                                 </div>
                                 <div className="flex gap-4">
-                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({...shipping, ciudad: e.target.value})} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
-                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({...shipping, provincia: e.target.value})} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
+                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
+                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
                                 </div>
                             </div>
                         )}
-                        <input 
-                            type="tel" 
-                            placeholder="TELÉFONO" 
-                            value={shipping.telefono} 
-                            onChange={e => setShipping({...shipping, telefono: e.target.value})} 
-                            required 
-                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" 
+                        <input
+                            type="tel"
+                            placeholder="TELÉFONO"
+                            value={shipping.telefono}
+                            onChange={e => setShipping({ ...shipping, telefono: e.target.value })}
+                            required
+                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none"
                         />
                     </form>
 
@@ -146,10 +146,10 @@ export default function Checkout() {
                         <span>Total</span>
                         <span className="text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
                     </div>
-                    <button 
-                        type="submit" 
-                        form="checkout-form" 
-                        disabled={loading} 
+                    <button
+                        type="submit"
+                        form="checkout-form"
+                        disabled={loading}
                         className="w-full mt-8 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                     >
                         {loading ? 'Procesando...' : 'Pagar con Mercado Pago'} <ShieldCheck size={20} />
