@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown, AlertTriangle } from 'lucide-react'; // Añadido AlertTriangle
+import { ADMIN_EMAILS } from '../config';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -39,7 +40,7 @@ export default function AdminPanel() {
             return;
         }
         const user = JSON.parse(storedUser);
-        if (user.email !== 'hubvntg@gmail.com') {
+        if (!ADMIN_EMAILS.includes(user.email)) {
             navigate('/');
         } else {
             fetchData();
@@ -47,17 +48,20 @@ export default function AdminPanel() {
     }, [navigate]);
 
     const fetchData = () => {
-        fetch(`${API_URL}/api/admin/products`)
+        const token = localStorage.getItem('vntg_token');
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        fetch(`${API_URL}/api/admin/products`, { headers })
             .then(res => res.json())
             .then(data => setProducts(data))
             .catch(err => console.error(err));
 
-        fetch(`${API_URL}/api/admin/categories`)
+        fetch(`${API_URL}/api/admin/categories`, { headers })
             .then(res => res.json())
             .then(data => setCategories(data))
             .catch(err => console.error(err));
 
-        fetch(`${API_URL}/api/admin/orders`)
+        fetch(`${API_URL}/api/admin/orders`, { headers })
             .then(res => res.json())
             .then(data => setOrders(data))
             .catch(err => console.error(err));
@@ -94,10 +98,11 @@ export default function AdminPanel() {
         const url = editingItem ? `${API_URL}/api/admin/products/${editingItem.id}` : `${API_URL}/api/admin/products`;
         const finalGallery = productForm.gallery.split(',').map(s => s.trim()).filter(s => s);
 
+        const token = localStorage.getItem('vntg_token');
         try {
             await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ ...productForm, gallery: finalGallery })
             });
             setIsProductModalOpen(false);
@@ -113,8 +118,12 @@ export default function AdminPanel() {
     const executeDelete = async () => {
         const { id, type } = confirmDelete;
         const endpoint = type === 'product' ? 'products' : 'categories';
+        const token = localStorage.getItem('vntg_token');
         try {
-            await fetch(`${API_URL}/api/admin/${endpoint}/${id}`, { method: 'DELETE' });
+            await fetch(`${API_URL}/api/admin/${endpoint}/${id}`, { 
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setConfirmDelete({ isOpen: false, id: null, title: '', type: '' });
             fetchData();
         } catch (error) { console.error("Error al eliminar:", error); }
@@ -140,10 +149,11 @@ export default function AdminPanel() {
             ? `${API_URL}/api/admin/categories/${categoryForm.id}` 
             : `${API_URL}/api/admin/categories`;
 
+        const token = localStorage.getItem('vntg_token');
         try {
             await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(categoryForm)
             });
             setIsCategoryModalOpen(false);
@@ -153,10 +163,11 @@ export default function AdminPanel() {
 
     // --- MANEJO DE ÓRDENES ---
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
+        const token = localStorage.getItem('vntg_token');
         try {
             await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ status: newStatus })
             });
             fetchData();

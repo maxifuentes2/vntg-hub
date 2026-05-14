@@ -8,6 +8,8 @@ const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const jwt = require("jsonwebtoken");
+const config = require("./config");
 
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -172,7 +174,8 @@ app.post("/api/auth/login/local", async (req, res) => {
             if (trusted.length > 0) {
                 // Si el dispositivo es conocido y no expiró, entramos directo
                 const { password, verification_code, verification_expires, ...userSinPass } = users[0];
-                return res.json({ message: "Inicio rápido", user: userSinPass, skipCode: true });
+                const token = jwt.sign({ id: users[0].id, email: users[0].email }, process.env.JWT_SECRET || 'vntg_secret_key', { expiresIn: '7d' });
+                return res.json({ message: "Inicio rápido", user: userSinPass, skipCode: true, token });
             }
         }
 
@@ -214,11 +217,13 @@ app.post("/api/auth/verify-code", async (req, res) => {
 
         await db.query("UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?", [user.id]);
         const { password, verification_code, verification_expires, ...userSinPass } = user;
+        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'vntg_secret_key', { expiresIn: '7d' });
 
         res.json({
             message: "Éxito",
             user: userSinPass,
-            deviceToken: newToken
+            deviceToken: newToken,
+            token
         });
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
@@ -245,7 +250,8 @@ app.post("/api/auth/google", async (req, res) => {
             user = users[0];
         }
         const { password, ...userSinPass } = user;
-        res.json({ user: userSinPass });
+        const jwtToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'vntg_secret_key', { expiresIn: '7d' });
+        res.json({ user: userSinPass, token: jwtToken });
     } catch (error) {
         console.error("Error en Google Auth:", error);
         res.status(500).json({ error: "Error al autenticar con Google" });
@@ -332,15 +338,31 @@ app.post("/api/checkout", async (req, res) => {
 // --- RUTAS DE ADMINISTRACIÓN (CRUD y Órdenes) ---
 // ==========================================
 
+const verifyAdmin = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "No autorizado" });
+    const token = authHeader.split(" ")[1];
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'vntg_secret_key');
+        if (!config.ADMIN_EMAILS.includes(decoded.email)) {
+            return res.status(403).json({ error: "No eres administrador" });
+        }
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ error: "Token inválido" });
+    }
+};
+
 // Productos
-app.get("/api/admin/products", async (req, res) => {
+app.get("/api/admin/products", verifyAdmin, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT * FROM products ORDER BY id DESC");
         res.json(rows);
     } catch (error) { res.status(500).json({ error: "Error al cargar productos" }); }
 });
 
-app.post("/api/admin/products", async (req, res) => {
+app.post("/api/admin/products", verifyAdmin, async (req, res) => {
     const { id, title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
@@ -352,7 +374,7 @@ app.post("/api/admin/products", async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.put("/api/admin/products/:id", async (req, res) => {
+app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     const { title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
@@ -382,7 +404,7 @@ app.put("/api/admin/products/:id", async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.delete("/api/admin/products/:id", async (req, res) => {
+app.delete("/api/admin/products/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         await db.query("DELETE FROM products WHERE id=?", [id]);
@@ -391,14 +413,14 @@ app.delete("/api/admin/products/:id", async (req, res) => {
 });
 
 // Categorías
-app.get("/api/admin/categories", async (req, res) => {
+app.get("/api/admin/categories", verifyAdmin, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT * FROM categories");
         res.json(rows);
     } catch (error) { res.status(500).json({ error: "Error al cargar categorías" }); }
 });
 
-app.post("/api/admin/categories", async (req, res) => {
+app.post("/api/admin/categories", verifyAdmin, async (req, res) => {
     const { name } = req.body;
     try {
         // Ya no enviamos el ID, MySQL lo pone automáticamente
@@ -407,7 +429,7 @@ app.post("/api/admin/categories", async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.put("/api/admin/categories/:id", async (req, res) => {
+app.put("/api/admin/categories/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
     try {
@@ -416,7 +438,7 @@ app.put("/api/admin/categories/:id", async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.delete("/api/admin/categories/:id", async (req, res) => {
+app.delete("/api/admin/categories/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         await db.query("DELETE FROM categories WHERE id=?", [id]);
@@ -425,7 +447,7 @@ app.delete("/api/admin/categories/:id", async (req, res) => {
 });
 
 // Órdenes (Administrador)
-app.get("/api/admin/orders", async (req, res) => {
+app.get("/api/admin/orders", verifyAdmin, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT o.*, u.email as user_email, u.name as user_name 
@@ -437,7 +459,7 @@ app.get("/api/admin/orders", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error al cargar órdenes" }); }
 });
 
-app.put("/api/admin/orders/:id/status", async (req, res) => {
+app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     const { status, trackingNumber } = req.body;
     try {

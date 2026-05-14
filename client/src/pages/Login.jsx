@@ -36,6 +36,7 @@ export default function Login() {
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem('vntg_user', JSON.stringify(data.user));
+                if (data.token) localStorage.setItem('vntg_token', data.token);
                 navigate('/');
                 window.location.reload();
             } else {
@@ -75,6 +76,7 @@ export default function Login() {
                 if (data.skipCode) {
                     // Si el dispositivo es de confianza, entramos directo
                     localStorage.setItem('vntg_user', JSON.stringify(data.user));
+                    if (data.token) localStorage.setItem('vntg_token', data.token);
                     navigate('/');
                     window.location.reload();
                 } else if (data.requireCode) {
@@ -119,6 +121,7 @@ export default function Login() {
                     localStorage.setItem('vntg_device_token', data.deviceToken);
                 }
                 localStorage.setItem('vntg_user', JSON.stringify(data.user));
+                if (data.token) localStorage.setItem('vntg_token', data.token);
                 navigate('/');
                 window.location.reload();
             } else {
