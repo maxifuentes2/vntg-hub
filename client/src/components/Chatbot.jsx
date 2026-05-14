@@ -73,7 +73,7 @@ export default function Chatbot({ isSidebarOpen }) {
                                     <Bot size={14} className="text-brand-orange" />
                                 </div>
                             )}
-                            <div className={`p-4 text-[10px] font-black italic uppercase leading-relaxed shadow-sm ${msg.isBot
+                            <div className={`p-4 text-xs font-bold italic leading-relaxed shadow-sm ${msg.isBot
                                 ? 'bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border-l-4 border-brand-orange'
                                 : 'bg-brand-orange text-white'
                                 }`}>
@@ -86,7 +86,7 @@ export default function Chatbot({ isSidebarOpen }) {
                             <div className="w-8 h-8 bg-zinc-900 flex items-center justify-center shrink-0 border border-brand-orange">
                                 <Bot size={14} className="text-brand-orange animate-pulse" />
                             </div>
-                            <div className="p-4 text-[10px] font-black italic uppercase text-zinc-500">
+                            <div className="p-4 text-xs font-bold italic text-zinc-500">
                                 Procesando telemetría...
                             </div>
                         </div>
@@ -101,7 +101,7 @@ export default function Chatbot({ isSidebarOpen }) {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none px-4 py-3 text-[10px] font-black uppercase italic focus:outline-none dark:text-white"
+                        className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none px-4 py-3 text-xs font-bold italic focus:outline-none dark:text-white"
                     />
                     <button
                         onClick={handleSend}
