@@ -37,7 +37,6 @@ app.get("/api/products", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error al obtener productos" }); }
 });
 
-// DETALLE: Trae todos los campos de TiDB y procesa la galería
 app.get("/api/products/:id", async (req, res) => {
     const { id } = req.params;
     try {
@@ -66,7 +65,36 @@ app.get("/api/categories", async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- AUTENTICACIÓN CON DISEÑO DE CORREO PROFESIONAL ---
+// --- PERFIL DE USUARIO (Ruta que faltaba) ---
+app.put("/api/auth/update-profile", async (req, res) => {
+    const { userId, field, value } = req.body;
+
+    // Lista de campos permitidos por seguridad
+    const allowedFields = ['address', 'city', 'province', 'zip_code', 'phone'];
+    if (!allowedFields.includes(field)) {
+        return res.status(400).json({ error: "Campo no permitido" });
+    }
+
+    try {
+        // Actualizamos solo el campo específico
+        await db.query(`UPDATE users SET ${field} = ? WHERE id = ?`, [value, userId]);
+
+        // Obtenemos el usuario actualizado para devolverlo al frontend
+        const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        const { password, verification_code, verification_expires, ...userSinPass } = rows[0];
+        res.json({ message: "Perfil actualizado correctamente", user: userSinPass });
+    } catch (error) {
+        console.error("Error al actualizar perfil:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+// --- AUTENTICACIÓN ---
 app.post("/api/auth/login/local", async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -108,7 +136,6 @@ app.post("/api/auth/verify-code", async (req, res) => {
 app.post("/api/auth/google", async (req, res) => {
     const { token } = req.body;
     try {
-        // 1. Verificamos el token con Google
         const ticket = await client.verifyIdToken({
             idToken: token,
             audience: process.env.GOOGLE_CLIENT_ID,
@@ -116,13 +143,10 @@ app.post("/api/auth/google", async (req, res) => {
         const payload = ticket.getPayload();
         const { email, name, picture, sub: googleId } = payload;
 
-        // 2. Buscamos si el usuario ya existe
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
         
         let user;
         if (users.length === 0) {
-            // 3. Si no existe, lo creamos automáticamente
-            // Nota: Usamos el googleId como contraseña temporal o simplemente dejamos el pass nulo
             await db.query(
                 "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
                 [name, email, 'google-auth-user-' + googleId] 
@@ -133,12 +157,26 @@ app.post("/api/auth/google", async (req, res) => {
             user = users[0];
         }
 
-        // 4. Devolvemos el usuario (sin datos sensibles)
         const { password, ...userSinPass } = user;
         res.json({ user: userSinPass });
     } catch (error) {
         console.error("Error en Google Auth:", error);
         res.status(500).json({ error: "Error al autenticar con Google" });
+    }
+});
+
+// --- HISTORIAL DE ÓRDENES (Para que MiCuenta no dé error 404) ---
+app.get("/api/orders/:userId", async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM orders WHERE user_id = ? AND status = 'approved' ORDER BY created_at DESC",
+            [userId]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Error al obtener órdenes:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
     }
 });
 

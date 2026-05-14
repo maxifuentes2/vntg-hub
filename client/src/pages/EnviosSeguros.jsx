@@ -2,71 +2,52 @@ import { Package, Truck, Shield, Clock } from 'lucide-react';
 
 export default function EnviosSeguros() {
     return (
-        <div className="w-full transition-colors duration-300">
-            <div 
-                className="relative w-full min-h-[80vh] bg-cover bg-center bg-fixed py-12 px-4"
-                style={{ backgroundImage: "url('/wallpaper.webp')" }}
-            >
-                <div className="absolute inset-0 bg-white/85 dark:bg-neutral-950/90 transition-colors duration-300 pointer-events-none"></div>
-                
-                <div className="relative z-10 max-w-4xl mx-auto bg-white dark:bg-neutral-900 rounded-3xl shadow-xl border border-gray-100 dark:border-neutral-800 p-8 md:p-12">
-                    
-                    <div className="flex items-center gap-4 mb-8 border-b border-gray-100 dark:border-neutral-800 pb-6">
-                        <Package className="text-brand-blue" size={40} />
-                        <h1 className="text-3xl md:text-4xl font-black dark:text-white">Envíos y Embalaje Seguros</h1>
-                    </div>
+        <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans transition-colors duration-300">
+            {/* HERO HEADER */}
+            <header className="py-24 bg-zinc-100 dark:bg-[#111111] border-b-[6px] border-brand-orange text-center px-4">
+                <Package className="text-brand-blue mx-auto mb-6" size={60} />
+                <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Envíos Seguros</h1>
+                <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Logística de Élite</p>
+            </header>
 
-                    <div className="space-y-8">
-                        <p className="text-lg text-gray-600 dark:text-gray-300 font-medium">
-                            Como coleccionistas, sabemos que la caja importa tanto como la figura. Cuidamos tu tesoro desde nuestro almacén hasta tus manos.
-                        </p>
+            <div className="max-w-[1200px] mx-auto px-6 py-20">
+                <div className="bg-zinc-50 dark:bg-[#111111] p-10 md:p-16 border border-zinc-200 dark:border-white/5 shadow-2xl space-y-12">
+                    <p className="text-xl md:text-2xl font-black italic uppercase text-zinc-800 dark:text-zinc-200 border-l-4 border-brand-orange pl-6">
+                        Como coleccionistas, sabemos que la caja importa tanto como la figura. Cuidamos tu tesoro desde nuestro almacén hasta tus manos.
+                    </p>
 
-                        <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                                <div className="bg-brand-orange/20 p-3 rounded-xl text-brand-orange">
-                                    <Shield size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold dark:text-white">Embalaje de Grado Coleccionista</h3>
-                                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                        Utilizamos cajas de cartón corrugado de doble pared, plástico de burbujas premium y esquineros protectores para evitar cualquier daño durante el tránsito. Tus cómics se envían en sobres rígidos.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="bg-brand-blue/20 p-3 rounded-xl text-brand-blue">
-                                    <Truck size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold dark:text-white">Métodos de Envío</h3>
-                                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 mt-2 space-y-1">
-                                        <li><span className="font-bold text-gray-800 dark:text-gray-200">Envío Estándar:</span> 3 a 5 días hábiles.</li>
-                                        <li><span className="font-bold text-gray-800 dark:text-gray-200">Envío Express:</span> 24 a 48 horas hábiles.</li>
-                                        <li><span className="font-bold text-gray-800 dark:text-gray-200">Retiro en Sucursal:</span> Disponible en nuestros puntos habilitados.</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="bg-green-500/20 p-3 rounded-xl text-green-500">
-                                    <Clock size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold dark:text-white">Tiempos de Procesamiento</h3>
-                                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                        Todos los pedidos se procesan y despachan en un plazo máximo de 24 horas hábiles tras la confirmación del pago.
-                                    </p>
-                                </div>
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-orange transition-colors flex flex-col items-start">
+                            <Shield size={36} className="text-brand-orange mb-6" />
+                            <h3 className="text-xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Embalaje Grado Coleccionista</h3>
+                            <p className="text-zinc-600 dark:text-zinc-400 font-medium text-sm leading-relaxed">
+                                Utilizamos cajas de cartón corrugado de doble pared, plástico de burbujas premium y esquineros protectores para evitar cualquier daño durante el tránsito. Tus cómics se envían en sobres rígidos.
+                            </p>
                         </div>
 
-                        <div className="bg-gray-100 dark:bg-neutral-800 p-6 rounded-2xl text-center mt-8">
-                            <p className="font-bold dark:text-white text-lg">Todos nuestros envíos están 100% asegurados.</p>
-                            <p className="text-gray-500 text-sm mt-1">Si el paquete se pierde o llega dañado, nosotros nos hacemos cargo.</p>
+                        <div className="bg-white dark:bg-[#1a1a1a] p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-blue transition-colors flex flex-col items-start">
+                            <Truck size={36} className="text-brand-blue mb-6" />
+                            <h3 className="text-xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Métodos de Envío</h3>
+                            <ul className="text-zinc-600 dark:text-zinc-400 font-medium text-sm space-y-3 w-full">
+                                <li className="flex justify-between border-b border-zinc-100 dark:border-white/5 pb-2"><span className="font-black italic text-zinc-900 dark:text-white">Estándar</span> 3-5 días hábiles</li>
+                                <li className="flex justify-between border-b border-zinc-100 dark:border-white/5 pb-2"><span className="font-black italic text-zinc-900 dark:text-white">Express</span> 24-48 hs</li>
+                                <li className="flex justify-between"><span className="font-black italic text-zinc-900 dark:text-white">Retiro</span> En Sucursal</li>
+                            </ul>
+                        </div>
+
+                        <div className="bg-white dark:bg-[#1a1a1a] p-8 border border-zinc-200 dark:border-white/5 group hover:border-green-500 transition-colors flex flex-col items-start">
+                            <Clock size={36} className="text-green-500 mb-6" />
+                            <h3 className="text-xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Tiempos de Proceso</h3>
+                            <p className="text-zinc-600 dark:text-zinc-400 font-medium text-sm leading-relaxed">
+                                Todos los pedidos se procesan y despachan en un plazo máximo de 24 horas hábiles tras la confirmación del pago.
+                            </p>
                         </div>
                     </div>
 
+                    <div className="bg-zinc-900 dark:bg-white text-white dark:text-brand-dark p-8 border-l-[8px] border-brand-blue flex flex-col justify-center items-center text-center">
+                        <p className="text-2xl md:text-3xl font-black italic uppercase mb-2">100% Asegurados</p>
+                        <p className="font-bold tracking-widest text-xs md:text-sm uppercase text-zinc-400 dark:text-zinc-600">Si el paquete se pierde o llega dañado, nosotros nos hacemos cargo.</p>
+                    </div>
                 </div>
             </div>
         </div>
