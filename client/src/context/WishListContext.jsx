@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useToast } from './ToastContext'; 
 
 const WishListContext = createContext();
 
 export function WishListProvider({ children }) {
+    const { addToast } = useToast();
+    
     const [wishListItems, setWishListItems] = useState(() => {
         try {
             const saved = localStorage.getItem('vntg_wishlist');
-            // Verificamos que lo que haya en localStorage sea realmente un array
             const parsed = saved ? JSON.parse(saved) : [];
             return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
@@ -20,20 +22,19 @@ export function WishListProvider({ children }) {
     }, [wishListItems]);
 
     const addToWishList = (product) => {
-        console.log("Intentando agregar a wishlist:", product.title); // Para debugear en tu consola
+        // 1. Verificamos afuera del setter para evitar ejecuciones múltiples
+        const yaExiste = wishListItems.some(item => String(item.id) === String(product.id));
         
-        setWishListItems((prevItems) => {
-            // Comparamos convirtiendo a String por las dudas (ej: 220 vs "220")
-            const yaExiste = prevItems.some(item => String(item.id) === String(product.id));
-            
-            if (yaExiste) {
-                console.log("El producto ya estaba en la lista.");
-                return prevItems; 
-            }
-            
-            console.log("Producto agregado exitosamente.");
-            return [...prevItems, product];
-        });
+        if (yaExiste) {
+            addToast(product, 'Ya está en tu lista de deseos', 'error');
+            return; // Cortamos la ejecución acá
+        }
+
+        // 2. Si no existe, disparamos la notificación UNA sola vez
+        addToast(product, '¡Añadido a favoritos!', 'success');
+        
+        // 3. Actualizamos el estado
+        setWishListItems((prevItems) => [...prevItems, product]);
     };
 
     const removeFromWishList = (id) => {
