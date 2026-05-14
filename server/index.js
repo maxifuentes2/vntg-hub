@@ -46,8 +46,8 @@ app.get("/api/products", async (req, res) => {
     const params = [];
     if (categoryId && categoryId !== 'all') { sql += " AND categoryId = ?"; params.push(categoryId); }
     if (q) {
-        sql += " AND (title LIKE ? OR description LIKE ? OR franchise LIKE ?)";
-        const searchTerm = `%${q}%`;
+        sql += " AND (LOWER(title) LIKE ? OR LOWER(description) LIKE ? OR LOWER(franchise) LIKE ?)";
+        const searchTerm = `%${q.toLowerCase()}%`;
         params.push(searchTerm, searchTerm, searchTerm);
     }
     // Ordenar: Los que tienen stock arriba, luego por ID

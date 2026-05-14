@@ -8,8 +8,7 @@ html {
 }
 
 /* ========================================================
-   ADAPTACIÓN PARA PANTALLAS PEQUEÑAS (hasta 320px)
-   ======================================================== */
+  ADAPTACIÓN PARA PANTALLAS PEQUEÑAS (hasta 320px)======================================================== */
 @media (max-width: 360px) {
   /* 
     Escala muy sutil de la fuente base. 
@@ -18,6 +17,6 @@ html {
     para entrar en pantalla, sin que el texto pierda legibilidad.
   */
   html {
-    font-size: 15px !important; 
+    font-size: 15px !important;
   }
 }
