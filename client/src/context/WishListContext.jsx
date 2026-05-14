@@ -22,18 +22,14 @@ export function WishListProvider({ children }) {
     }, [wishListItems]);
 
     const addToWishList = (product) => {
-        // 1. Verificamos afuera del setter para evitar ejecuciones múltiples
         const yaExiste = wishListItems.some(item => String(item.id) === String(product.id));
         
         if (yaExiste) {
             addToast(product, 'Ya está en tu lista de deseos', 'error');
-            return; // Cortamos la ejecución acá
+            return;
         }
 
-        // 2. Si no existe, disparamos la notificación UNA sola vez
         addToast(product, '¡Añadido a favoritos!', 'success');
-        
-        // 3. Actualizamos el estado
         setWishListItems((prevItems) => [...prevItems, product]);
     };
 
