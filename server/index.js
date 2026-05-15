@@ -898,11 +898,9 @@ app.post("/api/chat", async (req, res) => {
             error.status === 429 ||
             (error.message && error.message.includes("429"))
         ) {
-            return res
-                .status(429)
-                .json({
-                    reply: "Estoy recibiendo muchos mensajes ahora mismo. Por favor, espera unos segundos e intenta de nuevo. ⏳",
-                });
+            return res.status(429).json({
+                reply: "Estoy recibiendo muchos mensajes ahora mismo. Por favor, espera unos segundos e intenta de nuevo. ⏳",
+            });
         }
 
         res.status(500).json({

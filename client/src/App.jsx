@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollTotop';
-import SplashScreen from './components/SplashScreen';
 import Chatbot from './components/Chatbot'; 
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
@@ -40,7 +39,6 @@ import RestablecerPassword from './pages/RestablecerPassword';
 import MiCuenta from './pages/MiCuenta'; 
 
 function App() {
-  const [appReady, setAppReady] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false); 
   const [categories, setCategories] = useState([]); 
 
@@ -58,8 +56,6 @@ function App() {
       <SidebarProvider>
         <CartProvider>
           <WishListProvider> 
-            {/* Splash Screen: se muestra hasta que el app esté listo */}
-            {!appReady && <SplashScreen onDone={() => setAppReady(true)} />}
             <Router>
               {/* COMPONENTE LÓGICO DE SCROLL: Asegura que cada navegación empiece desde arriba */}
               <ScrollToTopOnNavigation />
