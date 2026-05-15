@@ -122,7 +122,6 @@ export default function MiCuenta() {
                         <DataRow label="Teléfono" field="phone" value={user.phone} icon={Smartphone} />
                     </div>
                 </section>
-
                 <section>
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-3">
                         <Package size={14} className="text-brand-orange" /> Mis Compras
@@ -141,7 +140,7 @@ export default function MiCuenta() {
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">
-                                            <Calendar size={12}/> {new Date(order.created_at).toLocaleDateString()}
+                                            <Calendar size={12}/> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} (Hora ARG)
                                         </div>
                                         <p className="font-bold italic uppercase text-sm group-hover:text-brand-orange transition-colors">Orden #{order.id.slice(0,8)}</p>
                                     </div>

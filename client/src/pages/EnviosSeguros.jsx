@@ -5,9 +5,9 @@ export default function EnviosSeguros() {
         <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans transition-colors duration-300">
             {/* HERO HEADER */}
             <header className="py-24 bg-zinc-100 dark:bg-[#111111] border-b-[6px] border-brand-orange text-center px-4">
-                <Package className="text-brand-blue mx-auto mb-6" size={60} />
-                <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Envíos Seguros</h1>
-                <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Logística de Élite</p>
+                    <Package className="text-brand-blue mx-auto mb-6" size={60} />
+                    <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Envíos Seguros</h1>
+                    <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Logística de Élite</p>
             </header>
 
             <div className="max-w-[1200px] mx-auto px-6 py-20">
@@ -24,7 +24,6 @@ export default function EnviosSeguros() {
                                 Utilizamos cajas de cartón corrugado de doble pared, plástico de burbujas premium y esquineros protectores para evitar cualquier daño durante el tránsito. Tus cómics se envían en sobres rígidos.
                             </p>
                         </div>
-
                         <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-blue transition-colors flex flex-col items-start">
                             <Truck size={36} className="text-brand-blue mb-6" />
                             <h3 className="text-xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Métodos de Envío</h3>
@@ -34,7 +33,6 @@ export default function EnviosSeguros() {
                                 <li className="flex justify-between"><span className="font-black italic text-zinc-900 dark:text-white">Retiro</span> En Sucursal</li>
                             </ul>
                         </div>
-
                         <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 group hover:border-green-500 transition-colors flex flex-col items-start">
                             <Clock size={36} className="text-green-500 mb-6" />
                             <h3 className="text-xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Tiempos de Proceso</h3>
@@ -43,7 +41,6 @@ export default function EnviosSeguros() {
                             </p>
                         </div>
                     </div>
-
                     <div className="bg-zinc-900 dark:bg-white text-white dark:text-brand-dark p-5 sm:p-8 border-l-[8px] border-brand-blue flex flex-col justify-center items-center text-center">
                         <p className="text-2xl md:text-3xl font-black italic uppercase mb-2">100% Asegurados</p>
                         <p className="font-bold tracking-widest text-xs md:text-sm uppercase text-zinc-400 dark:text-zinc-600">Si el paquete se pierde o llega dañado, nosotros nos hacemos cargo.</p>

@@ -310,7 +310,7 @@ export default function AdminPanel() {
                                         <strong className="dark:text-zinc-300">Cliente:</strong> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})
                                     </p>
                                     <p className="text-[11px] text-zinc-500 mt-1">
-                                        <strong className="dark:text-zinc-300">Fecha:</strong> {new Date(order.created_at).toLocaleString()}
+                                        <strong className="dark:text-zinc-300">Fecha:</strong> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} (Hora ARG)
                                     </p>
                                 </div>
 

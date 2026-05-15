@@ -5,9 +5,9 @@ export default function GuiaAutenticidad() {
         <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans transition-colors duration-300">
             {/* HERO HEADER */}
             <header className="py-24 bg-zinc-100 dark:bg-[#111111] border-b-[6px] border-brand-orange text-center px-4">
-                <ShieldCheck className="text-brand-orange mx-auto mb-6" size={60} />
-                <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Autenticidad</h1>
-                <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs md:text-sm">Coleccionismo Verificado</p>
+                    <ShieldCheck className="text-brand-orange mx-auto mb-6" size={60} />
+                    <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Autenticidad</h1>
+                    <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs md:text-sm">Coleccionismo Verificado</p>
             </header>
 
             <div className="max-w-[1200px] mx-auto px-6 py-20 space-y-16">
@@ -24,7 +24,6 @@ export default function GuiaAutenticidad() {
                                 Nuestro equipo de curadores revisa cada artículo al detalle: materiales, marcas de fábrica, estado de conservación y consistencia histórica.
                             </p>
                         </div>
-                        
                         <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 group hover:border-brand-orange transition-colors">
                             <Award className="text-brand-orange mb-6" size={40} />
                             <h3 className="text-2xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">2. Agencias Oficiales</h3>
@@ -32,7 +31,6 @@ export default function GuiaAutenticidad() {
                                 Trabajamos con artículos graduados por las mejores agencias del mundo (CGC para cómics, PSA/Beckett para TCG y PCGS para numismática).
                             </p>
                         </div>
-
                         <div className="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 border border-zinc-200 dark:border-white/5 md:col-span-2 group hover:border-green-500 transition-colors">
                             <FileText className="text-green-500 mb-6" size={40} />
                             <h3 className="text-2xl font-black italic uppercase mb-4 text-zinc-900 dark:text-white">Certificado de Autenticidad (COA)</h3>
@@ -42,7 +40,6 @@ export default function GuiaAutenticidad() {
                         </div>
                     </div>
                 </div>
-
                 <div className="bg-brand-blue text-white p-5 sm:p-8 md:p-12 border-l-[10px] border-brand-orange shadow-2xl flex flex-col md:flex-row items-center gap-8">
                     <ShieldCheck size={60} className="shrink-0 text-brand-orange" />
                     <div>

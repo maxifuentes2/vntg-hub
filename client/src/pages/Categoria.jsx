@@ -15,6 +15,27 @@ import { useWishList } from '../context/WishListContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// Imagen con efecto hover que muestra la segunda foto de la galería
+const CardImage = ({ item }) => {
+    const gallery = (() => {
+        if (!item.gallery) return [];
+        if (Array.isArray(item.gallery)) return item.gallery;
+        try { return JSON.parse(item.gallery); } catch { return []; }
+    })();
+    const hoverImg = gallery.find(img => img && img !== item.images);
+
+    if (!hoverImg) {
+        return <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />;
+    }
+
+    return (
+        <div className="relative w-full h-full flex items-center justify-center">
+            <img src={item.images} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500" />
+            <img src={hoverImg} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        </div>
+    );
+};
+
 const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const { id } = useParams();
     const location = useLocation(); 
@@ -142,14 +163,10 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 {/* GRID DE PRODUCTOS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {productos.map((item) => (
-                        <div key={item.id} className={`group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-70' : ''}`}>
+                        <div className={`group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-70' : ''}`}>
                             <div className="aspect-video bg-zinc-50 dark:bg-brand-dark flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
                                 <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
-                                    <img 
-                                        src={item.images} 
-                                        className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" 
-                                        alt={item.title} 
-                                    />
+                                    <CardImage item={item} />
                                 </Link>
                                 <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
                                     {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}

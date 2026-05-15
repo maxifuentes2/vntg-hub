@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
     Menu, 
     ShoppingCart, 
@@ -31,6 +31,7 @@ export default function Navbar() {
     const { wishListCount } = useWishList();
     const { cartCount } = useCart();
     const navigate = useNavigate(); 
+    const location = useLocation();
 
     useEffect(() => {
         const storedUser = localStorage.getItem('vntg_user');
@@ -87,7 +88,11 @@ export default function Navbar() {
                     <button onClick={openCategory} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white">
                         <Menu size={24} />
                     </button>
-                    <Link to="/" className="flex items-center">
+                    <Link 
+                        to="/" 
+                        onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        className="flex items-center"
+                    >
                         <img src="/logo-texto-transparente.webp" alt="VNTG HUB Logo" className="h-8 sm:h-10 md:h-12 w-auto object-contain" />
                     </Link>
                 </div>

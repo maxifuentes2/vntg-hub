@@ -40,8 +40,8 @@ export default function Contacto() {
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans transition-colors">
             <header className="py-24 bg-zinc-100 dark:bg-[#111111] border-b-[6px] border-brand-orange text-center px-4">
-                <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-4">Contacto</h1>
-                <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs">Direct support for collectors</p>
+                    <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-4">Contacto</h1>
+                    <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs">Direct support for collectors</p>
             </header>
             <div className="max-w-[1400px] mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-20">
                 <div className="space-y-12 flex flex-col justify-center">
@@ -63,7 +63,6 @@ export default function Contacto() {
                         </div>
                     </div>
                 </div>
-                
                 {/* Formulario conectado con los estados */}
                 <form className="bg-zinc-50 dark:bg-[#111111] p-5 sm:p-10 md:p-16 border border-zinc-200 dark:border-white/5 space-y-6 shadow-2xl" onSubmit={handleSubmit}>
                     <input 

@@ -105,7 +105,6 @@ const DetalleProducto = () => {
                 </button>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-32 items-start">
-                    
                     <div className="flex flex-col gap-6">
                         <div 
                             className="relative w-full bg-[#f8f8f8] dark:bg-[#0a0a0a] border border-white/5 overflow-hidden flex items-center justify-center shadow-xl cursor-zoom-in group"
@@ -131,7 +130,6 @@ const DetalleProducto = () => {
                             </div>
                         )}
                     </div>
-
                     <div className="flex flex-col pt-4">
                         <div className="mb-8">
                             <span className="bg-brand-blue/10 text-brand-blue px-3 py-1 text-[9px] font-black uppercase italic tracking-widest border border-brand-blue/30 mb-6 inline-block">
@@ -204,8 +202,8 @@ const DetalleProducto = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {relacionados.map((item) => (
-                                <div key={item.id} className="group">
+                            {relacionados.map((item, i) => (
+                                <div className="group">
                                     <div className="relative w-full bg-[#f8f8f8] dark:bg-[#111111] overflow-hidden border border-white/5 transition-colors">
                                         <Link to={`/producto/${item.id}`}>
                                             <img src={item.images} alt={item.title} className="w-full h-auto object-contain p-4 transition-transform duration-700 group-hover:scale-110" />

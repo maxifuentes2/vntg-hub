@@ -5,9 +5,9 @@ export default function Terminos() {
         <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans transition-colors duration-300">
             {/* HERO HEADER */}
             <header className="py-24 bg-zinc-100 dark:bg-[#111111] border-b-[6px] border-brand-orange text-center px-4">
-                <FileText className="text-brand-blue mx-auto mb-6" size={60} />
-                <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Términos</h1>
-                <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Condiciones de Servicio</p>
+                    <FileText className="text-brand-blue mx-auto mb-6" size={60} />
+                    <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Términos</h1>
+                    <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Condiciones de Servicio</p>
             </header>
 
             <div className="max-w-[1000px] mx-auto px-6 py-20">
@@ -15,7 +15,6 @@ export default function Terminos() {
                     <p className="text-sm font-black italic uppercase tracking-widest text-zinc-500 mb-12 border-b border-zinc-200 dark:border-white/10 pb-4">
                         Última actualización: Enero 2026
                     </p>
-
                     <div className="space-y-12">
                         <div>
                             <div className="flex items-center gap-4 mb-6">
@@ -26,7 +25,6 @@ export default function Terminos() {
                                 Al acceder y utilizar <span className="font-black italic text-zinc-900 dark:text-white">VNTG HUB</span>, aceptas estar sujeto a estos términos y condiciones. Si no estás de acuerdo con alguna parte, te pedimos que no utilices nuestros servicios.
                             </p>
                         </div>
-
                         <div>
                             <div className="flex items-center gap-4 mb-6">
                                 <span className="text-3xl font-black text-brand-blue italic">02</span>

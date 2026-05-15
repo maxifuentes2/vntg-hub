@@ -54,10 +54,9 @@ export default function PedidoDetalle() {
                 <button onClick={() => navigate('/perfil')} className="flex items-center gap-2 text-zinc-400 hover:text-brand-orange mb-8 font-black text-[10px] uppercase tracking-[0.3em] transition-colors">
                     <ChevronLeft size={18} /> Volver a mi cuenta
                 </button>
-
                 <div className="mb-12">
                     <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter mb-2">Orden #{pedido.id.slice(0,8)}</h1>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {new Date(pedido.created_at).toLocaleDateString()}</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {new Date(pedido.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} (Hora ARG)</p>
                 </div>
 
                 {/* MAPA DE ESTADO (TIMELINE) */}
@@ -103,7 +102,6 @@ export default function PedidoDetalle() {
                         </div>
                     )}
                 </div>
-
                 {/* DETALLES DE COMPRA */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* ARTÍCULOS */}

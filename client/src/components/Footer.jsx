@@ -7,7 +7,7 @@ export default function Footer() {
     const MapPin = Lucide.MapPin;
 
     return (
-        <footer className="bg-zinc-100 dark:bg-brand-dark pt-20 pb-8 border-t-4 border-brand-orange transition-colors duration-300">
+        <footer className="bg-zinc-100 dark:bg-brand-dark pt-20 pb-12 border-t-4 border-brand-orange transition-colors duration-300">
             <div className="max-w-[1700px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
                 
                 {/* Logo y descripción */}
@@ -91,7 +91,7 @@ export default function Footer() {
             </div>
             
             {/* Copyright y Ubicación */}
-            <div className="max-w-[1700px] mx-auto mt-20 pt-8 border-t dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="max-w-[1700px] mx-auto px-6 mt-20 pt-8 border-t border-zinc-300 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-[10px] font-black uppercase italic text-zinc-400 tracking-widest">
                     VNTG-HUB © 2026 MENDOZA, ARGENTINA
                 </p>

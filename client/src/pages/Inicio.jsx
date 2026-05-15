@@ -1,10 +1,42 @@
-import { useState, useEffect, useRef } from 'react'; // Añadido useRef
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
+import Reveal from '../components/Reveal';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// Componente de imagen con hover para mostrar segunda foto de galería
+const CardImage = ({ item }) => {
+    const gallery = (() => {
+        if (!item.gallery) return [];
+        if (Array.isArray(item.gallery)) return item.gallery;
+        try { return JSON.parse(item.gallery); } catch { return []; }
+    })();
+    const hoverImg = gallery.find(img => img && img !== item.images);
+
+    if (!hoverImg) {
+        return item.images
+            ? <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />
+            : <Box size={40} className="text-zinc-300 dark:text-white/5" />;
+    }
+
+    return (
+        <div className="relative w-full h-full flex items-center justify-center">
+            <img
+                src={item.images}
+                alt={item.title}
+                className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500"
+            />
+            <img
+                src={hoverImg}
+                alt={item.title}
+                className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            />
+        </div>
+    );
+};
 
 export default function Inicio() {
     const [productos, setProductos] = useState([]);
@@ -13,10 +45,8 @@ export default function Inicio() {
     const { addToCart } = useCart();
     const { addToWishList } = useWishList();
 
-    // Referencia para la primera sección de categorías
     const firstCategoryRef = useRef(null);
 
-    // Función para scroll suave
     const scrollToContent = () => {
         firstCategoryRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -53,7 +83,7 @@ export default function Inicio() {
             id: cat.id,
             nombre: cat.name,
             banner: cat.banner_url || "/wallpaper.webp",
-            items: filtrados.slice(0, 3) 
+            items: filtrados.slice(0, 3)
         };
     }).filter(seccion => seccion.items.length > 0);
 
@@ -85,16 +115,20 @@ export default function Inicio() {
                 <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-brand-dark via-transparent to-transparent"></div>
 
                 <div className="relative z-10 text-center px-4">
-                    <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">
-                        VNTG <span className="text-brand-orange">HUB</span>
-                    </h1>
-                    <p className="text-lg md:text-xl font-bold italic text-zinc-600 dark:text-zinc-500 uppercase tracking-[0.4em]">
-                        Coleccionismo de Alto Nivel
-                    </p>
+                    <Reveal variant="fade-down" delay={0}>
+                        <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">
+                            VNTG <span className="text-brand-orange">HUB</span>
+                        </h1>
+                    </Reveal>
+                    <Reveal variant="fade-up" delay={150}>
+                        <p className="text-lg md:text-xl font-bold italic text-zinc-600 dark:text-zinc-500 uppercase tracking-[0.4em]">
+                            Coleccionismo de Alto Nivel
+                        </p>
+                    </Reveal>
                 </div>
 
-                {/* BOTÓN SIGUE EXPLORANDO (ACCESIBILIDAD MEJORADA) */}
-                <button 
+                {/* BOTÓN SIGUE EXPLORANDO */}
+                <button
                     onClick={scrollToContent}
                     className="absolute bottom-10 w-full flex flex-col items-center justify-center animate-bounce z-20 text-zinc-900 dark:text-white opacity-70 hover:opacity-100 transition-all cursor-pointer group"
                 >
@@ -107,9 +141,9 @@ export default function Inicio() {
 
             {/* SECCIONES DINÁMICAS */}
             {secciones.map((seccion, index) => (
-                <section 
-                    key={seccion.id} 
-                    ref={index === 0 ? firstCategoryRef : null} // Asignar ref a la primera categoría
+                <section
+                    key={seccion.id}
+                    ref={index === 0 ? firstCategoryRef : null}
                     className="w-full pb-20"
                 >
 
@@ -127,7 +161,7 @@ export default function Inicio() {
                         <div className="absolute inset-0 bg-gradient-to-r from-zinc-50 dark:from-brand-dark via-transparent to-transparent"></div>
 
                         <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
-                            <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
+                            <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">
                                 Colección Oficial
                             </span>
                             <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
@@ -147,15 +181,7 @@ export default function Inicio() {
                                 <div key={item.id} className={`group bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-60' : ''}`}>
                                     <div className="aspect-[16/10] bg-white dark:bg-brand-dark relative overflow-hidden flex items-center justify-center p-4 border-b border-zinc-200 dark:border-white/5">
                                         <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
-                                            {item.images ? (
-                                                <img
-                                                    src={item.images}
-                                                    alt={item.title}
-                                                    className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300"
-                                                />
-                                            ) : (
-                                                <Box size={40} className="text-zinc-300 dark:text-white/5" />
-                                            )}
+                                            <CardImage item={item} />
                                         </Link>
                                         <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
                                             {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
