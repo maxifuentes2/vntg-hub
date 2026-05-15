@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Mail, MapPin, Send } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Contacto() {
     // Estados para guardar la información del formulario
     const [formData, setFormData] = useState({ nombre: '', email: '', mensaje: '' });
@@ -18,7 +20,7 @@ export default function Contacto() {
 
         try {
             // Mandamos los datos al backend
-            const response = await fetch('http://localhost:5000/api/contact', {
+            const response = await fetch(`${API_URL}/api/contact`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
