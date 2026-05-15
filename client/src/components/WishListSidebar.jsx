@@ -2,7 +2,8 @@ import { Heart, HeartCrack, Trash2, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useWishList } from '../context/WishListContext'; 
 import { useCart } from '../context/CartContext'; 
-import { useSidebar } from '../context/SidebarContext'; // <-- Importante
+import { useSidebar } from '../context/SidebarContext';
+import { slugify } from '../utils/slugify'; // <-- Importante
 import SidebarWrapper from './SidebarWrapper';
 
 export default function WishListSidebar() { // <-- Sin props
@@ -46,7 +47,7 @@ export default function WishListSidebar() { // <-- Sin props
                             </div>
                             <div className="flex flex-col flex-1 py-1">
                                 <p className="text-[10px] font-black uppercase italic text-brand-orange mb-1">{item.franchise || item.brand || 'VNTG'}</p>
-                                <Link to={`/producto/${item.id}`} onClick={closeAll} className="text-sm font-bold leading-tight mb-auto hover:text-brand-orange line-clamp-2">{item.title}</Link>
+                                <Link to={`/producto/${slugify(item.title)}`} onClick={closeAll} className="text-sm font-bold leading-tight mb-auto hover:text-brand-orange line-clamp-2">{item.title}</Link>
                                 <div className="flex items-center justify-between mt-2">
                                     <p className="font-black">${Number(item.price).toLocaleString('es-AR')}</p>
                                 </div>

@@ -73,9 +73,9 @@ function App() {
                 <main className="flex-grow">
                   <Routes>
                     <Route path="/" element={<Inicio />} />
-                    <Route path="/producto/:id" element={<DetalleProducto />} />
+                    <Route path="/producto/:slug" element={<DetalleProducto />} />
                     <Route 
-                      path="/categoria/:id" 
+                      path="/categoria/:slug" 
                       element={
                         <Categoria 
                           isFilterOpen={isFilterOpen} 

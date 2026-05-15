@@ -39,12 +39,27 @@ const sendVntgEmail = async (to, subject, title, message, buttonText, buttonUrl)
 app.use(cors({ origin: ["http://localhost:5173", "https://vntg-hub.vercel.app"], credentials: true }));
 app.use(express.json());
 
+// Función para generar slugs URL-friendly desde nombres/títulos
+const slugify = (text) => {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+};
+
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
-    const { categoryId, q } = req.query;
+    const { categoryId, q, minPrice, maxPrice } = req.query;
     let sql = "SELECT * FROM products WHERE 1=1";
     const params = [];
     if (categoryId && categoryId !== 'all') { sql += " AND categoryId = ?"; params.push(categoryId); }
+    if (minPrice) { sql += " AND price >= ?"; params.push(Number(minPrice)); }
+    if (maxPrice) { sql += " AND price <= ?"; params.push(Number(maxPrice)); }
     if (q) {
         sql += " AND (LOWER(title) LIKE ? OR LOWER(description) LIKE ? OR LOWER(franchise) LIKE ?)";
         const searchTerm = `%${q.toLowerCase()}%`;
@@ -60,8 +75,16 @@ app.get("/api/products", async (req, res) => {
 
 app.get("/api/products/:id", async (req, res) => {
     const { id } = req.params;
+    const isNumeric = /^\d+$/.test(id);
     try {
-        const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+        let rows;
+        if (isNumeric) {
+            [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+        } else {
+            // Búsqueda por slug: traer todos y filtrar en JS
+            const [all] = await db.query("SELECT * FROM products");
+            rows = all.filter(p => slugify(p.title) === id);
+        }
         if (rows.length === 0) return res.status(404).json({ error: "No encontrado" });
 
         const producto = rows[0];
@@ -82,7 +105,9 @@ app.get("/api/products/:id", async (req, res) => {
 app.get("/api/categories", async (req, res) => {
     try {
         const [rows] = await db.query("SELECT DISTINCT c.* FROM categories c INNER JOIN products p ON c.id = p.categoryId");
-        res.json(rows);
+        // Agregar campo slug derivado del nombre
+        const withSlug = rows.map(c => ({ ...c, slug: slugify(c.name) }));
+        res.json(withSlug);
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
 

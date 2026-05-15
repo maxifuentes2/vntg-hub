@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext'; 
+import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -46,7 +47,7 @@ const AccordionItem = ({ title, children, isOpen, onClick }) => (
 );
 
 const DetalleProducto = () => {
-    const { id } = useParams();
+    const { slug } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
     const { addToWishList } = useWishList(); 
@@ -74,7 +75,7 @@ const DetalleProducto = () => {
     useEffect(() => {
         const fetchDatos = async () => {
             try {
-                const res = await fetch(`${API_URL}/api/products/${id}`);
+                const res = await fetch(`${API_URL}/api/products/${slug}`);
                 const data = await res.json();
                 
                 let gallery = data.gallery;
@@ -88,7 +89,7 @@ const DetalleProducto = () => {
                 if (data.categoryId) {
                     const resRel = await fetch(`${API_URL}/api/products?categoryId=${data.categoryId}`);
                     const dataRel = await resRel.json();
-                    setRelacionados(dataRel.filter(p => String(p.id) !== String(id)).slice(0, 4));
+                    setRelacionados(dataRel.filter(p => slugify(p.title) !== slug).slice(0, 4));
                 }
                 
                 setLoading(false);
@@ -99,7 +100,7 @@ const DetalleProducto = () => {
             }
         };
         fetchDatos();
-    }, [id]);
+    }, [slug]);
 
     const handleWheel = (e) => {
         if (!isModalOpen) return;
@@ -224,7 +225,7 @@ const DetalleProducto = () => {
                             {relacionados.map((item) => (
                                 <div key={item.id} className="group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
                                     <div className="aspect-video bg-zinc-50 dark:bg-[#111111] flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
-                                        <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
+                                        <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                             <CardImage item={item} />
                                         </Link>
                                         <div className="absolute top-3 left-3 bg-brand-blue text-white px-2 py-0.5 text-[9px] font-black uppercase italic tracking-widest z-10">
@@ -232,7 +233,7 @@ const DetalleProducto = () => {
                                         </div>
                                     </div>
                                     <div className="p-4">
-                                        <Link to={`/producto/${item.id}`}>
+                                        <Link to={`/producto/${slugify(item.title)}`}>
                                             <h3 className="text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-3">{item.title}</h3>
                                         </Link>
                                         <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-3">

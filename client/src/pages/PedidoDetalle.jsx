@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Package, Truck, CheckCircle2, Home, MapPin, Loader2, ExternalLink } from 'lucide-react';
+import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -114,7 +115,7 @@ export default function PedidoDetalle() {
                                         <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain" />
                                     </div>
                                     <div className="flex-1">
-                                        <Link to={`/producto/${item.product_id}`} className="text-sm font-bold uppercase italic hover:text-brand-orange transition-colors line-clamp-1">{item.title}</Link>
+                                        <Link to={`/producto/${slugify(item.title)}`} className="text-sm font-bold uppercase italic hover:text-brand-orange transition-colors line-clamp-1">{item.title}</Link>
                                         <p className="text-xs text-zinc-500 font-bold mt-1">{item.quantity} x ${Number(item.price).toLocaleString('es-AR')}</p>
                                     </div>
                                 </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
 import { useWishList } from '../context/WishListContext';
+import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -37,11 +38,12 @@ const CardImage = ({ item }) => {
 };
 
 const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
-    const { id } = useParams();
+    const { slug } = useParams();
     const location = useLocation(); 
     const { addToCart } = useCart(); 
     const { addToWishList } = useWishList();
     
+    const [categoryId, setCategoryId] = useState(null);
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [categoriaInfo, setCategoriaInfo] = useState(null);
@@ -61,7 +63,25 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
         const fetchDatos = async () => {
             setLoading(true);
             try {
-                let url = `${API_URL}/api/products?categoryId=${id}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                // Resolver slug a ID de categoría
+                const resCats = await fetch(`${API_URL}/api/categories`);
+                const cats = await resCats.json();
+                
+                let resolvedId = slug;
+                if (slug !== 'all') {
+                    const catActual = cats.find(c => c.slug === slug || slugify(c.name) === slug);
+                    if (catActual) {
+                        resolvedId = catActual.id;
+                        setCategoriaInfo(catActual);
+                    } else {
+                        setCategoriaInfo(null);
+                    }
+                } else {
+                    setCategoriaInfo(null);
+                }
+                setCategoryId(resolvedId);
+
+                let url = `${API_URL}/api/products?categoryId=${resolvedId}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
                 if (franquiciaSeleccionada) url += `&franchise=${franquiciaSeleccionada}`;
                 if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
 
@@ -71,17 +91,14 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 let productosOrdenados = Array.isArray(data) ? [...data] : [];
                 if (orden === "precioAsc") productosOrdenados.sort((a, b) => a.price - b.price);
                 else if (orden === "precioDesc") productosOrdenados.sort((a, b) => b.price - a.price);
+                else if (orden === "alfaAsc") productosOrdenados.sort((a, b) => a.title.localeCompare(b.title));
+                else if (orden === "alfaDesc") productosOrdenados.sort((a, b) => b.title.localeCompare(a.title));
                 
                 setProductos(productosOrdenados);
 
-                const resCats = await fetch(`${API_URL}/api/categories`);
-                const cats = await resCats.json();
-                const catActual = cats.find(c => String(c.id) === String(id));
-                
-                if (catActual) {
-                    setCategoriaInfo(catActual);
-                } else {
-                    setCategoriaInfo(null);
+                if (listaFranquicias.length === 0 && productosOrdenados.length > 0) {
+                    const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
+                    setListaFranquicias(unicas);
                 }
 
                 if (listaFranquicias.length === 0 && productosOrdenados.length > 0) {
@@ -96,7 +113,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
             }
         };
         fetchDatos();
-    }, [id, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, searchQuery]);
+    }, [slug, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, searchQuery]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -108,13 +125,13 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
 
     const renderTitulo = () => {
         if (searchQuery) return `"${searchQuery}"`;
-        if (id === 'all') return "TODO EL CATALOGO";
+        if (slug === 'all') return "TODO EL CATALOGO";
         if (categoriaInfo?.name || categoriaInfo?.nombre) return categoriaInfo.name || categoriaInfo.nombre;
-        if (isNaN(id)) return id.replace(/-/g, ' ');
+        if (isNaN(slug)) return slug.replace(/-/g, ' ');
         return "COLECCIÓN"; 
     };
 
-    const bannerImg = id === 'all' 
+    const bannerImg = slug === 'all' 
         ? "/wallpaper.webp" 
         : (categoriaInfo?.banner_url || "/wallpaper.webp");
 
@@ -139,7 +156,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 
                 <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
                     <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
-                        {id === 'all' ? "Tienda Completa" : "Colección Oficial"}
+                        {slug === 'all' ? "Tienda Completa" : "Colección Oficial"}
                     </span>
                     <h1 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
                         {renderTitulo()}
@@ -165,7 +182,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                     {productos.map((item) => (
                         <div className={`group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-70' : ''}`}>
                             <div className="aspect-video bg-zinc-50 dark:bg-brand-dark flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
-                                <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
+                                <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                     <CardImage item={item} />
                                 </Link>
                                 <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
@@ -216,9 +233,9 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     <Tag size={14} className="text-brand-orange" /> Ordenar
                                 </h4>
                                 <div className="grid grid-cols-1 gap-2">
-                                    {["reciente", "precioAsc", "precioDesc"].map((k) => (
+                                    {["reciente", "precioAsc", "precioDesc", "alfaAsc", "alfaDesc"].map((k) => (
                                         <button key={k} onClick={() => setOrden(k)} className={`px-6 py-4 text-left text-xs font-bold uppercase italic border ${orden === k ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>
-                                            {k === "reciente" ? "Novedades" : k === "precioAsc" ? "Menor Precio" : "Mayor Precio"}
+                                            {k === "reciente" ? "Novedades" : k === "precioAsc" ? "Menor Precio" : k === "precioDesc" ? "Mayor Precio" : k === "alfaAsc" ? "A - Z" : "Z - A"}
                                         </button>
                                     ))}
                                 </div>

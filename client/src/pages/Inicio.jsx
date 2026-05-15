@@ -4,6 +4,7 @@ import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown, Heart } from 'luci
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import Reveal from '../components/Reveal';
+import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -166,7 +167,7 @@ export default function Inicio() {
                             </span>
                             <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
                             <Link
-                                to={`/categoria/${seccion.id}`}
+                                to={`/categoria/${seccion.slug || slugify(seccion.nombre)}`}
                                 className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 sm:px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
                             >
                                 SHOP NOW <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
@@ -180,7 +181,7 @@ export default function Inicio() {
                             {seccion.items.map((item) => (
                                 <div key={item.id} className={`group bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-60' : ''}`}>
                                     <div className="aspect-[16/10] bg-white dark:bg-brand-dark relative overflow-hidden flex items-center justify-center p-4 border-b border-zinc-200 dark:border-white/5">
-                                        <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
+                                        <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                             <CardImage item={item} />
                                         </Link>
                                         <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
@@ -189,7 +190,7 @@ export default function Inicio() {
                                     </div>
 
                                     <div className="p-4 sm:p-8">
-                                        <Link to={`/producto/${item.id}`}>
+                                        <Link to={`/producto/${slugify(item.title)}`}>
                                             <h3 className="text-xl font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
                                                 {item.title}
                                             </h3>

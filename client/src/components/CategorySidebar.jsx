@@ -3,8 +3,9 @@ import {
     BookOpen, Bot, Gamepad2, Package 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useSidebar } from '../context/SidebarContext'; // <-- Importamos el contexto
+import { useSidebar } from '../context/SidebarContext';
 import SidebarWrapper from './SidebarWrapper';
+import { slugify } from '../utils/slugify';
 
 const getCategoryIcon = (categoryName) => {
     if (!categoryName) return <Tag size={18} />;
@@ -35,7 +36,7 @@ export default function CategorySidebar({ categories = [] }) {
                     categories.map((cat) => (
                         <Link
                             key={cat.id}
-                            to={`/categoria/${cat.id}`}
+                            to={`/categoria/${cat.slug || slugify(cat.name)}`}
                             onClick={closeAll}
                             className="flex items-center justify-between group px-4 py-4 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all border border-transparent hover:border-brand-orange/20"
                         >
