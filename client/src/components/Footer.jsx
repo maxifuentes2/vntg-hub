@@ -7,7 +7,7 @@ export default function Footer() {
     const MapPin = Lucide.MapPin;
 
     return (
-        <footer className="bg-zinc-100 dark:bg-brand-dark pt-20 pb-12 border-t-4 border-brand-orange transition-colors duration-300">
+        <footer className="bg-zinc-100 dark:bg-brand-dark pt-20 pb-28 border-t-4 border-brand-orange transition-colors duration-300">
             <div className="max-w-[1700px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
                 
                 {/* Logo y descripción */}
