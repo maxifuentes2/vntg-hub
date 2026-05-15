@@ -140,7 +140,7 @@ export default function MiCuenta() {
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">
-                                            <Calendar size={12}/> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} (Hora ARG)
+                                            <Calendar size={12}/> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)
                                         </div>
                                         <p className="font-bold italic uppercase text-sm group-hover:text-brand-orange transition-colors">Orden #{order.id.slice(0,8)}</p>
                                     </div>

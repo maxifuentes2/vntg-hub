@@ -9,6 +9,25 @@ import { useWishList } from '../context/WishListContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// Imagen con efecto hover que muestra la segunda foto de la galería
+const CardImage = ({ item }) => {
+    const gallery = (() => {
+        if (!item.gallery) return [];
+        if (Array.isArray(item.gallery)) return item.gallery;
+        try { return JSON.parse(item.gallery); } catch { return []; }
+    })();
+    const hoverImg = gallery.find(img => img && img !== item.images);
+    if (!hoverImg) {
+        return <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />;
+    }
+    return (
+        <div className="relative w-full h-full flex items-center justify-center">
+            <img src={item.images} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500" />
+            <img src={hoverImg} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        </div>
+    );
+};
+
 const AccordionItem = ({ title, children, isOpen, onClick }) => (
     <div className="border-b border-zinc-200 dark:border-white/10">
         <button 
@@ -110,7 +129,7 @@ const DetalleProducto = () => {
                             className="relative w-full bg-[#f8f8f8] dark:bg-[#0a0a0a] border border-white/5 overflow-hidden flex items-center justify-center shadow-xl cursor-zoom-in group"
                             onClick={() => { setIsModalOpen(true); setZoomLevel(1); }}
                         >
-                            <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain transition-transform duration-700 group-hover:scale-105" />
+                            <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain" />
                             <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl">
                                 {producto.stock === 0 ? "OUT OF STOCK" : (producto.estado || "EXCLUSIVE STOCK")}
                             </div>
@@ -202,23 +221,26 @@ const DetalleProducto = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {relacionados.map((item, i) => (
-                                <div className="group">
-                                    <div className="relative w-full bg-[#f8f8f8] dark:bg-[#111111] overflow-hidden border border-white/5 transition-colors">
-                                        <Link to={`/producto/${item.id}`}>
-                                            <img src={item.images} alt={item.title} className="w-full h-auto object-contain p-4 transition-transform duration-700 group-hover:scale-110" />
+                            {relacionados.map((item) => (
+                                <div key={item.id} className="group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
+                                    <div className="aspect-video bg-zinc-50 dark:bg-[#111111] flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
+                                        <Link to={`/producto/${item.id}`} className="w-full h-full flex items-center justify-center">
+                                            <CardImage item={item} />
                                         </Link>
+                                        <div className="absolute top-3 left-3 bg-brand-blue text-white px-2 py-0.5 text-[9px] font-black uppercase italic tracking-widest z-10">
+                                            {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
+                                        </div>
                                     </div>
-                                    <div className="mt-6">
+                                    <div className="p-4">
                                         <Link to={`/producto/${item.id}`}>
-                                            <h3 className="text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-4">{item.title}</h3>
+                                            <h3 className="text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-3">{item.title}</h3>
                                         </Link>
-                                        <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                                        <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-3">
                                             <p className="text-xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
-                                            <button 
-                                                onClick={() => addToCart(item)} 
+                                            <button
+                                                onClick={() => addToCart(item)}
                                                 disabled={item.stock === 0}
-                                                className={`transition-colors ${item.stock === 0 ? 'text-zinc-300 cursor-not-allowed' : 'text-zinc-900 dark:text-white hover:text-brand-orange'}`}
+                                                className={`p-2 transition-colors ${item.stock === 0 ? 'text-zinc-300 cursor-not-allowed' : 'text-zinc-900 dark:text-white hover:text-brand-orange'}`}
                                             >
                                                 <ShoppingCart size={20} />
                                             </button>

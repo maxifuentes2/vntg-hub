@@ -56,7 +56,7 @@ export default function PedidoDetalle() {
                 </button>
                 <div className="mb-12">
                     <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter mb-2">Orden #{pedido.id.slice(0,8)}</h1>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {new Date(pedido.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} (Hora ARG)</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {new Date(pedido.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)</p>
                 </div>
 
                 {/* MAPA DE ESTADO (TIMELINE) */}
