@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 
@@ -7,6 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const justRegistered = location.state?.registered;
 
     const [step, setStep] = useState(1); 
     const [email, setEmail] = useState('');
@@ -144,6 +146,12 @@ export default function Login() {
                     <>
                         <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Login</h1>
                         <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Access your profile</p>
+
+                        {justRegistered && (
+                            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/50 text-green-500 text-xs font-bold uppercase italic">
+                                ¡Cuenta creada! Iniciá sesión para entrar al Hub.
+                            </div>
+                        )}
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">

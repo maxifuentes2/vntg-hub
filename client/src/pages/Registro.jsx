@@ -33,9 +33,7 @@ export default function Registro() {
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem('vntg_user', JSON.stringify(data.user));
-                navigate('/');
-                window.location.reload();
+                navigate('/login', { state: { registered: true } });
             } else {
                 setError(data.error || "Error al crear la cuenta");
             }
