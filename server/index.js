@@ -4,7 +4,7 @@ require("dotenv").config();
 const db = require("./db");
 const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
+// nodemailer eliminado — emails delegados a n8n
 const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -15,26 +15,23 @@ const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const mpClient = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-});
-
-// FUNCIÓN AUXILIAR PARA DISEÑO DE CORREOS VNTG HUB
-const sendVntgEmail = async (to, subject, title, message, buttonText, buttonUrl) => {
-    const html = `
-        <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 40px; text-align: center; max-width: 600px; margin: auto; border: 1px solid #27272a;">
-            <h1 style="color: #f97316; font-size: 32px; font-style: italic; text-transform: uppercase; margin-bottom: 20px;">VNTG HUB</h1>
-            <h2 style="text-transform: uppercase; font-size: 18px; letter-spacing: 2px;">${title}</h2>
-            <div style="background: #111; padding: 30px; border: 1px solid #27272a; margin: 20px 0; text-align: left;">
-                <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6;">${message}</p>
-            </div>
-            ${buttonText ? `<a href="${buttonUrl}" style="background: #f97316; color: #fff; padding: 15px 25px; text-decoration: none; font-weight: bold; display: inline-block; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">${buttonText}</a>` : ''}
-            <p style="color: #52525b; font-size: 10px; margin-top: 30px; text-transform: uppercase;">Este es un correo automático, por favor no lo respondas.</p>
-        </div>`;
-
-    return transporter.sendMail({ from: `"VNTG HUB" <${process.env.EMAIL_USER}>`, to, subject, html });
+// Función para disparar un email a través de n8n webhook
+const triggerN8nEmail = async (type, to, data) => {
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (!webhookUrl) {
+        console.warn("⚠️  N8N_WEBHOOK_URL no configurada. Correo no enviado.");
+        return;
+    }
+    const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, to, data })
+    });
+    if (!res.ok) throw new Error(`n8n webhook error: ${res.status}`);
+    return res.json();
 };
+
+
 
 app.use(cors({ origin: ["http://localhost:5173", "https://vntg-hub.vercel.app"], credentials: true }));
 app.use(express.json());
@@ -208,17 +205,7 @@ app.post("/api/auth/login/local", async (req, res) => {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         await db.query("UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?", [code, users[0].id]);
 
-        const html = `
-        <div style="font-family:sans-serif;background:#09090b;color:#fff;padding:40px;text-align:center;">
-            <h1 style="color:#f97316;font-size:32px;font-style:italic;text-transform:uppercase;">VNTG HUB</h1>
-            <div style="background:#111;padding:30px;border:1px solid #27272a;display:inline-block;min-width:300px;">
-                <h2 style="text-transform:uppercase;font-size:18px;">Código de Verificación</h2>
-                <div style="background:#f97316;color:#fff;font-size:42px;font-weight:900;padding:15px;margin:20px 0;">${code}</div>
-                <p style="color:#a1a1aa;font-size:12px;">Válido por 5 minutos.</p>
-            </div>
-        </div>`;
-
-        await transporter.sendMail({ from: `"VNTG HUB" <${process.env.EMAIL_USER}>`, to: email, subject: `${code} es tu código - VNTG HUB`, html });
+        await triggerN8nEmail("2fa_code", email, { code });
         res.json({ message: "Código enviado", requireCode: true, email });
     } catch (error) { res.status(500).json({ error: "Error" }); }
 });
@@ -415,14 +402,11 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
         if (stockPrevio === 0 && stock > 0) {
             const [interesados] = await db.query("SELECT u.email, u.name FROM wishlist w JOIN users u ON w.user_id = u.id WHERE w.product_id = ?", [id]);
             for (let u of interesados) {
-                await sendVntgEmail(
-                    u.email,
-                    `¡Stock disponible! ${title}`,
-                    "¡VOLVIÓ A INGRESAR!",
-                    `Hola ${u.name}, el producto que tenías en tu wishlist ya está disponible para su compra inmediata.`,
-                    "Comprar ahora",
-                    `https://vntg-hub.vercel.app/producto/${id}`
-                );
+                await triggerN8nEmail("stock_alert", u.email, {
+                    userName: u.name,
+                    productTitle: title,
+                    productId: id
+                });
             }
         }
         res.json({ message: "Producto actualizado" });
@@ -529,7 +513,16 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
         }
 
         if (subject) {
-            await sendVntgEmail(order.email, subject, title, message, btnText, btnUrl);
+            await triggerN8nEmail("order_status", order.email, {
+                name: order.name,
+                orderId: id,
+                status,
+                subject,
+                title,
+                message,
+                btnText,
+                btnUrl
+            });
         }
 
         res.json({ message: "Estado de orden actualizado y correo enviado" });
@@ -606,14 +599,7 @@ app.post("/api/chat", async (req, res) => {
                     const summaryResult = await summaryModel.generateContent(summaryPrompt);
                     const summaryText = summaryResult.response.text();
 
-                    await sendVntgEmail(
-                        userEmail,
-                        "Resumen de tu consulta - Soporte VNTG HUB",
-                        "Registro de tu consulta reciente",
-                        summaryText,
-                        "Volver a la Tienda",
-                        "https://vntg-hub.vercel.app"
-                    );
+                    await triggerN8nEmail("chat_summary", userEmail, { summary: summaryText });
                 } catch (summaryError) {
                     console.error("Error al generar/enviar resumen del chat:", summaryError);
                 }
@@ -642,22 +628,7 @@ app.post("/api/contact", async (req, res) => {
     }
 
     try {
-        await transporter.sendMail({
-            from: `"VNTG HUB Web" <${process.env.EMAIL_USER}>`,
-            to: "soportehubvntg@gmail.com",
-            replyTo: email,
-            subject: `Nuevo Correo de ${nombre} - VNTG HUB`,
-            html: `
-                <div style="font-family: sans-serif; background: #09090b; color: #fff; padding: 20px;">
-                    <h2 style="color: #f97316;">Nuevo mensaje desde la web</h2>
-                    <p><strong>Nombre:</strong> ${nombre}</p>
-                    <p><strong>Email de contacto:</strong> ${email}</p>
-                    <hr style="border: 1px solid #27272a; margin: 20px 0;">
-                    <p><strong>Mensaje:</strong></p>
-                    <p style="background: #111; padding: 15px; border-radius: 5px;">${mensaje}</p>
-                </div>
-            `
-        });
+        await triggerN8nEmail("contact", "soportehubvntg@gmail.com", { nombre, email, mensaje });
         res.json({ message: "Correo enviado con éxito" });
     } catch (error) {
         console.error("Error al enviar el correo:", error);
