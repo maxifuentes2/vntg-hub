@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown, AlertTriangle } from 'lucide-react'; // Añadido AlertTriangle
-import { ADMIN_EMAILS } from '../config';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -40,7 +39,7 @@ export default function AdminPanel() {
             return;
         }
         const user = JSON.parse(storedUser);
-        if (!ADMIN_EMAILS.includes(user.email)) {
+        if (user.role !== 'admin') {
             navigate('/');
         } else {
             fetchData();

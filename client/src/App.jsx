@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import ScrollToTop from './components/ScrollTotop';
 import Chatbot from './components/Chatbot'; 
-import WhatsAppButton from './components/WhatsAppButton'; 
 import SubtleScrollToTop from './components/SubtleScrollToTop'; 
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
@@ -108,7 +106,6 @@ function App() {
                 </main>
                 
                 <Footer />
-                <WhatsAppButton isSidebarOpen={isFilterOpen} /> 
                 <Chatbot isFilterOpen={isFilterOpen} /> 
                 <SubtleScrollToTop />
               </div>

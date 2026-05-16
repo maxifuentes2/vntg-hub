@@ -12,7 +12,6 @@ import {
     Loader2,
     ArrowLeft
 } from 'lucide-react';
-import { SUPPORT_EMAILS, ADMIN_EMAILS } from '../config';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -28,7 +27,7 @@ export default function SupportPanel() {
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
-        if (!user || (!SUPPORT_EMAILS.includes(user.email) && !ADMIN_EMAILS.includes(user.email))) {
+        if (!user || (user.role !== 'admin' && user.role !== 'support')) {
             navigate('/');
             return;
         }

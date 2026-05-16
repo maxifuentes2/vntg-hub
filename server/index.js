@@ -9,7 +9,6 @@ const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const jwt = require("jsonwebtoken");
-const config = require("./config");
 
 // --- INICIALIZACIÓN DE TABLAS ---
 const initDB = async () => {
@@ -26,6 +25,12 @@ const initDB = async () => {
             )
         `);
         console.log("✅ Tabla support_messages lista");
+
+        // Agregar columna role a users si no existe
+        await db.query(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS role ENUM('user', 'admin', 'support') DEFAULT 'user'
+        `);
+        console.log("✅ Columna role en users verificada");
     } catch (err) {
         console.error("❌ Error al inicializar tablas:", err);
     }
@@ -291,7 +296,7 @@ app.post("/api/auth/login/local", async (req, res) => {
                     ...userSinPass
                 } = users[0];
                 const token = jwt.sign(
-                    { id: users[0].id, email: users[0].email },
+                    { id: users[0].id, email: users[0].email, role: users[0].role || 'user' },
                     process.env.JWT_SECRET || "vntg_secret_key",
                     { expiresIn: "7d" },
                 );
@@ -350,7 +355,7 @@ app.post("/api/auth/verify-code", async (req, res) => {
             ...userSinPass
         } = user;
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: user.id, email: user.email, role: user.role || 'user' },
             process.env.JWT_SECRET || "vntg_secret_key",
             { expiresIn: "7d" },
         );
@@ -394,7 +399,7 @@ app.post("/api/auth/google", async (req, res) => {
         }
         const { password, ...userSinPass } = user;
         const jwtToken = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: user.id, email: user.email, role: user.role || 'user' },
             process.env.JWT_SECRET || "vntg_secret_key",
             { expiresIn: "7d" },
         );
@@ -535,7 +540,7 @@ const verifyAdmin = (req, res, next) => {
             token,
             process.env.JWT_SECRET || "vntg_secret_key",
         );
-        if (!config.ADMIN_EMAILS.includes(decoded.email)) {
+        if (decoded.role !== 'admin') {
             return res.status(403).json({ error: "No eres administrador" });
         }
         req.user = decoded;
@@ -555,8 +560,8 @@ const verifySupport = (req, res, next) => {
             process.env.JWT_SECRET || "vntg_secret_key",
         );
         // Soporte puede ser Admin O Soporte específico
-        const isSupport = config.SUPPORT_EMAILS.includes(decoded.email);
-        const isAdmin = config.ADMIN_EMAILS.includes(decoded.email);
+        const isSupport = decoded.role === 'support';
+        const isAdmin = decoded.role === 'admin';
         
         if (!isSupport && !isAdmin) {
             return res.status(403).json({ error: "No tienes permisos de soporte" });
