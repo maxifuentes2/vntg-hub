@@ -97,7 +97,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="hidden md:flex flex-1 max-w-xl">
-                    <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent focus-within:border-brand-orange transition-all">
+                    <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
                         <input 
                             type="text" 
                             value={searchTerm}
@@ -178,7 +178,7 @@ export default function Navbar() {
 
             {/* Buscador Móvil */}
             <div className="md:hidden px-4 pb-4">
-                <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent focus-within:border-brand-orange transition-all">
+                <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
                     <input 
                         type="text" 
                         value={searchTerm}
