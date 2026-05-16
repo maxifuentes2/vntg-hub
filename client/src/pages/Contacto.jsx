@@ -73,8 +73,8 @@ export default function Contacto() {
                         value={formData.nombre}
                         onChange={handleChange}
                         required
-                        placeholder="NOMBRE COMPLETO" 
-                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-5 font-black uppercase italic focus:border-brand-orange outline-none rounded-xl transition-all" 
+                        placeholder="Nombre completo" 
+                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-5 font-black italic focus:border-brand-orange outline-none rounded-xl transition-all" 
                     />
                     <input 
                         type="email" 
@@ -82,8 +82,8 @@ export default function Contacto() {
                         value={formData.email}
                         onChange={handleChange}
                         required
-                        placeholder="EMAIL DE CONTACTO" 
-                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-5 font-black uppercase italic focus:border-brand-orange outline-none rounded-xl transition-all" 
+                        placeholder="Email de contacto" 
+                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-5 font-black italic focus:border-brand-orange outline-none rounded-xl transition-all" 
                     />
                     <textarea 
                         name="mensaje"
@@ -91,8 +91,8 @@ export default function Contacto() {
                         onChange={handleChange}
                         required
                         rows="5" 
-                        placeholder="TU MENSAJE..." 
-                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-5 font-black uppercase italic focus:border-brand-orange outline-none resize-none rounded-xl transition-all"
+                        placeholder="Tu mensaje..." 
+                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-5 font-black italic focus:border-brand-orange outline-none resize-none rounded-xl transition-all"
                     ></textarea>
                     
                     <button 
