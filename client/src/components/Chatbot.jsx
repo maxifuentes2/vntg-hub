@@ -6,6 +6,25 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Chatbot({ isSidebarOpen }) {
     const [isOpen, setIsOpen] = useState(false);
+    const chatbotRef = React.useRef(null);
+
+    // Cerrar al hacer clic afuera
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (chatbotRef.current && !chatbotRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        }
+        if (isOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isOpen]);
+
     // 1. Inicializar mensajes desde localStorage
     const getStorageKey = () => {
         const userStr = localStorage.getItem('vntg_user');
@@ -114,12 +133,14 @@ export default function Chatbot({ isSidebarOpen }) {
 
     return (
         /* Se desplaza a la izquierda si cualquier sidebar (Carrito o Filtros) está abierto */
-        <div className={`fixed bottom-6 transition-all duration-500 z-[90] ${isSidebarOpen ? 'right-[20px] md:right-[470px]' : 'right-3 sm:right-6'
+        <div 
+            ref={chatbotRef}
+            className={`fixed bottom-6 transition-all duration-500 z-[90] ${isSidebarOpen ? 'right-[20px] md:right-[470px]' : 'right-3 sm:right-6'
             }`}>
 
             {/* Ventana de Chat con Estética de Competición */}
             <div
-                className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 max-h-[calc(100vh-250px)] sm:max-h-none bg-white/90 dark:bg-brand-dark/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
+                className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 max-h-[70vh] sm:max-h-[600px] bg-white/90 dark:bg-brand-dark/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
                     }`}
             >
                 {/* Header Estilo Pit Wall */}
@@ -179,7 +200,7 @@ export default function Chatbot({ isSidebarOpen }) {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !cooldown && handleSend()}
                         disabled={cooldown > 0 || isLoading}
-                        className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border-none px-4 py-3 text-base sm:text-xs font-bold italic focus:outline-none dark:text-white disabled:opacity-50 rounded-xl"
+                        className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border-none px-4 py-3 text-base font-bold italic focus:outline-none dark:text-white disabled:opacity-50 rounded-xl"
                     />
                     <button
                         onClick={handleSend}

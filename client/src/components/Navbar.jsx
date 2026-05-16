@@ -21,9 +21,11 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function Navbar() {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [user, setUser] = useState(null);
     const userMenuRef = useRef(null);
+    const searchRef = useRef(null);
     
     // Conexión con el estado global de los sidebars
     const { openCart, openWishList, openCategory } = useSidebar();
@@ -31,6 +33,37 @@ export default function Navbar() {
     const { cartCount } = useCart();
     const navigate = useNavigate(); 
     const location = useLocation();
+
+    // Búsqueda predictiva (Autocomplete)
+    useEffect(() => {
+        const fetchResults = async () => {
+            if (searchTerm.trim().length < 2) {
+                setSearchResults([]);
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/api/products?q=${encodeURIComponent(searchTerm)}`);
+                const data = await res.json();
+                setSearchResults(data.slice(0, 5)); // Mostrar máximo 5 predicciones
+            } catch (err) {
+                console.error("Error en búsqueda predictiva:", err);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchResults, 300); // Debounce de 300ms
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
+
+    // Cerrar resultados al hacer clic afuera
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setSearchResults([]);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('vntg_user');
@@ -63,12 +96,25 @@ export default function Navbar() {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        if (searchTerm.trim()) {
-            navigate(`/categoria/all?search=${encodeURIComponent(searchTerm.trim())}`);
+    const performSearch = (term) => {
+        const query = term || searchTerm;
+        if (query.trim()) {
+            navigate(`/categoria/all?search=${encodeURIComponent(query.trim())}`);
             setSearchTerm('');
+            setSearchResults([]);
         }
+    };
+
+    const handleSearch = (e) => {
+        if (e) e.preventDefault();
+        performSearch();
+    };
+
+    const handleSelectResult = (product) => {
+        const slug = product.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        navigate(`/producto/${slug}`);
+        setSearchTerm('');
+        setSearchResults([]);
     };
 
     const handleLogout = () => {
@@ -96,19 +142,66 @@ export default function Navbar() {
                     </Link>
                 </div>
 
-                <div className="hidden md:flex flex-1 max-w-xl">
+                <div className="hidden md:flex flex-1 max-w-xl relative" ref={searchRef}>
                     <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
                         <input 
                             type="text" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Buscar tesoros..." 
-                            className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-sm italic font-medium"
+                            className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-base italic font-medium"
                         />
                         <button type="submit" className="px-6 text-zinc-400 hover:text-brand-orange transition-colors">
                             <Search size={20} />
                         </button>
                     </form>
+
+                    {/* Resultados Predictivos Desktop */}
+                    {searchTerm.trim().length >= 2 && (
+                        <div className="absolute top-full left-0 w-full mt-2 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden py-2 animate-reveal">
+                            {searchResults.length > 0 ? (
+                                <>
+                                    {searchResults.map(p => (
+                                        <button 
+                                            key={p.id}
+                                            onMouseDown={() => handleSelectResult(p)}
+                                            className="w-full flex items-center gap-4 px-5 py-3 hover:bg-brand-orange group transition-all text-left"
+                                        >
+                                            <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-white/10">
+                                                <img src={p.images} className="w-full h-full object-cover" alt="" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-white truncate">{p.title}</p>
+                                                <p className="text-[9px] font-bold text-zinc-500 group-hover:text-white/70 uppercase truncate">{p.franchise || 'VNTG Hub'}</p>
+                                            </div>
+                                            <Search size={14} className="text-zinc-400 group-hover:text-white" />
+                                        </button>
+                                    ))}
+                                    <button 
+                                        onMouseDown={handleSearch}
+                                        className="w-full flex items-center justify-between px-5 py-4 border-t border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-brand-orange/10 rounded-lg group-hover:bg-brand-orange transition-colors">
+                                                <Search size={14} className="text-brand-orange group-hover:text-white" />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase italic text-zinc-600 dark:text-white/60 group-hover:text-brand-orange transition-colors">Ver todos los resultados para <span className="text-zinc-900 dark:text-white">"{searchTerm}"</span></p>
+                                        </div>
+                                    </button>
+                                </>
+                            ) : (
+                                <button 
+                                    onMouseDown={handleSearch}
+                                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                >
+                                    <div className="p-2 bg-zinc-100 dark:bg-white/5 rounded-lg group-hover:bg-brand-orange transition-colors">
+                                        <Search size={14} className="text-zinc-400 group-hover:text-white" />
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase italic text-zinc-600 dark:text-white/60 group-hover:text-brand-orange transition-colors">No hay coincidencias directas. Buscar <span className="text-zinc-900 dark:text-white">"{searchTerm}"</span> en toda la tienda</p>
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2">
@@ -124,40 +217,40 @@ export default function Navbar() {
                         <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
                             <User size={22} className="group-hover:text-brand-orange transition-colors" />
                         </button>
-                        {isUserMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-2xl border border-white/20 dark:border-white/5 shadow-2xl py-2 z-50 rounded-2xl overflow-hidden">
-                                {user ? (
-                                    <>
-                                        <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 mb-2 bg-zinc-50 dark:bg-white/5">
-                                            <p className="text-[9px] font-black uppercase italic tracking-widest text-brand-orange">Bienvenido</p>
-                                            <p className="text-sm font-bold truncate text-zinc-900 dark:text-white capitalize">{user.name}</p>
-                                            <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
-                                        </div>
+                        <div className={`absolute right-0 mt-3 w-64 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] py-3 z-50 rounded-[2rem] overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
+                            {user ? (
+                                <>
+                                    <div className="px-6 py-4 border-b border-zinc-200 dark:border-white/5 mb-2 bg-zinc-50/50 dark:bg-white/5">
+                                        <p className="text-[9px] font-black uppercase italic tracking-[0.2em] text-brand-orange mb-1">Piloto Identificado</p>
+                                        <p className="text-sm font-black italic uppercase truncate text-zinc-900 dark:text-white">{user.name}</p>
+                                        <p className="text-[10px] font-bold text-zinc-500 truncate">{user.email}</p>
+                                    </div>
+                                    <div className="px-2 space-y-1">
                                         {user.role === 'admin' && (
-                                            <Link to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-brand-orange hover:bg-brand-orange hover:text-white transition-colors">
+                                            <Link to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-brand-orange hover:bg-brand-orange hover:text-white rounded-xl transition-all">
                                                 <Shield size={16} /> Panel Admin
                                             </Link>
                                         )}
                                         {(user.role === 'support' || user.role === 'admin') && (
-                                            <Link to="/soporte" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-brand-blue hover:bg-brand-blue hover:text-white transition-colors">
+                                            <Link to="/soporte" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl transition-all">
                                                 <Shield size={16} /> Panel Soporte
                                             </Link>
                                         )}
-                                        <Link to="/mi-cuenta" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors">
+                                        <Link to="/mi-cuenta" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white rounded-xl transition-all">
                                             <Settings size={16} /> Mi Cuenta
                                         </Link>
-                                        <button onClick={handleLogout} className="w-full flex items-center gap-3 text-left px-4 py-3 text-xs font-black uppercase italic text-red-500 hover:bg-red-500 hover:text-white transition-colors border-t border-zinc-200 dark:border-white/5 mt-1">
+                                        <button onClick={handleLogout} className="w-full flex items-center gap-3 text-left px-4 py-3 text-[11px] font-black uppercase italic text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border-t border-zinc-200 dark:border-white/5 mt-2">
                                             <LogOut size={16} /> Cerrar Sesión
                                         </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Link to="/login" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors">Iniciar Sesión</Link>
-                                        <Link to="/register" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors">Registrarse</Link>
-                                    </>
-                                )}
-                            </div>
-                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="px-2 space-y-1 py-1">
+                                    <Link to="/login" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-3 text-[11px] font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white rounded-xl transition-all">Iniciar Sesión</Link>
+                                    <Link to="/register" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-3 text-[11px] font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white rounded-xl transition-all">Registrarse</Link>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <button onClick={openWishList} className="relative p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
@@ -177,19 +270,66 @@ export default function Navbar() {
             </div>
 
             {/* Buscador Móvil */}
-            <div className="md:hidden px-4 pb-4">
+            <div className="md:hidden px-4 pb-4 relative" ref={searchRef}>
                 <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
                     <input 
                         type="text" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Buscar tesoros..." 
-                        className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-sm italic font-medium"
+                        className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-base italic font-medium"
                     />
                     <button type="submit" className="px-6 text-zinc-400 hover:text-brand-orange transition-colors">
                         <Search size={20} />
                     </button>
                 </form>
+
+                {/* Resultados Predictivos Móvil */}
+                {searchTerm.trim().length >= 2 && (
+                    <div className="absolute top-full left-4 right-4 mt-2 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-reveal">
+                        {searchResults.length > 0 ? (
+                            <>
+                                {searchResults.map(p => (
+                                    <button 
+                                        key={p.id}
+                                        onMouseDown={() => handleSelectResult(p)}
+                                        className="w-full flex items-center gap-4 px-5 py-3 hover:bg-brand-orange group transition-all text-left"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-white/10">
+                                            <img src={p.images} className="w-full h-full object-cover" alt="" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[11px] font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-white truncate">{p.title}</p>
+                                            <p className="text-[9px] font-bold text-zinc-500 group-hover:text-white/70 uppercase truncate">{p.franchise || 'VNTG Hub'}</p>
+                                        </div>
+                                        <Search size={14} className="text-zinc-400 group-hover:text-white" />
+                                    </button>
+                                ))}
+                                <button 
+                                    onMouseDown={handleSearch}
+                                    className="w-full flex items-center justify-between px-5 py-4 border-t border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-brand-orange/10 rounded-lg group-hover:bg-brand-orange transition-colors">
+                                            <Search size={14} className="text-brand-orange group-hover:text-white" />
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase italic text-zinc-600 dark:text-white/60 group-hover:text-brand-orange transition-colors">Ver todos los resultados para <span className="text-zinc-900 dark:text-white">"{searchTerm}"</span></p>
+                                    </div>
+                                </button>
+                            </>
+                        ) : (
+                            <button 
+                                onMouseDown={handleSearch}
+                                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                            >
+                                <div className="p-2 bg-zinc-100 dark:bg-white/5 rounded-lg group-hover:bg-brand-orange transition-colors">
+                                    <Search size={14} className="text-zinc-400 group-hover:text-white" />
+                                </div>
+                                <p className="text-[10px] font-black uppercase italic text-zinc-600 dark:text-white/60 group-hover:text-brand-orange transition-colors">No hay coincidencias directas. Buscar <span className="text-zinc-900 dark:text-white">"{searchTerm}"</span> en toda la tienda</p>
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </nav>
     );

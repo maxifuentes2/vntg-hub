@@ -349,94 +349,115 @@ export default function AdminPanel() {
             {/* MODAL DE PRODUCTOS */}
             {isProductModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl">
-                        <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-white/5 sticky top-0 bg-white dark:bg-[#111] z-10">
+                    <div className="bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-3xl w-full max-w-2xl max-h-[80vh] shadow-2xl flex flex-col overflow-hidden">
+                        {/* Header Estático */}
+                        <div className="flex justify-between items-center p-6 border-b border-white/5 bg-black/20 z-10">
                             <h2 className="text-xl font-black italic uppercase text-brand-orange">
                                 {editingItem ? 'Editar Producto' : 'Nuevo Producto'}
                             </h2>
-                            <button onClick={() => setIsProductModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
-
-                            {/* NUEVO: ID (Solo lectura) y Nombre del Producto (Title) */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                {editingItem && (
-                                    <div className="md:col-span-1">
-                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Auto)</label>
-                                        <input type="text" disabled value={productForm.id} className="w-full bg-zinc-200 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white/50 cursor-not-allowed" />
-                                    </div>
-                                )}
-                                <div className={editingItem ? "md:col-span-3" : "md:col-span-4"}>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Nombre del Producto *</label>
-                                    <input type="text" required value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} placeholder="Ej: Remera Vintage Oversize" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white border border-transparent focus:border-brand-orange/50" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Escala</label>
-                                    <input type="text" value={productForm.escala} onChange={e => setProductForm({ ...productForm, escala: e.target.value })} placeholder="Ej: 1/6, 1:10" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Fabricante</label>
-                                    <input type="text" value={productForm.fabricante} onChange={e => setProductForm({ ...productForm, fabricante: e.target.value })} placeholder="Ej: Hot Toys, Hasbro" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Año</label>
-                                    <input type="text" value={productForm.anio} onChange={e => setProductForm({ ...productForm, anio: e.target.value })} placeholder="Ej: 2024" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Material</label>
-                                    <input type="text" value={productForm.material} onChange={e => setProductForm({ ...productForm, material: e.target.value })} placeholder="Ej: PVC, Resina" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Estado</label>
-                                    <input type="text" value={productForm.estado} onChange={e => setProductForm({ ...productForm, estado: e.target.value })} placeholder="Ej: Mint, Loose, Nuevo" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Categoría</label>
-                                    <select required value={productForm.categoryId} onChange={e => setProductForm({ ...productForm, categoryId: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white">
-                                        <option value="">Seleccionar...</option>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name || c.id}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Precio ($)</label>
-                                    <input type="number" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Stock</label>
-                                    <input type="number" required value={productForm.stock} onChange={e => setProductForm({ ...productForm, stock: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Imagen Principal (URL)</label>
-                                <input type="text" required value={productForm.images} onChange={e => setProductForm({ ...productForm, images: e.target.value })} placeholder="https://vntg-hub.com/img.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Franquicia (Ej: Marvel, Star Wars)</label>
-                                <input type="text" value={productForm.franchise} onChange={e => setProductForm({ ...productForm, franchise: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Descripción</label>
-                                <textarea rows="3" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Galería (URLs separadas por coma)</label>
-                                <textarea rows="2" value={productForm.gallery} onChange={e => setProductForm({ ...productForm, gallery: e.target.value })} placeholder="https://img1.jpg, https://img2.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded-xl outline-none text-sm dark:text-white border border-transparent focus:border-brand-orange" />
-                            </div>
-
-                            <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded-xl mt-4 hover:bg-orange-600 transition-all shadow-lg active:scale-95">
-                                Guardar Producto
+                            <button onClick={() => setIsProductModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+                                <X size={24} />
                             </button>
-                        </form>
+                        </div>
+
+                        {/* Área Scrolleable Interna */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                            <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
+
+                                {/* NUEVO: ID (Solo lectura) y Nombre del Producto (Title) */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    {editingItem && (
+                                        <div className="md:col-span-1">
+                                            <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Auto)</label>
+                                            <input type="text" disabled value={productForm.id} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white/50 cursor-not-allowed" />
+                                        </div>
+                                    )}
+                                    <div className={editingItem ? "md:col-span-3" : "md:col-span-4"}>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Nombre del Producto *</label>
+                                        <input type="text" required value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} placeholder="Ej: Remera Vintage Oversize" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white focus:border-brand-orange/50 transition-all placeholder:text-zinc-600" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Escala</label>
+                                        <input type="text" value={productForm.escala} onChange={e => setProductForm({ ...productForm, escala: e.target.value })} placeholder="Ej: 1/6, 1:10" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white placeholder:text-zinc-600" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Fabricante</label>
+                                        <input type="text" value={productForm.fabricante} onChange={e => setProductForm({ ...productForm, fabricante: e.target.value })} placeholder="Ej: Hot Toys, Hasbro" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white placeholder:text-zinc-600" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Año</label>
+                                        <input type="text" value={productForm.anio} onChange={e => setProductForm({ ...productForm, anio: e.target.value })} placeholder="Ej: 2024" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white placeholder:text-zinc-600" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Material</label>
+                                        <input type="text" value={productForm.material} onChange={e => setProductForm({ ...productForm, material: e.target.value })} placeholder="Ej: PVC, Resina" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white placeholder:text-zinc-600" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Estado</label>
+                                        <input type="text" value={productForm.estado} onChange={e => setProductForm({ ...productForm, estado: e.target.value })} placeholder="Ej: Mint, Loose, Nuevo" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white placeholder:text-zinc-600" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Categoría</label>
+                                        <div className="relative">
+                                            <select 
+                                                required 
+                                                value={productForm.categoryId} 
+                                                onChange={e => setProductForm({ ...productForm, categoryId: e.target.value })} 
+                                                className={`appearance-none w-full bg-white/5 border border-white/5 p-3 pr-10 rounded-xl outline-none text-sm font-bold uppercase italic focus:border-brand-orange transition-all cursor-pointer ${!productForm.categoryId ? 'text-zinc-600' : 'text-white'}`}
+                                            >
+                                                <option value="" className="bg-zinc-950">Seleccionar...</option>
+                                                {categories.map(c => (
+                                                    <option key={c.id} value={c.id} className="bg-zinc-950">
+                                                        {c.name || c.id}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-brand-orange">
+                                                <ChevronDown size={16} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Precio ($)</label>
+                                        <input type="number" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Stock</label>
+                                        <input type="number" required value={productForm.stock} onChange={e => setProductForm({ ...productForm, stock: e.target.value })} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Imagen Principal (URL)</label>
+                                    <input type="text" required value={productForm.images} onChange={e => setProductForm({ ...productForm, images: e.target.value })} placeholder="https://vntg-hub.com/img.jpg" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white placeholder:text-zinc-600" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Franquicia (Ej: Marvel, Star Wars)</label>
+                                    <input type="text" value={productForm.franchise} onChange={e => setProductForm({ ...productForm, franchise: e.target.value })} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Descripción</label>
+                                    <textarea rows="3" value={productForm.description} onChange={setProductForm ? e => setProductForm({ ...productForm, description: e.target.value }) : undefined} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Galería (URLs separadas por coma)</label>
+                                    <textarea rows="2" value={productForm.gallery} onChange={e => setProductForm({ ...productForm, gallery: e.target.value })} placeholder="https://img1.jpg, https://img2.jpg" className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white border border-transparent focus:border-brand-orange placeholder:text-zinc-600" />
+                                </div>
+
+                                <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded-xl mt-4 hover:bg-orange-600 transition-all shadow-lg active:scale-95">
+                                    Guardar Producto
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
@@ -444,23 +465,25 @@ export default function AdminPanel() {
             {/* MODAL DE CATEGORÍAS */}
             {isCategoryModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-3xl w-full max-w-sm shadow-2xl">
-                        <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-white/5">
+                    <div className="bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
+                        <div className="flex justify-between items-center p-6 border-b border-white/5 bg-black/20">
                             <h2 className="text-xl font-black italic uppercase text-brand-orange">
                                 {categoryForm.id ? 'Editar Categoría' : 'Nueva Categoría'}
                             </h2>
-                            <button onClick={() => setIsCategoryModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={24} /></button>
+                            <button onClick={() => setIsCategoryModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
                         </div>
                         <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
                             {categoryForm.id && (
                                 <div>
                                     <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID (Auto)</label>
-                                    <input type="text" disabled value={categoryForm.id} className="w-full bg-zinc-200 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white/50 cursor-not-allowed" />
+                                    <input type="text" disabled value={categoryForm.id} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white/50 cursor-not-allowed" />
                                 </div>
                             )}
                             <div>
                                 <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Nombre Visible (Ej: Remeras Oversize)</label>
-                                <input type="text" required value={categoryForm.name} onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                <input type="text" required value={categoryForm.name} onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })} className="w-full bg-white/5 border border-white/5 p-3 rounded-xl outline-none text-sm text-white focus:border-brand-orange transition-all" />
                             </div>
                             <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded-xl mt-4 hover:bg-orange-600 transition-all shadow-lg active:scale-95">
                                 {categoryForm.id ? 'Guardar Cambios' : 'Crear Categoría'}

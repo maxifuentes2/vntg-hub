@@ -83,32 +83,99 @@ const slugify = (text) => {
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q, minPrice, maxPrice } = req.query;
-    let sql = "SELECT * FROM products WHERE 1=1";
+    let sql = "SELECT p.* FROM products p LEFT JOIN categories c ON p.categoryId = c.id WHERE 1=1";
     const params = [];
     if (categoryId && categoryId !== "all") {
-        sql += " AND categoryId = ?";
+        sql += " AND p.categoryId = ?";
         params.push(categoryId);
     }
     if (minPrice) {
-        sql += " AND price >= ?";
+        sql += " AND p.price >= ?";
         params.push(Number(minPrice));
     }
     if (maxPrice) {
-        sql += " AND price <= ?";
+        sql += " AND p.price <= ?";
         params.push(Number(maxPrice));
     }
     if (q) {
-        sql +=
-            " AND (LOWER(title) LIKE ? OR LOWER(description) LIKE ? OR LOWER(franchise) LIKE ?)";
-        const searchTerm = `%${q.toLowerCase()}%`;
-        params.push(searchTerm, searchTerm, searchTerm);
+        // Normalizar: quitar acentos y pasar a minúsculas
+        const normalizedQ = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        
+        // Diccionario local de sinónimos para rapidez y fiabilidad extrema
+        const synonymMap = {
+            "peliculas": ["cine", "movie", "film", "hollywood", "estreno", "pantalla"],
+            "pelicula": ["cine", "movie", "film", "hollywood", "estreno", "pantalla"],
+            "autos": ["coche", "vehiculo", "car", "escala", "motor", "ruedas"],
+            "auto": ["coche", "vehiculo", "car", "escala", "motor", "ruedas"],
+            "figuras": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys"],
+            "figura": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys"],
+            "ropa": ["vintage", "urbana", "streetwear", "t-shirt", "prenda", "outfit"],
+            "remeras": ["t-shirt", "remera", "prenda", "vintage", "top"],
+            "comics": ["historieta", "dc", "marvel", "manga", "lectura"],
+            "anime": ["manga", "japon", "otaku", "animacion"]
+        };
+
+        // Dividir en palabras y aplicar un "stemming" ultra-básico
+        let keywords = normalizedQ.split(/\s+/).filter(w => w.length > 2).map(word => {
+            if (word.endsWith('es') && word.length > 4) return word.slice(0, -2);
+            if (word.endsWith('s') && word.length > 3) return word.slice(0, -1);
+            return word;
+        });
+
+        // Enriquecer con el mapa local
+        keywords.forEach(word => {
+            if (synonymMap[word]) {
+                keywords = [...new Set([...keywords, ...synonymMap[word]])];
+            }
+        });
+
+        // --- EXPANSIÓN SEMÁNTICA CON IA (GEMINI) ---
+        // Se mantiene como capa extra de inteligencia
+        if (normalizedQ.length > 3) {
+            try {
+                const semanticModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const prompt = `Actúa como un experto en coleccionismo. El usuario busca "${normalizedQ}". 
+                Devuelve una lista de 5 palabras clave relacionadas (sinónimos, franquicias o temas). 
+                Solo palabras separadas por comas.`;
+                const result = await semanticModel.generateContent(prompt);
+                const expanded = result.response.text().split(",").map(t => t.trim().toLowerCase()).filter(t => t.length > 2);
+                keywords = [...new Set([...keywords, ...expanded])];
+            } catch (aiErr) {
+                // Falla silenciosa de la IA
+            }
+        }
+
+        if (keywords.length > 0) {
+            sql += " AND (";
+            const keywordConditions = [];
+            
+            // 1. Prioridad: Coincidencia exacta de la frase completa en campos clave
+            keywordConditions.push("(LOWER(p.title) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.franchise) LIKE ? OR LOWER(c.name) LIKE ?)");
+            params.push(`%${normalizedQ}%`, `%${normalizedQ}%`, `%${normalizedQ}%`, `%${normalizedQ}%`);
+
+            // 2. Coincidencia de palabras clave en TODOS los campos técnicos
+            keywords.forEach(word => {
+                if (word.length < 3) return;
+                keywordConditions.push("(LOWER(p.title) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.franchise) LIKE ? OR LOWER(p.escala) LIKE ? OR LOWER(p.fabricante) LIKE ? OR LOWER(p.anio) LIKE ? OR LOWER(p.material) LIKE ? OR LOWER(c.name) LIKE ?)");
+                const searchTerm = `%${word}%`;
+                params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            });
+
+            sql += keywordConditions.join(" OR ");
+            sql += ")";
+        } else {
+            sql += " AND (LOWER(p.title) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.franchise) LIKE ? OR LOWER(c.name) LIKE ?)";
+            const searchTerm = `%${normalizedQ}%`;
+            params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+        }
     }
     // Ordenar: Los que tienen stock arriba, luego por ID
-    sql += " ORDER BY (stock > 0) DESC, id DESC";
+    sql += " ORDER BY (p.stock > 0) DESC, p.id DESC";
     try {
         const [rows] = await db.query(sql, params);
         res.json(rows);
     } catch (error) {
+        console.error("Error en búsqueda:", error);
         res.status(500).json({ error: "Error al obtener productos" });
     }
 });
@@ -883,7 +950,7 @@ app.post("/api/chat", async (req, res) => {
 
         // 4. Le inyectamos el catálogo y contexto al cerebro
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
+            model: "gemini-1.5-flash",
             systemInstruction: `Eres el agente de soporte oficial de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, profesional y resolutivo. Usas un estilo 'racing/automovilismo' ocasionalmente.
             Ayudas a los clientes con dudas sobre envíos (normal $9426, prioritario $17276), medios de pago y estado de órdenes. Respuestas cortas y directas.
 
@@ -919,7 +986,7 @@ app.post("/api/chat", async (req, res) => {
             if (userEmail) {
                 try {
                     const summaryModel = genAI.getGenerativeModel({
-                        model: "gemini-2.5-flash",
+                        model: "gemini-1.5-flash",
                     });
                     const summaryPrompt = `Resume brevemente esta conversación de soporte técnico en 1 o 2 párrafos concisos para enviársela al cliente por correo electrónico como un comprobante de su consulta. No uses formato markdown complejo, solo texto claro y formal:\n\nHistorial:\n${JSON.stringify(history)}\n\nCliente: ${message}\nSoporte: ${response}`;
                     const summaryResult =

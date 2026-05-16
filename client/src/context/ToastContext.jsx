@@ -36,7 +36,7 @@ export const ToastProvider = ({ children }) => {
                                 {toast.type === 'error' ? (
                                     <AlertCircle size={14} className="text-red-500" />
                                 ) : (
-                                    <CheckCircle size={14} className="text-orange-500" />
+                                    <CheckCircle size={14} className="text-emerald-500" />
                                 )}
                                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{toast.type === 'error' ? 'Error' : 'Éxito'}</span>
                             </div>
@@ -49,7 +49,7 @@ export const ToastProvider = ({ children }) => {
                         >
                             <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                         </button>
-                        <div className={`absolute bottom-0 left-0 h-[3px] animate-progress ${toast.type === 'error' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]'}`} />
+                        <div className={`absolute bottom-0 left-0 h-[3px] animate-progress ${toast.type === 'error' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`} />
                     </div>
                 ))}
             </div>

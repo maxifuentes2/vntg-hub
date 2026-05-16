@@ -2,6 +2,16 @@ import React from 'react';
 import { X } from 'lucide-react';
 
 export default function SidebarWrapper({ isOpen, onClose, title, icon: Icon, children, side = 'right' }) {
+    // Bloquear scroll del body cuando el sidebar está abierto
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [isOpen]);
+
     // Definimos hacia dónde se esconde según el lado
     const translateClass = side === 'right' 
         ? (isOpen ? 'translate-x-0' : 'translate-x-full') 
