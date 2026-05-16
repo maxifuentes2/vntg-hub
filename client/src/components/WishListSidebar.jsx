@@ -36,7 +36,7 @@ export default function WishListSidebar() { // <-- Sin props
             ) : (
                 <div className="flex flex-col gap-4">
                     {wishListItems.map((item) => (
-                        <div key={item.id} className="flex gap-4 bg-white/40 dark:bg-white/5 backdrop-blur-md p-3 rounded-3xl border border-white/20 dark:border-white/5 relative shadow-lg group">
+                        <div key={item.id} className="flex gap-4 bg-white/40 dark:bg-white/5 backdrop-blur-md p-3 rounded-2xl border border-white/20 dark:border-white/5 relative shadow-lg group">
                             <div className="w-24 h-24 bg-white/20 dark:bg-zinc-800/50 backdrop-blur-sm rounded-2xl overflow-hidden flex-shrink-0 relative shadow-sm">
                                 <img src={item.images || item.image} alt={item.title} className="w-full h-full object-cover" />
                                 {item.stock === 0 && (

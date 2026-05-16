@@ -119,7 +119,7 @@ export default function Chatbot({ isSidebarOpen }) {
 
             {/* Ventana de Chat con Estética de Competición */}
             <div
-                className={`absolute bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
+                className={`absolute bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 bg-white/90 dark:bg-brand-dark/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
                     }`}
             >
                 {/* Header Estilo Pit Wall */}

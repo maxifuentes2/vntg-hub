@@ -22,7 +22,7 @@ export default function CartSidebar() {
         >
             {/* BARRA DE PROGRESO */}
             {cart.length > 0 && (
-                <div className="mb-6 p-4 bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl shadow-lg">
+                <div className="mb-6 p-4 bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-lg">
                     <div className="flex justify-between items-center mb-2">
                         <span className={`text-[9px] font-black uppercase italic tracking-widest ${tieneEnvioGratis ? 'text-emerald-500' : 'text-zinc-500'}`}>
                             {tieneEnvioGratis ? '¡Envío Gratis Desbloqueado!' : `Faltan $${faltante.toLocaleString('es-AR')} para envío gratis`}
@@ -37,13 +37,13 @@ export default function CartSidebar() {
 
             <div className="space-y-4">
                 {cart.length > 0 ? cart.map((item) => (
-                    <div key={item.id} className="bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/5 p-4 flex gap-4 rounded-xl shadow-md group">
-                        <img src={item.images} className="w-20 h-20 object-cover border border-white/10 rounded-lg shadow-sm" alt="" />
+                    <div key={item.id} className="bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/5 p-4 flex gap-4 rounded-2xl shadow-md group">
+                        <img src={item.images} className="w-20 h-20 object-cover border border-white/10 rounded-xl shadow-sm" alt="" />
                         <div className="flex-grow">
                             <h3 className="text-xs font-black uppercase italic line-clamp-1">{item.title}</h3>
                             <p className="text-brand-orange font-black italic text-sm mb-3">${item.price.toLocaleString('es-AR')}</p>
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 bg-white/60 dark:bg-black/40 backdrop-blur-sm border border-white/20 dark:border-white/10 px-2 py-1 rounded-lg">
+                                <div className="flex items-center gap-3 bg-white/60 dark:bg-black/40 backdrop-blur-sm border border-white/20 dark:border-white/10 px-2 py-1 rounded-xl">
                                     <button onClick={() => updateQuantity(item.id, -1)} className="hover:text-brand-orange transition-colors"><Minus size={14} /></button>
                                     <span className="text-xs font-black">{item.cantidad}</span>
                                     <button onClick={() => updateQuantity(item.id, 1)} className="hover:text-brand-orange transition-colors"><Plus size={14} /></button>
@@ -66,7 +66,7 @@ export default function CartSidebar() {
                                 <button 
                                     key={type}
                                     onClick={() => setShippingType(type)} 
-                                    className={`p-3 border transition-all text-left rounded-xl ${shippingType === type ? 'border-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-white/10'}`}
+                                    className={`p-3 border transition-all text-left rounded-2xl ${shippingType === type ? 'border-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-white/10'}`}
                                 >
                                     <div className="flex justify-between items-center">
                                         <span className={`text-xs font-black uppercase italic ${shippingType === type ? 'text-brand-orange' : ''}`}>

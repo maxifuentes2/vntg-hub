@@ -38,7 +38,7 @@ export default function CategorySidebar({ categories = [] }) {
                             key={cat.id}
                             to={`/categoria/${cat.slug || slugify(cat.name)}`}
                             onClick={closeAll}
-                            className="flex items-center justify-between group px-4 py-4 bg-white/20 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/5 hover:border-brand-orange/50 transition-all rounded-xl shadow-sm mb-2"
+                            className="flex items-center justify-between group px-4 py-4 bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/5 hover:border-brand-orange/50 transition-all rounded-xl shadow-sm mb-2"
                         >
                             <div className="flex items-center gap-4 dark:text-white">
                                 <div className="text-brand-blue group-hover:text-brand-orange transition-colors">

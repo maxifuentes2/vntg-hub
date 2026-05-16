@@ -15,7 +15,7 @@ export default function SidebarWrapper({ isOpen, onClose, title, icon: Icon, chi
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             
             {/* Panel Lateral con Liquid Glass */}
-            <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[350px] sm:max-w-md bg-white/40 dark:bg-black/40 backdrop-blur-3xl shadow-2xl transform transition-transform duration-500 ease-out border-white/20 dark:border-white/5 ${translateClass}`}>
+            <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[350px] sm:max-w-md bg-white/70 dark:bg-brand-dark/40 backdrop-blur-2xl shadow-2xl transform transition-transform duration-500 ease-out border-white/20 dark:border-white/10 ${translateClass}`}>
                 <div className="h-full flex flex-col">
                     {/* Cabecera Unificada */}
                     <div className="p-4 sm:p-8 flex justify-between items-center border-b border-white/20 dark:border-white/5">
