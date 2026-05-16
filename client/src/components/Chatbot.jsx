@@ -119,7 +119,7 @@ export default function Chatbot({ isSidebarOpen }) {
 
             {/* Ventana de Chat con Estética de Competición */}
             <div
-                className={`absolute bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 bg-white/90 dark:bg-brand-dark/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
+                className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 max-h-[calc(100vh-250px)] sm:max-h-none bg-white/90 dark:bg-brand-dark/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'
                     }`}
             >
                 {/* Header Estilo Pit Wall */}
@@ -142,7 +142,7 @@ export default function Chatbot({ isSidebarOpen }) {
                 </div>
 
                 {/* Historial de Chat */}
-                <div className="h-80 overflow-y-auto p-6 space-y-6 bg-zinc-50 dark:bg-zinc-950/50 custom-scrollbar flex flex-col">
+                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6 bg-zinc-50 dark:bg-zinc-950/50 custom-scrollbar flex flex-col">
                     {messages.map((msg, index) => (
                         <div key={index} className={`flex gap-3 ${msg.isBot ? '' : 'flex-row-reverse'}`}>
                             {msg.isBot && (
@@ -179,7 +179,7 @@ export default function Chatbot({ isSidebarOpen }) {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !cooldown && handleSend()}
                         disabled={cooldown > 0 || isLoading}
-                        className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border-none px-4 py-3 text-xs font-bold italic focus:outline-none dark:text-white disabled:opacity-50 rounded-xl"
+                        className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border-none px-4 py-3 text-base sm:text-xs font-bold italic focus:outline-none dark:text-white disabled:opacity-50 rounded-xl"
                     />
                     <button
                         onClick={handleSend}
