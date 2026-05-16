@@ -144,7 +144,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     }
 
     return (
-        <div className="w-full bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white transition-colors duration-300">
+        <div className="w-full bg-transparent min-h-screen text-zinc-900 dark:text-white transition-colors duration-300 relative">
 
             <section className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-b border-zinc-200 dark:border-white/5">
                 <img 
@@ -152,7 +152,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                     className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]" 
                     alt={renderTitulo()}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-white dark:from-brand-dark via-white/50 dark:via-brand-dark/30 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/60 dark:from-brand-dark/60 via-zinc-50/20 dark:via-brand-dark/20 to-transparent backdrop-blur-sm"></div>
                 
                 <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
                     <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
@@ -171,7 +171,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                     </span>
                     <button 
                         onClick={() => setIsFilterOpen(true)} 
-                        className="flex items-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 py-3 font-black uppercase italic text-xs hover:bg-brand-orange transition-all"
+                        className="flex items-center gap-3 bg-white/40 dark:bg-white/10 backdrop-blur-md text-zinc-900 dark:text-white px-6 py-3 font-black uppercase italic text-xs hover:bg-brand-orange hover:text-white transition-all border border-white/20 dark:border-white/5 shadow-lg rounded-2xl"
                     >
                         <SlidersHorizontal size={16} /> Filtros
                     </button>
@@ -180,12 +180,12 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 {/* GRID DE PRODUCTOS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {productos.map((item) => (
-                        <div className={`group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-70' : ''}`}>
-                            <div className="aspect-video bg-zinc-50 dark:bg-brand-dark flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
+                        <div key={item.id} className={`group bg-white/20 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-xl rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-70' : ''}`}>
+                            <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-white/5">
                                 <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                     <CardImage item={item} />
                                 </Link>
-                                <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
+                                <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
                                     {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                 </div>
                             </div>
@@ -205,7 +205,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                         <button 
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }} 
                                             disabled={item.stock === 0}
-                                            className={`p-3.5 transition-colors shadow-lg ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
+                                            className={`p-3.5 transition-all duration-300 shadow-lg rounded-2xl active:scale-95 ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
                                         >
                                             <ShoppingCart size={24} />
                                         </button>
@@ -220,7 +220,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
             {/* SIDEBAR DE FILTROS */}
             <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${isFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
-                <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-brand-dark shadow-2xl transform transition-transform duration-500 ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white/40 dark:bg-black/40 backdrop-blur-3xl border-l border-white/20 dark:border-white/5 shadow-2xl transform transition-transform duration-500 ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="h-full flex flex-col p-4 sm:p-8">
                         <div className="flex justify-between items-center border-b border-zinc-200 dark:border-white/5 pb-6 mb-8">
                             <h2 className="text-2xl font-black italic uppercase">Filtros</h2>
@@ -234,7 +234,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                 </h4>
                                 <div className="grid grid-cols-1 gap-2">
                                     {["reciente", "precioAsc", "precioDesc", "alfaAsc", "alfaDesc"].map((k) => (
-                                        <button key={k} onClick={() => setOrden(k)} className={`px-6 py-4 text-left text-xs font-bold uppercase italic border ${orden === k ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>
+                                        <button key={k} onClick={() => setOrden(k)} className={`px-6 py-4 text-left text-xs font-bold uppercase italic border transition-all rounded-xl ${orden === k ? 'border-brand-orange text-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-white/5'}`}>
                                             {k === "reciente" ? "Novedades" : k === "precioAsc" ? "Menor Precio" : k === "precioDesc" ? "Mayor Precio" : k === "alfaAsc" ? "A - Z" : "Z - A"}
                                         </button>
                                     ))}
@@ -271,7 +271,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                 <div className="grid grid-cols-1 gap-2">
                                     <button onClick={() => setFranquiciaSeleccionada("")} className={`w-full text-left p-4 text-xs font-black italic uppercase border ${franquiciaSeleccionada === "" ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>Todas</button>
                                     {listaFranquicias.map(f => (
-                                        <button key={f} onClick={() => setFranquiciaSeleccionada(f)} className={`w-full text-left p-4 text-xs font-black italic uppercase border ${franquiciaSeleccionada === f ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>{f}</button>
+                                        <button key={f} onClick={() => setFranquiciaSeleccionada(f)} className={`w-full text-left p-4 text-xs font-black italic uppercase border transition-all rounded-xl ${franquiciaSeleccionada === f ? 'border-brand-orange text-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-white/5'}`}>{f}</button>
                                     ))}
                                 </div>
                             </div>
@@ -280,7 +280,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                         <div className="pt-8">
                             <button 
                                 onClick={() => setIsFilterOpen(false)} 
-                                className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest shadow-xl hover:bg-zinc-900 transition-colors"
+                                className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest shadow-xl hover:bg-zinc-900 transition-colors rounded-2xl"
                             >
                                 Aplicar Configuración
                             </button>
@@ -291,7 +291,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
 
             <style dangerouslySetInnerHTML={{ __html: `
                 .dual-range-input::-webkit-slider-thumb {
-                    pointer-events: auto; width: 20px; height: 20px; border-radius: 0;
+                    pointer-events: auto; width: 20px; height: 20px; border-radius: 100%;
                     background: #ff5a00; cursor: pointer; -webkit-appearance: none; border: 2px solid #fff;
                 }
                 .custom-scrollbar::-webkit-scrollbar {

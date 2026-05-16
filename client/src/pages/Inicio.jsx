@@ -97,7 +97,7 @@ export default function Inicio() {
     }
 
     return (
-        <div className="w-full transition-colors duration-300 font-sans overflow-x-hidden bg-white dark:bg-brand-dark">
+        <div className="w-full transition-colors duration-300 font-sans overflow-x-hidden relative">
 
             {/* HERO SECTION */}
             <section className="relative h-[85vh] flex items-center justify-center overflow-hidden mb-20">
@@ -113,7 +113,7 @@ export default function Inicio() {
                     />
                 </div>
 
-                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-brand-dark via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-50/80 dark:from-brand-dark/80 via-transparent to-transparent backdrop-blur-[2px]"></div>
 
                 <div className="relative z-10 text-center px-4">
                     <Reveal variant="fade-down" delay={0}>
@@ -159,7 +159,7 @@ export default function Inicio() {
                             className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]"
                             alt={seccion.nombre}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-50 dark:from-brand-dark via-transparent to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/40 dark:from-brand-dark/40 via-transparent to-transparent backdrop-blur-sm"></div>
 
                         <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
                             <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">
@@ -168,7 +168,7 @@ export default function Inicio() {
                             <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
                             <Link
                                 to={`/categoria/${seccion.slug || slugify(seccion.nombre)}`}
-                                className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 sm:px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
+                                className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 sm:px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl rounded-2xl"
                             >
                                 COMPRAR AHORA <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
                             </Link>
@@ -179,12 +179,12 @@ export default function Inicio() {
                     <div className="max-w-[1700px] mx-auto px-4 mt-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {seccion.items.map((item) => (
-                                <div key={item.id} className={`group bg-white dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg ${item.stock === 0 ? 'opacity-60' : ''}`}>
-                                    <div className="aspect-[16/10] bg-white dark:bg-brand-dark relative overflow-hidden flex items-center justify-center p-4 border-b border-zinc-200 dark:border-white/5">
+                                <div key={item.id} className={`group bg-white/20 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-xl rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
+                                    <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-white/5">
                                         <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                             <CardImage item={item} />
                                         </Link>
-                                        <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10">
+                                        <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
                                             {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                         </div>
                                     </div>
@@ -211,7 +211,7 @@ export default function Inicio() {
                                                 <button
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }}
                                                     disabled={item.stock === 0}
-                                                    className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
+                                                    className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 rounded-2xl ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
                                                 >
                                                     <ShoppingCart size={24} />
                                                 </button>

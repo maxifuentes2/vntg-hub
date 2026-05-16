@@ -106,7 +106,7 @@ export default function SupportPanel() {
                         <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-2">Panel de Soporte</h1>
                         <p className="text-brand-blue font-black uppercase tracking-[0.3em] text-[10px] italic">Atención al Cliente Hub</p>
                     </div>
-                    <div className="flex items-center gap-4 bg-white dark:bg-[#111] p-2 border border-zinc-200 dark:border-white/5 rounded-xl shadow-xl">
+                    <div className="flex items-center gap-4 bg-white/40 dark:bg-black/20 backdrop-blur-xl p-2 border border-white/20 dark:border-white/5 rounded-xl shadow-xl">
                         <div className="flex flex-col items-end px-4">
                             <p className="text-[9px] font-black uppercase text-zinc-500">Estado del Sistema</p>
                             <p className="text-xs font-bold text-green-500 flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Operativo</p>
@@ -118,7 +118,7 @@ export default function SupportPanel() {
                     {/* Lista de Mensajes */}
                     <div className="lg:col-span-5 space-y-6">
                         {/* Filtros y Búsqueda */}
-                        <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-4 rounded-xl shadow-lg space-y-4">
+                        <div className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 p-4 rounded-xl shadow-lg space-y-4">
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
                                 <input 
@@ -126,7 +126,7 @@ export default function SupportPanel() {
                                     placeholder="BUSCAR MENSAJES..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-3 pl-12 font-bold italic text-xs uppercase outline-none focus:border-brand-blue transition-all"
+                                    className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-3 pl-12 font-bold italic text-xs uppercase outline-none focus:border-brand-blue transition-all rounded-xl shadow-inner"
                                 />
                             </div>
                             <div className="flex gap-2">
@@ -134,7 +134,7 @@ export default function SupportPanel() {
                                     <button 
                                         key={f}
                                         onClick={() => setFilter(f)}
-                                        className={`flex-1 py-2 text-[10px] font-black uppercase italic border transition-all ${filter === f ? 'bg-brand-blue text-white border-brand-blue' : 'bg-transparent border-zinc-200 dark:border-white/5 text-zinc-500 hover:border-brand-blue'}`}
+                                        className={`flex-1 py-2 text-[10px] font-black uppercase italic border transition-all rounded-lg ${filter === f ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-blue-500/20' : 'bg-transparent border-zinc-200 dark:border-white/5 text-zinc-500 hover:border-brand-blue'}`}
                                     >
                                         {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : 'Respondidos'}
                                     </button>
@@ -150,7 +150,7 @@ export default function SupportPanel() {
                                     <div 
                                         key={msg.id} 
                                         onClick={() => setSelectedMsg(msg)}
-                                        className={`p-5 bg-white dark:bg-[#111] border rounded-xl cursor-pointer transition-all group relative overflow-hidden ${selectedMsg?.id === msg.id ? 'border-brand-blue shadow-blue-500/10 scale-[1.02]' : 'border-zinc-200 dark:border-white/5 hover:border-brand-blue/50'}`}
+                                        className={`p-5 bg-white/40 dark:bg-black/20 backdrop-blur-md border rounded-2xl cursor-pointer transition-all group relative overflow-hidden shadow-sm ${selectedMsg?.id === msg.id ? 'border-brand-blue shadow-blue-500/10 scale-[1.02]' : 'border-white/10 dark:border-white/5 hover:border-brand-blue/50'}`}
                                     >
                                         {msg.status === 'pending' && (
                                             <div className="absolute top-0 right-0 w-2 h-full bg-brand-orange"></div>
@@ -175,7 +175,7 @@ export default function SupportPanel() {
                     {/* Detalle y Respuesta */}
                     <div className="lg:col-span-7">
                         {selectedMsg ? (
-                            <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl shadow-2xl overflow-hidden flex flex-col h-full min-h-[600px]">
+                            <div className="bg-white/40 dark:bg-black/20 backdrop-blur-2xl border border-white/20 dark:border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-full min-h-[600px]">
                                 {/* Cabecera Detalle */}
                                 <div className="p-8 border-b border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-white/5 flex justify-between items-center">
                                     <div>
@@ -200,14 +200,14 @@ export default function SupportPanel() {
                                         </div>
                                     </div>
 
-                                    <div className="bg-zinc-50 dark:bg-[#1a1a1a] p-6 border-l-4 border-brand-blue relative">
+                                    <div className="bg-zinc-50 dark:bg-[#1a1a1a] p-6 border-l-4 border-brand-blue relative rounded-r-2xl shadow-inner">
                                         <MessageSquare size={40} className="absolute top-4 right-4 text-brand-blue/5" />
                                         <p className="text-[10px] font-black uppercase text-brand-blue mb-2">Mensaje del Cliente</p>
                                         <p className="text-sm font-medium leading-relaxed dark:text-zinc-200">{selectedMsg.mensaje}</p>
                                     </div>
 
                                     {selectedMsg.status === 'replied' && (
-                                        <div className="bg-green-500/5 dark:bg-green-500/5 p-6 border-l-4 border-green-500">
+                                        <div className="bg-green-500/5 dark:bg-green-500/5 p-6 border-l-4 border-green-500 rounded-r-2xl shadow-inner">
                                             <p className="text-[10px] font-black uppercase text-green-500 mb-2">Nuestra Respuesta</p>
                                             <p className="text-sm font-medium leading-relaxed dark:text-zinc-200 italic">"{selectedMsg.respuesta}"</p>
                                         </div>
@@ -224,11 +224,11 @@ export default function SupportPanel() {
                                                 onChange={(e) => setReplyText(e.target.value)}
                                                 rows="5"
                                                 placeholder="Hola! Gracias por contactarnos..."
-                                                className="w-full bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-5 text-sm font-medium outline-none focus:border-brand-blue transition-all resize-none"
+                                                className="w-full bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-5 text-sm font-medium outline-none focus:border-brand-blue transition-all resize-none rounded-2xl shadow-inner"
                                             ></textarea>
                                             <button 
                                                 disabled={sendingReply || !replyText.trim()}
-                                                className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all disabled:opacity-50"
+                                                className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all disabled:opacity-50 rounded-2xl shadow-lg active:scale-95"
                                             >
                                                 {sendingReply ? <Loader2 className="animate-spin" /> : <><Send size={18} /> Enviar Respuesta por n8n</>}
                                             </button>
@@ -237,7 +237,7 @@ export default function SupportPanel() {
                                 )}
                             </div>
                         ) : (
-                            <div className="h-full min-h-[600px] flex flex-col items-center justify-center bg-white dark:bg-[#111] border border-dashed border-zinc-200 dark:border-white/5 rounded-xl text-center p-12">
+                            <div className="h-full min-h-[600px] flex flex-col items-center justify-center bg-white/40 dark:bg-black/20 backdrop-blur-2xl border border-dashed border-white/20 dark:border-white/5 rounded-2xl text-center p-12">
                                 <div className="w-24 h-24 bg-brand-blue/10 rounded-full flex items-center justify-center mb-6">
                                     <MessageSquare size={48} className="text-brand-blue" />
                                 </div>

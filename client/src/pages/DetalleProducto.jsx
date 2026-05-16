@@ -116,7 +116,7 @@ const DetalleProducto = () => {
     ])).filter(img => img && typeof img === 'string' && img.trim() !== '');
 
     return (
-        <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans py-20 px-4 transition-colors relative overflow-hidden">
+        <div className="bg-transparent min-h-screen text-zinc-900 dark:text-white font-sans py-20 px-4 transition-colors relative overflow-hidden">
             
             <div className="max-w-[1400px] mx-auto">
                 
@@ -127,11 +127,11 @@ const DetalleProducto = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-32 items-start">
                     <div className="flex flex-col gap-6">
                         <div 
-                            className="relative w-full bg-[#f8f8f8] dark:bg-[#0a0a0a] border border-white/5 overflow-hidden flex items-center justify-center shadow-xl cursor-zoom-in group"
+                            className="relative w-full bg-white/20 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/5 overflow-hidden flex items-center justify-center shadow-2xl cursor-zoom-in group rounded-3xl p-4"
                             onClick={() => { setIsModalOpen(true); setZoomLevel(1); }}
                         >
                             <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain" />
-                            <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl">
+                            <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl rounded-full">
                                 {producto.stock === 0 ? 'SIN STOCK' : (producto.estado || 'STOCK EXCLUSIVO')}
                             </div>
                         </div>
@@ -142,7 +142,7 @@ const DetalleProducto = () => {
                                     <button 
                                         key={idx}
                                         onClick={() => setImgPrincipal(fotoUrl)}
-                                        className={`aspect-square border transition-all duration-300 bg-[#f8f8f8] dark:bg-[#111111] p-1 ${imgPrincipal === fotoUrl ? 'border-brand-orange' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                                        className={`aspect-square border transition-all duration-300 bg-white/20 dark:bg-white/5 backdrop-blur-lg p-1 rounded-lg ${imgPrincipal === fotoUrl ? 'border-brand-orange' : 'border-transparent opacity-50 hover:opacity-100'}`}
                                     >
                                         <img src={fotoUrl} alt="Thumb" className="w-full h-full object-contain" />
                                     </button>
@@ -152,7 +152,7 @@ const DetalleProducto = () => {
                     </div>
                     <div className="flex flex-col pt-4">
                         <div className="mb-8">
-                            <span className="bg-brand-blue/10 text-brand-blue px-3 py-1 text-[9px] font-black uppercase italic tracking-widest border border-brand-blue/30 mb-6 inline-block">
+                            <span className="bg-brand-blue/10 text-brand-blue px-3 py-1 text-[9px] font-black uppercase italic tracking-widest border border-brand-blue/30 mb-6 inline-block rounded-full">
                                 {producto.franchise || "SERIE VNTG"}
                             </span>
                             <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 leading-[0.9]">{producto.title}</h1>
@@ -169,14 +169,14 @@ const DetalleProducto = () => {
                         <button 
                             onClick={() => addToCart(producto)} 
                             disabled={producto.stock === 0}
-                            className={`w-full py-6 font-black uppercase italic text-lg tracking-[0.2em] transition-all flex items-center justify-center gap-4 mb-4 shadow-xl active:translate-y-1 ${producto.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-orange text-white hover:bg-zinc-900'}`}
+                            className={`w-full py-6 font-black uppercase italic text-lg tracking-[0.2em] transition-all flex items-center justify-center gap-4 mb-4 shadow-xl active:translate-y-1 rounded-2xl ${producto.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-orange text-white hover:bg-zinc-900'}`}
                         >
                             <ShoppingCart size={24} /> {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
                         </button>
 
                         <button 
                             onClick={() => addToWishList(producto)} 
-                            className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10"
+                            className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10 rounded-xl"
                         >
                             <Heart size={18} /> {producto.stock === 0 ? 'Avísame cuando haya stock' : 'Agregar a la lista de deseos'}
                         </button>
@@ -223,12 +223,12 @@ const DetalleProducto = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                             {relacionados.map((item) => (
-                                <div key={item.id} className="group bg-zinc-50 dark:bg-brand-dark border border-zinc-200 dark:border-white/5 transition-all duration-300 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-lg">
-                                    <div className="aspect-video bg-zinc-50 dark:bg-[#111111] flex items-center justify-center overflow-hidden relative p-4 border-b border-zinc-200 dark:border-white/5">
+                                <div key={item.id} className="group bg-white/20 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-xl rounded-3xl overflow-hidden">
+                                    <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-white/5">
                                         <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                             <CardImage item={item} />
                                         </Link>
-                                        <div className="absolute top-3 left-3 bg-brand-blue text-white px-2 py-0.5 text-[9px] font-black uppercase italic tracking-widest z-10">
+                                        <div className="absolute top-3 left-3 bg-brand-blue text-white px-2 py-0.5 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
                                             {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                         </div>
                                     </div>

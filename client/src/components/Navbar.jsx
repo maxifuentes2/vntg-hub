@@ -81,7 +81,7 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="sticky top-0 z-[100] bg-white/80 dark:bg-brand-dark/80 backdrop-blur-md border-b border-zinc-200 dark:border-white/5 transition-colors duration-300">
+        <nav className="sticky top-0 z-[100] bg-white/40 dark:bg-brand-dark/40 backdrop-blur-2xl border-b border-white/20 dark:border-white/5 transition-all duration-500">
             <div className="max-w-[1700px] mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-1 sm:gap-4">
                 <div className="flex items-center gap-2 sm:gap-6">
                     {/* Botón de categorías conectado al contexto */}
@@ -122,7 +122,7 @@ export default function Navbar() {
                             <User size={22} />
                         </button>
                         {isUserMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#111111] border border-zinc-200 dark:border-white/5 shadow-2xl py-2 z-50">
+                            <div className="absolute right-0 mt-2 w-56 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-2xl border border-white/20 dark:border-white/5 shadow-2xl py-2 z-50 rounded-2xl overflow-hidden">
                                 {user ? (
                                     <>
                                         <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 mb-2 bg-zinc-50 dark:bg-white/5">

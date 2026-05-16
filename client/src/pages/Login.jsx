@@ -138,8 +138,8 @@ export default function Login() {
     };
 
     return (
-        <div className="bg-white dark:bg-brand-dark min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors">
-            <div className="max-w-md w-full bg-zinc-50 dark:bg-[#111111] border border-zinc-200 dark:border-white/5 p-6 sm:p-12 text-center relative shadow-2xl">
+        <div className="bg-transparent min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors relative overflow-hidden">
+            <div className="max-w-md w-full bg-white/20 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/5 p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange transform rotate-45 translate-x-12 -translate-y-12"></div>
 
                 {step === 1 ? (
@@ -148,13 +148,13 @@ export default function Login() {
                         <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Accede a tu perfil</p>
 
                         {justRegistered && (
-                            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/50 text-green-500 text-xs font-bold uppercase italic">
+                            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/50 text-green-500 text-xs font-bold uppercase italic rounded-xl">
                                 ¡Cuenta creada! Iniciá sesión para entrar al Hub.
                             </div>
                         )}
 
                         {error && (
-                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">
+                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic rounded-xl">
                                 {error}
                             </div>
                         )}
@@ -167,7 +167,7 @@ export default function Login() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 disabled={isLoading}
-                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50"
+                                className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50 rounded-xl transition-all"
                             />
                             
                             <div>
@@ -180,7 +180,7 @@ export default function Login() {
                                         onKeyUp={checkCapsLock}
                                         required
                                         disabled={isLoading}
-                                        className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50"
+                                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50 rounded-xl transition-all"
                                     />
                                     <button 
                                         type="button"
@@ -212,7 +212,7 @@ export default function Login() {
                             <button 
                                 type="submit" 
                                 disabled={isLoading}
-                                className={`w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest transition-all mt-2 flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange'}`}
+                                className={`w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest transition-all mt-2 flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 rounded-2xl ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange'}`}
                             >
                                 {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar'}
                             </button>
@@ -227,7 +227,7 @@ export default function Login() {
                         </div>
 
                         <div className="flex justify-center">
-                            <GoogleLogin onSuccess={handleGoogleSuccess} theme="filled_black" shape="square" />
+                            <GoogleLogin onSuccess={handleGoogleSuccess} theme="filled_black" shape="pill" />
                         </div>
 
                         <p className="mt-10 text-[11px] font-bold uppercase italic text-zinc-500">
@@ -252,7 +252,7 @@ export default function Login() {
                         <p className="text-brand-blue font-bold text-xs mb-8 italic">{mensaje}</p>
 
                         {error && (
-                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">
+                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic rounded-xl">
                                 {error}
                             </div>
                         )}
@@ -266,13 +266,13 @@ export default function Login() {
                                 maxLength={6}
                                 required
                                 disabled={isLoading}
-                                className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none disabled:opacity-50"
+                                className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none disabled:opacity-50 rounded-2xl transition-all"
                             />
                             
                             <button 
                                 type="submit" 
                                 disabled={isLoading}
-                                className={`w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest transition-all mt-4 flex justify-center items-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark'}`}
+                                className={`w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest transition-all mt-4 flex justify-center items-center gap-2 rounded-2xl ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark'}`}
                             >
                                 {isLoading ? <Loader2 className="animate-spin" size={20} /> : <>Confirmar <ShieldCheck size={18} /></>}
                             </button>

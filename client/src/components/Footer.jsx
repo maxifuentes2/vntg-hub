@@ -7,7 +7,9 @@ export default function Footer() {
     const MapPin = Lucide.MapPin;
 
     return (
-        <footer className="bg-zinc-100 dark:bg-brand-dark pt-20 pb-28 border-t-4 border-brand-orange transition-colors duration-300">
+        <footer className="bg-white/40 dark:bg-black/20 backdrop-blur-xl pt-20 pb-28 border-t border-white/20 dark:border-white/5 transition-all duration-300 relative overflow-hidden">
+            {/* Sutil gradiente superior para separar */}
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-orange to-transparent"></div>
             <div className="max-w-[1700px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
                 
                 {/* Logo y descripción */}
@@ -29,7 +31,7 @@ export default function Footer() {
                             href="https://www.instagram.com/gaspo0.0" 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-orange hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg flex items-center justify-center"
+                            className="bg-white/40 dark:bg-white/5 backdrop-blur-md p-3 hover:bg-brand-orange hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-xl flex items-center justify-center border border-white/20 dark:border-white/5 shadow-sm"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
@@ -41,7 +43,7 @@ export default function Footer() {
                             href="https://x.com/LoboLocura33" 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="bg-zinc-200 dark:bg-white/5 p-3 hover:bg-brand-blue hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-lg flex items-center justify-center"
+                            className="bg-white/40 dark:bg-white/5 backdrop-blur-md p-3 hover:bg-brand-blue hover:text-white transition-all text-zinc-600 dark:text-zinc-300 rounded-xl flex items-center justify-center border border-white/20 dark:border-white/5 shadow-sm"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" />

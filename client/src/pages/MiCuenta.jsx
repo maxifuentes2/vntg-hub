@@ -79,7 +79,7 @@ export default function MiCuenta() {
                             autoFocus 
                             value={tempValue} 
                             onChange={(e) => setTempValue(e.target.value)} 
-                            className="w-full bg-zinc-100 dark:bg-black text-sm font-bold border-b border-brand-orange outline-none py-1 dark:text-white" 
+                            className="w-full bg-zinc-100 dark:bg-black text-sm font-bold border-b border-brand-orange outline-none py-1 dark:text-white rounded-lg px-2" 
                         />
                     ) : (
                         <p className="text-sm font-bold dark:text-white italic uppercase">{value || 'No definido'}</p>
@@ -106,7 +106,7 @@ export default function MiCuenta() {
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-3">
                         <User size={14} className="text-brand-orange" /> Perfil de Usuario
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-200 dark:bg-white/5 border border-zinc-200 dark:border-white/5 shadow-xl overflow-hidden rounded-xl">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl overflow-hidden rounded-[2rem]">
                         <div className="p-4 bg-zinc-100 dark:bg-[#111] border-b border-zinc-200 dark:border-white/5">
                             <p className="text-[9px] font-black uppercase text-zinc-500">Nombre</p>
                             <p className="text-sm font-bold italic uppercase">{user.name}</p>
@@ -136,7 +136,7 @@ export default function MiCuenta() {
                                 <Link 
                                     to={`/pedido/${order.id}`} 
                                     key={order.id} 
-                                    className="bg-white dark:bg-[#1a1a1a] p-6 border border-zinc-200 dark:border-white/5 rounded-xl flex justify-between items-center hover:border-brand-orange/50 transition-all cursor-pointer group"
+                                    className="bg-white/40 dark:bg-black/20 backdrop-blur-md p-6 border border-white/20 dark:border-white/5 rounded-2xl flex justify-between items-center hover:border-brand-orange/50 transition-all cursor-pointer group shadow-lg"
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">

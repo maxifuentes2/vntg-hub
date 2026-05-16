@@ -14,14 +14,14 @@ export default function SidebarWrapper({ isOpen, onClose, title, icon: Icon, chi
             {/* Backdrop con tu blur y opacidad */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
             
-            {/* Panel Lateral con la transición de 500ms ease-out del carrito */}
-            <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[350px] sm:max-w-md bg-white dark:bg-brand-dark shadow-2xl transform transition-transform duration-500 ease-out border-zinc-200 dark:border-white/5 ${translateClass}`}>
+            {/* Panel Lateral con Liquid Glass */}
+            <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[350px] sm:max-w-md bg-white/40 dark:bg-black/40 backdrop-blur-3xl shadow-2xl transform transition-transform duration-500 ease-out border-white/20 dark:border-white/5 ${translateClass}`}>
                 <div className="h-full flex flex-col">
                     {/* Cabecera Unificada */}
-                    <div className="p-4 sm:p-8 flex justify-between items-center border-b border-zinc-200 dark:border-white/5">
+                    <div className="p-4 sm:p-8 flex justify-between items-center border-b border-white/20 dark:border-white/5">
                         <div className="flex flex-col">
                             {side === 'left' && <span className="text-brand-orange font-black uppercase tracking-[0.3em] text-[10px] italic mb-1">Menu Principal</span>}
-                            <h2 className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3">
+                            <h2 className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3 text-zinc-900 dark:text-white">
                                 {Icon && <Icon className="text-brand-orange" />} 
                                 {title}
                             </h2>

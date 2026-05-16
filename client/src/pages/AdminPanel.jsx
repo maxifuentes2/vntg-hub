@@ -177,7 +177,7 @@ export default function AdminPanel() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] p-4 md:p-8">
+        <div className="min-h-screen bg-transparent p-4 md:p-8 relative">
             <div className="max-w-7xl mx-auto pt-24 md:pt-28">
 
                 {/* HEADER Y PESTAÑAS */}
@@ -187,7 +187,7 @@ export default function AdminPanel() {
                         <p className="text-brand-orange text-[10px] font-bold uppercase tracking-widest mt-1">Control Total de Base de Datos</p>
                     </div>
 
-                    <div className="flex flex-wrap justify-center bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl p-1 gap-1">
+                    <div className="flex flex-wrap justify-center bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-xl p-1 gap-1 shadow-lg">
                         <button
                             onClick={() => setActiveTab('products')}
                             className={`flex items-center gap-2 px-6 py-2 text-sm font-black uppercase italic rounded-lg transition-all ${activeTab === 'products' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
@@ -208,7 +208,7 @@ export default function AdminPanel() {
                         </button>
                     </div>
 
-                    <button onClick={fetchData} className="p-3 bg-zinc-100 dark:bg-white/5 rounded-xl text-brand-orange hover:rotate-180 transition-all duration-500">
+                    <button onClick={fetchData} className="p-3 bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl text-brand-orange hover:rotate-180 transition-all duration-500 shadow-lg">
                         <RefreshCw size={24} />
                     </button>
                 </div>
@@ -217,14 +217,14 @@ export default function AdminPanel() {
                 {activeTab === 'products' && (
                     <>
                         <div className="flex justify-end mb-6">
-                            <button onClick={() => handleOpenProductModal()} className="flex items-center gap-2 bg-brand-orange text-white px-4 py-3 rounded text-xs font-black uppercase italic hover:bg-orange-600 transition-colors">
+                            <button onClick={() => handleOpenProductModal()} className="flex items-center gap-2 bg-brand-orange text-white px-4 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
                                 <Plus size={16} /> Agregar Producto
                             </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {products.map(p => (
-                                <div key={p.id} className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-5 relative group">
+                                <div key={p.id} className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 p-5 relative group shadow-xl hover:scale-[1.02] transition-all duration-500 rounded-2xl overflow-hidden">
                                     <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate mb-1">{p.title}</h3>
                                     <p className="text-[10px] text-zinc-500 uppercase font-bold mb-3">ID: {p.id} | Cat: {p.categoryId}</p>
 
@@ -237,10 +237,10 @@ export default function AdminPanel() {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded hover:bg-brand-orange hover:text-white transition-colors">
+                                            <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
                                                 <Edit2 size={14} />
                                             </button>
-                                            <button onClick={() => openConfirmDelete(p.id, p.title, 'product')} className="p-2 bg-red-500/10 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors">
+                                            <button onClick={() => openConfirmDelete(p.id, p.title, 'product')} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
@@ -255,23 +255,23 @@ export default function AdminPanel() {
                 {activeTab === 'categories' && (
                     <>
                         <div className="flex justify-end mb-6">
-                            <button onClick={handleOpenCategoryModal} className="flex items-center gap-2 bg-brand-orange text-white px-4 py-3 rounded text-xs font-black uppercase italic hover:bg-orange-600 transition-colors">
+                            <button onClick={handleOpenCategoryModal} className="flex items-center gap-2 bg-brand-orange text-white px-4 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
                                 <Plus size={16} /> Agregar Categoría
                             </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {categories.map(c => (
-                                <div key={c.id} className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-5 flex justify-between items-center group">
+                                <div key={c.id} className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 p-5 flex justify-between items-center group rounded-2xl shadow-lg">
                                     <div>
                                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">{c.name || c.id}</h3>
                                         <p className="text-[10px] text-zinc-500 uppercase mt-1">ID: {c.id}</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleOpenCategoryModal(c)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded hover:bg-brand-orange hover:text-white transition-colors">
+                                        <button onClick={() => handleOpenCategoryModal(c)} className="p-2 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
                                             <Edit2 size={16} />
                                         </button>
-                                        <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all">
+                                        <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all">
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
@@ -288,7 +288,7 @@ export default function AdminPanel() {
                             <p className="text-center text-zinc-500 dark:text-zinc-400 italic py-10">No hay órdenes registradas.</p>
                         )}
                         {orders.map(order => (
-                            <div key={order.id} className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-5 flex flex-col md:flex-row justify-between gap-4 md:items-center">
+                            <div key={order.id} className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 p-5 flex flex-col md:flex-row justify-between gap-4 md:items-center rounded-2xl shadow-lg">
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
                                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">Orden: {order.id.slice(0, 8)}...</h3>
@@ -350,7 +350,7 @@ export default function AdminPanel() {
             {/* MODAL DE PRODUCTOS */}
             {isProductModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl">
                         <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-white/5 sticky top-0 bg-white dark:bg-[#111] z-10">
                             <h2 className="text-xl font-black italic uppercase text-brand-orange">
                                 {editingItem ? 'Editar Producto' : 'Nuevo Producto'}
@@ -431,10 +431,10 @@ export default function AdminPanel() {
 
                             <div>
                                 <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Galería (URLs separadas por coma)</label>
-                                <textarea rows="2" value={productForm.gallery} onChange={e => setProductForm({ ...productForm, gallery: e.target.value })} placeholder="https://img1.jpg, https://img2.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
+                                <textarea rows="2" value={productForm.gallery} onChange={e => setProductForm({ ...productForm, gallery: e.target.value })} placeholder="https://img1.jpg, https://img2.jpg" className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded-xl outline-none text-sm dark:text-white border border-transparent focus:border-brand-orange" />
                             </div>
 
-                            <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded mt-4 hover:bg-orange-600 transition-colors">
+                            <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded-xl mt-4 hover:bg-orange-600 transition-all shadow-lg active:scale-95">
                                 Guardar Producto
                             </button>
                         </form>
@@ -445,7 +445,7 @@ export default function AdminPanel() {
             {/* MODAL DE CATEGORÍAS */}
             {isCategoryModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-xl w-full max-w-sm">
+                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 rounded-3xl w-full max-w-sm shadow-2xl">
                         <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-white/5">
                             <h2 className="text-xl font-black italic uppercase text-brand-orange">
                                 {categoryForm.id ? 'Editar Categoría' : 'Nueva Categoría'}
@@ -463,7 +463,7 @@ export default function AdminPanel() {
                                 <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Nombre Visible (Ej: Remeras Oversize)</label>
                                 <input type="text" required value={categoryForm.name} onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })} className="w-full bg-zinc-100 dark:bg-white/5 p-3 rounded outline-none text-sm dark:text-white" />
                             </div>
-                            <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded mt-4 hover:bg-orange-600 transition-colors">
+                            <button type="submit" className="w-full bg-brand-orange text-white font-black italic uppercase py-4 rounded-xl mt-4 hover:bg-orange-600 transition-all shadow-lg active:scale-95">
                                 {categoryForm.id ? 'Guardar Cambios' : 'Crear Categoría'}
                             </button>
                         </form>
@@ -474,7 +474,7 @@ export default function AdminPanel() {
             {/* --- NUEVO: MODAL DE CONFIRMACIÓN ESTÉTICO --- */}
             {confirmDelete.isOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex justify-center items-start p-4 pt-24 md:pt-40 overflow-y-auto">
-                    <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-4 sm:p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden group">
+                    <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-4 sm:p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden rounded-3xl group">
 
                         {/* Decoración estética de VNTG HUB */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange to-transparent opacity-50"></div>
@@ -499,13 +499,13 @@ export default function AdminPanel() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                                 <button
                                     onClick={() => setConfirmDelete({ isOpen: false, id: null, title: '', type: '' })}
-                                    className="px-6 py-4 bg-zinc-200 dark:bg-white/5 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-white/10 transition-all border border-transparent"
+                                    className="px-6 py-4 bg-zinc-200 dark:bg-white/5 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-white/10 transition-all border border-transparent rounded-xl"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={executeDelete}
-                                    className="px-6 py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-900 transition-all shadow-lg active:scale-95"
+                                    className="px-6 py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-900 transition-all shadow-lg active:scale-95 rounded-xl"
                                 >
                                     Eliminar
                                 </button>

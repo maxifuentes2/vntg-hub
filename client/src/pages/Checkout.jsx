@@ -97,17 +97,17 @@ export default function Checkout() {
                             value={shipping.nombre}
                             onChange={e => setShipping({ ...shipping, nombre: e.target.value })}
                             required
-                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold italic focus:border-brand-orange outline-none capitalize"
+                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold italic focus:border-brand-orange outline-none capitalize rounded-xl shadow-inner"
                         />
                         {!esRetiro && (
                             <div className="space-y-4">
                                 <div className="flex gap-4">
-                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
-                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
+                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                                 </div>
                                 <div className="flex gap-4">
-                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
-                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none" />
+                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                                 </div>
                             </div>
                         )}
@@ -117,14 +117,14 @@ export default function Checkout() {
                             value={shipping.telefono}
                             onChange={e => setShipping({ ...shipping, telefono: e.target.value })}
                             required
-                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none"
+                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
                         />
                     </form>
 
                     {error && <p className="mt-4 text-red-500 font-bold italic uppercase text-xs">{error}</p>}
                 </div>
 
-                <div className="bg-zinc-50 dark:bg-[#111] p-4 sm:p-8 border border-zinc-200 dark:border-white/5 h-fit sticky top-32">
+                <div className="bg-white/40 dark:bg-white/5 backdrop-blur-2xl p-4 sm:p-10 border border-white/20 dark:border-white/5 h-fit sticky top-32 rounded-3xl shadow-2xl">
                     <h2 className="text-xl font-black italic uppercase tracking-tight mb-8 flex items-center gap-3">
                         <MapPin size={20} className="text-brand-orange" /> Resumen
                     </h2>
@@ -150,7 +150,7 @@ export default function Checkout() {
                         type="submit"
                         form="checkout-form"
                         disabled={loading}
-                        className="w-full mt-8 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        className="w-full mt-8 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 rounded-2xl shadow-xl shadow-brand-orange/20 active:scale-95"
                     >
                         {loading ? 'Procesando...' : 'Pagar con Mercado Pago'} <ShieldCheck size={20} />
                     </button>

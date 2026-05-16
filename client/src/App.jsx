@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollTotop';
 import Chatbot from './components/Chatbot'; 
+import WhatsAppButton from './components/WhatsAppButton'; 
+import SubtleScrollToTop from './components/SubtleScrollToTop'; 
 import Inicio from './pages/Inicio';
 import Categoria from './pages/Categoria'; 
 import PedidoDetalle from './pages/PedidoDetalle';
@@ -61,7 +63,14 @@ function App() {
               {/* COMPONENTE LÓGICO DE SCROLL: Asegura que cada navegación empiece desde arriba */}
               <ScrollToTopOnNavigation />
 
-              <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
+              <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300 relative">
+                {/* Background Liquid Elements */}
+                <div className="liquid-bg">
+                  <div className="blob blob-orange"></div>
+                  <div className="blob blob-blue"></div>
+                  <div className="blob blob-center"></div>
+                </div>
+
                 <Navbar /> 
                 <CartSidebar />
                 <WishListSidebar />
@@ -99,8 +108,9 @@ function App() {
                 </main>
                 
                 <Footer />
-                <ScrollToTop />
+                <WhatsAppButton isSidebarOpen={isFilterOpen} /> 
                 <Chatbot isFilterOpen={isFilterOpen} /> 
+                <SubtleScrollToTop />
               </div>
             </Router>
           </WishListProvider>

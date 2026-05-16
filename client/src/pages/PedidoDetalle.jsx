@@ -62,7 +62,7 @@ export default function PedidoDetalle() {
 
                 {/* MAPA DE ESTADO (TIMELINE) */}
                 {/* NOTA: Se cambió p-8 por px-8 pt-8 pb-12 para dar más espacio inferior a las etiquetas */}
-                <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 px-4 sm:px-8 pt-4 sm:pt-8 pb-10 sm:pb-14 rounded-xl shadow-xl mb-8">
+                <div className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 px-4 sm:px-8 pt-4 sm:pt-8 pb-10 sm:pb-14 rounded-3xl shadow-2xl mb-8">
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-brand-orange mb-8">Estado del Envío</h2>
                     
                     <div className="relative flex justify-between items-center">
@@ -97,7 +97,7 @@ export default function PedidoDetalle() {
                                 <p className="text-[10px] font-black uppercase text-zinc-500 mb-1">Código de Seguimiento</p>
                                 <p className="text-lg font-bold italic text-brand-orange">{pedido.trackingNumber}</p>
                             </div>
-                            <a href="https://www.correoargentino.com.ar/formularios/e-commerce" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-brand-blue text-white px-4 py-2 text-xs font-black uppercase italic hover:bg-brand-orange transition-colors">
+                            <a href="https://www.correoargentino.com.ar/formularios/e-commerce" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-brand-blue text-white px-4 py-2 text-xs font-black uppercase italic hover:bg-brand-orange transition-all rounded-lg shadow-lg active:scale-95">
                                 Rastrear <ExternalLink size={14} />
                             </a>
                         </div>
@@ -106,7 +106,7 @@ export default function PedidoDetalle() {
                 {/* DETALLES DE COMPRA */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* ARTÍCULOS */}
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-4 sm:p-8 rounded-xl shadow-xl">
+                    <div className="bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/5 p-4 sm:p-8 rounded-2xl shadow-xl">
                         <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-2"><Package size={14} className="text-brand-orange"/> Productos</h2>
                         <div className="space-y-4">
                             {pedido.items?.map(item => (
@@ -128,7 +128,7 @@ export default function PedidoDetalle() {
                     </div>
 
                     {/* DIRECCIÓN */}
-                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-4 sm:p-8 rounded-xl shadow-xl h-fit">
+                    <div className="bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/5 p-4 sm:p-8 rounded-2xl shadow-xl h-fit">
                         <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-2"><MapPin size={14} className="text-brand-orange"/> Envío</h2>
                         <div className="space-y-3">
                             <p className="text-sm font-bold"><span className="text-zinc-500">Nombre:</span> {infoEnvio.nombre} {infoEnvio.apellido}</p>
