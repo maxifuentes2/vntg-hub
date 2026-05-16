@@ -39,10 +39,40 @@ const CardImage = ({ item }) => {
     );
 };
 
+const ScrambleText = ({ text, delay = 0, duration = 800 }) => {
+    const [displayText, setDisplayText] = useState(text);
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+
+    useEffect(() => {
+        let frame = 0;
+        const totalFrames = (duration / 1000) * 60;
+        const timeout = setTimeout(() => {
+            const interval = setInterval(() => {
+                setDisplayText(text.split('').map((char, i) => {
+                    if (char === ' ') return ' ';
+                    const progress = frame / totalFrames;
+                    if (progress > i / text.length) return char;
+                    return chars[Math.floor(Math.random() * chars.length)];
+                }).join(''));
+                frame++;
+                if (frame >= totalFrames) {
+                    setDisplayText(text);
+                    clearInterval(interval);
+                }
+            }, 1000 / 60);
+            return () => clearInterval(interval);
+        }, delay);
+        return () => clearTimeout(timeout);
+    }, [text, delay, duration]);
+
+    return <span>{displayText}</span>;
+};
+
 export default function Inicio() {
     const [productos, setProductos] = useState([]);
     const [dbCategories, setDbCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [triggerKey, setTriggerKey] = useState(0);
     const { addToCart } = useCart();
     const { addToWishList } = useWishList();
 
@@ -51,6 +81,14 @@ export default function Inicio() {
     const scrollToContent = () => {
         firstCategoryRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
+
+    // Re-triggerear la animación cada 10 segundos
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTriggerKey(prev => prev + 1);
+        }, 10000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -117,13 +155,18 @@ export default function Inicio() {
 
                 <div className="relative z-10 text-center px-4">
                     <Reveal variant="fade-down" delay={0}>
-                        <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">
-                            VNTG <span className="text-brand-orange">HUB</span>
+                        <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white flex items-center justify-center gap-4 subtle-glitch">
+                            <span className="hover:animate-pulse transition-all">
+                                <ScrambleText key={`vntg-${triggerKey}`} text="VNTG" delay={200} />
+                            </span>
+                            <span className="text-brand-orange liquid-text">
+                                <ScrambleText key={`hub-${triggerKey}`} text="HUB" delay={600} />
+                            </span>
                         </h1>
                     </Reveal>
                     <Reveal variant="fade-up" delay={150}>
-                        <p className="text-lg md:text-xl font-bold italic text-zinc-600 dark:text-zinc-500 uppercase tracking-[0.4em]">
-                            Coleccionismo de Alto Nivel
+                        <p className="text-lg md:text-xl font-bold italic liquid-text uppercase tracking-[0.4em] subtle-glitch">
+                            <ScrambleText key={`sub-${triggerKey}`} text="Coleccionismo de Alto Nivel" delay={1000} duration={1200} />
                         </p>
                     </Reveal>
                 </div>
@@ -139,6 +182,41 @@ export default function Inicio() {
                     </span>
                 </button>
             </section>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes liquid-flow {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+
+                @keyframes glitch-subtle {
+                    0%, 90%, 100% { transform: translate(0); opacity: 1; }
+                    91% { transform: translate(-2px, 1px) skewX(1deg); opacity: 0.8; }
+                    92% { transform: translate(2px, -1px) skewX(-1deg); opacity: 0.9; }
+                    95% { transform: translate(0); opacity: 1; }
+                }
+
+                .subtle-glitch {
+                    animation: glitch-subtle 8s infinite;
+                }
+
+                .liquid-text {
+                    background: linear-gradient(
+                        -45deg, 
+                        #ff5a00, 
+                        #ff8c00, 
+                        #ffc107, 
+                        #ff5a00
+                    );
+                    background-size: 300% 300%;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    animation: liquid-flow 6s ease infinite;
+                    display: inline-block;
+                    padding-right: 0.05em;
+                }
+            ` }} />
 
             {/* SECCIONES DINÁMICAS */}
             {secciones.map((seccion, index) => (
