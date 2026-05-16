@@ -84,8 +84,8 @@ export default function Navbar() {
             <div className="max-w-[1700px] mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-1 sm:gap-4">
                 <div className="flex items-center gap-2 sm:gap-6">
                     {/* Botón de categorías conectado al contexto */}
-                    <button onClick={openCategory} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white">
-                        <Menu size={24} />
+                    <button onClick={openCategory} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                        <Menu size={24} className="group-hover:text-brand-orange transition-colors" />
                     </button>
                     <Link 
                         to="/" 
@@ -112,13 +112,17 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2">
-                    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white">
-                        {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+                    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                        {theme === 'dark' ? (
+                            <Sun size={22} className="group-hover:text-brand-orange transition-colors" />
+                        ) : (
+                            <Moon size={22} className="group-hover:text-brand-orange transition-colors" />
+                        )}
                     </button>
 
                     <div className="relative" ref={userMenuRef}>
-                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white">
-                            <User size={22} />
+                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                            <User size={22} className="group-hover:text-brand-orange transition-colors" />
                         </button>
                         {isUserMenuOpen && (
                             <div className="absolute right-0 mt-2 w-56 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-2xl border border-white/20 dark:border-white/5 shadow-2xl py-2 z-50 rounded-2xl overflow-hidden">
