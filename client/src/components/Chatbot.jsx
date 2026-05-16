@@ -95,7 +95,7 @@ export default function Chatbot({ isSidebarOpen }) {
             const data = await res.json();
             
             // 4. Agregar la respuesta del bot
-            setMessages(prev => [...prev, { text: data.reply || "Avería en boxes: " + data.error, isBot: true }]);
+            setMessages(prev => [...prev, { text: data.reply || "Error del sistema: " + data.error, isBot: true }]);
             
             // 5. Si el bot indica que el chat terminó, limpiamos para la próxima vez
             if (data.finished) {
@@ -105,7 +105,7 @@ export default function Chatbot({ isSidebarOpen }) {
                 }, 2000);
             }
         } catch (error) {
-            setMessages(prev => [...prev, { text: "Error de conexión con boxes. Intenta de nuevo.", isBot: true }]);
+            setMessages(prev => [...prev, { text: "Error de conexión con el sistema. Intenta de nuevo.", isBot: true }]);
         } finally {
             setIsLoading(false);
             setCooldown(4); // 4 segundos de enfriamiento para no saturar la API de Gemini (15 RPM limite)

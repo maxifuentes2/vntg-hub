@@ -132,7 +132,7 @@ const DetalleProducto = () => {
                         >
                             <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain" />
                             <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl">
-                                {producto.stock === 0 ? "OUT OF STOCK" : (producto.estado || "EXCLUSIVE STOCK")}
+                                {producto.stock === 0 ? 'SIN STOCK' : (producto.estado || 'STOCK EXCLUSIVO')}
                             </div>
                         </div>
 
@@ -153,7 +153,7 @@ const DetalleProducto = () => {
                     <div className="flex flex-col pt-4">
                         <div className="mb-8">
                             <span className="bg-brand-blue/10 text-brand-blue px-3 py-1 text-[9px] font-black uppercase italic tracking-widest border border-brand-blue/30 mb-6 inline-block">
-                                {producto.franchise || "VNTG SERIES"}
+                                {producto.franchise || "SERIE VNTG"}
                             </span>
                             <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 leading-[0.9]">{producto.title}</h1>
                             

@@ -15,7 +15,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import { useSidebar } from '../context/SidebarContext';
-import { ADMIN_EMAILS } from '../config';
+import { ADMIN_EMAILS, SUPPORT_EMAILS } from '../config';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -132,7 +132,12 @@ export default function Navbar() {
                                         </div>
                                         {ADMIN_EMAILS.includes(user.email) && (
                                             <Link to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-brand-orange hover:bg-brand-orange hover:text-white transition-colors">
-                                                <Shield size={16} /> Consola Admin
+                                                <Shield size={16} /> Panel Admin
+                                            </Link>
+                                        )}
+                                        {(SUPPORT_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(user.email)) && (
+                                            <Link to="/soporte" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-brand-blue hover:bg-brand-blue hover:text-white transition-colors">
+                                                <Shield size={16} /> Panel Soporte
                                             </Link>
                                         )}
                                         <Link to="/mi-cuenta" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white transition-colors">

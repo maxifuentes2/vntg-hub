@@ -11,6 +11,27 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const jwt = require("jsonwebtoken");
 const config = require("./config");
 
+// --- INICIALIZACIÓN DE TABLAS ---
+const initDB = async () => {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nombre VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                mensaje TEXT NOT NULL,
+                status ENUM('pending', 'replied') DEFAULT 'pending',
+                respuesta TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log("✅ Tabla support_messages lista");
+    } catch (err) {
+        console.error("❌ Error al inicializar tablas:", err);
+    }
+};
+initDB();
+
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const mpClient = new MercadoPagoConfig({
@@ -524,6 +545,29 @@ const verifyAdmin = (req, res, next) => {
     }
 };
 
+const verifySupport = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "No autorizado" });
+    const token = authHeader.split(" ")[1];
+    try {
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET || "vntg_secret_key",
+        );
+        // Soporte puede ser Admin O Soporte específico
+        const isSupport = config.SUPPORT_EMAILS.includes(decoded.email);
+        const isAdmin = config.ADMIN_EMAILS.includes(decoded.email);
+        
+        if (!isSupport && !isAdmin) {
+            return res.status(403).json({ error: "No tienes permisos de soporte" });
+        }
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ error: "Token inválido" });
+    }
+};
+
 // Productos
 app.get("/api/admin/products", verifyAdmin, async (req, res) => {
     try {
@@ -844,10 +888,10 @@ app.post("/api/chat", async (req, res) => {
 
             CATÁLOGO ACTUAL DE PRODUCTOS:
             ${catalogo}
-            Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en boxes de ese artículo.
+            Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en el sistema de ese artículo.
 
             DERIVACIÓN A SOPORTE HUMANO:
-            Si el problema es complejo (devoluciones, quejas severas, reembolsos) indica al usuario que debe enviar un correo a soportehubvntg@gmail.com para que un humano del equipo de boxes lo asista.
+            Si el problema es complejo (devoluciones, quejas severas, reembolsos) indica al usuario que debe enviar un correo a soportehubvntg@gmail.com para que un humano del equipo del Hub lo asista.
             
             DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`,
         });
@@ -904,12 +948,12 @@ app.post("/api/chat", async (req, res) => {
         }
 
         res.status(500).json({
-            reply: "Avería en boxes. Intenta de nuevo más tarde.",
+            reply: "Error interno del sistema. Intenta de nuevo más tarde.",
         });
     }
 });
 
-// --- RUTA DE CONTACTO ---
+// --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
 app.post("/api/contact", async (req, res) => {
     const { nombre, email, mensaje } = req.body;
 
@@ -920,15 +964,62 @@ app.post("/api/contact", async (req, res) => {
     }
 
     try {
+        // 1. Guardar en la base de datos para el panel de soporte
+        await db.query(
+            "INSERT INTO support_messages (nombre, email, mensaje) VALUES (?, ?, ?)",
+            [nombre, email, mensaje]
+        );
+
+        // 2. Notificar por n8n (opcional, ya que ahora se ve en el panel)
         await triggerN8nEmail("contact", "hubvntg@gmail.com", {
             nombre,
             email,
             mensaje,
         });
-        res.json({ message: "Correo enviado con éxito" });
+
+        res.json({ message: "Mensaje recibido con éxito. Nos contactaremos pronto." });
     } catch (error) {
-        console.error("Error al enviar el correo:", error);
-        res.status(500).json({ error: "Error al enviar el correo" });
+        console.error("Error al procesar contacto:", error);
+        res.status(500).json({ error: "Error al enviar el mensaje" });
+    }
+});
+
+// --- RUTAS DE PANEL DE SOPORTE ---
+app.get("/api/support/messages", verifySupport, async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM support_messages ORDER BY created_at DESC");
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: "Error al cargar mensajes" });
+    }
+});
+
+app.post("/api/support/reply/:id", verifySupport, async (req, res) => {
+    const { id } = req.params;
+    const { respuesta } = req.body;
+
+    if (!respuesta) return res.status(400).json({ error: "La respuesta es obligatoria" });
+
+    try {
+        const [msgData] = await db.query("SELECT * FROM support_messages WHERE id = ?", [id]);
+        if (msgData.length === 0) return res.status(404).json({ error: "Mensaje no encontrado" });
+
+        const message = msgData[0];
+
+        // 1. Actualizar DB
+        await db.query("UPDATE support_messages SET respuesta = ?, status = 'replied' WHERE id = ?", [respuesta, id]);
+
+        // 2. Enviar correo via n8n
+        await triggerN8nEmail("support_reply", message.email, {
+            nombre: message.nombre,
+            mensajeOriginal: message.mensaje,
+            respuesta: respuesta
+        });
+
+        res.json({ message: "Respuesta enviada y guardada con éxito" });
+    } catch (error) {
+        console.error("Error al responder mensaje:", error);
+        res.status(500).json({ error: "Error al enviar la respuesta" });
     }
 });
 

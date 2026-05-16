@@ -170,7 +170,7 @@ export default function Inicio() {
                                 to={`/categoria/${seccion.slug || slugify(seccion.nombre)}`}
                                 className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 sm:px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl"
                             >
-                                SHOP NOW <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
+                                COMPRAR AHORA <ArrowRight size={20} className="group-hover/btn:translate-x-2 transition-transform" />
                             </Link>
                         </div>
                     </div>

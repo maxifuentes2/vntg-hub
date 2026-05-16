@@ -49,7 +49,7 @@ export default function Registro() {
                 <div className="absolute top-0 left-0 w-24 h-24 bg-brand-blue transform -rotate-45 -translate-x-12 -translate-y-12"></div>
                 
                 <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Registro</h1>
-                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Join the squadron</p>
+                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Únete al escuadrón</p>
                 
                 {error && (
                     <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-bold uppercase italic">
@@ -68,7 +68,7 @@ export default function Registro() {
                     />
                     <input 
                         type="email" 
-                        placeholder="EMAIL" 
+                        placeholder="CORREO ELECTRÓNICO" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
@@ -79,7 +79,7 @@ export default function Registro() {
                         <div className="relative">
                             <input 
                                 type={showPassword ? "text" : "password"}
-                                placeholder="PASSWORD" 
+                                placeholder="CONTRASEÑA" 
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyUp={checkCapsLock}

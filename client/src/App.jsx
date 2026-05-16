@@ -17,6 +17,7 @@ import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import NotFound from './pages/NotFound'; 
 import AdminPanel from './pages/AdminPanel';
+import SupportPanel from './pages/SupportPanel';
 
 // NUEVA IMPORTACIÓN PARA EL RESET DE SCROLL
 import ScrollToTopOnNavigation from './components/ScrollToTopOnNavigation';
@@ -87,6 +88,7 @@ function App() {
                     <Route path="/recuperar-password" element={<RecuperarPassword />} />
                     <Route path="/reset-password" element={<RestablecerPassword />} />
                     <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/soporte" element={<SupportPanel />} />
                     <Route path="/guia-autenticidad" element={<GuiaAutenticidad />} />
                     <Route path="/envios" element={<EnviosSeguros />} />
                     <Route path="/contacto" element={<Contacto />} />

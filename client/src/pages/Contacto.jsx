@@ -43,7 +43,7 @@ export default function Contacto() {
         <div className="bg-white dark:bg-brand-dark min-h-screen text-zinc-900 dark:text-white font-sans transition-colors">
             <header className="py-24 bg-zinc-100 dark:bg-[#111111] border-b-[6px] border-brand-orange text-center px-4">
                     <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-4">Contacto</h1>
-                    <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs">Direct support for collectors</p>
+                    <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs">Soporte directo para coleccionistas</p>
             </header>
             <div className="max-w-[1400px] mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-20">
                 <div className="space-y-12 flex flex-col justify-center">

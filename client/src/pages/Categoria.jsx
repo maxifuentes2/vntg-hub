@@ -173,7 +173,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                         onClick={() => setIsFilterOpen(true)} 
                         className="flex items-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 py-3 font-black uppercase italic text-xs hover:bg-brand-orange transition-all"
                     >
-                        <SlidersHorizontal size={16} /> Filter + Sort
+                        <SlidersHorizontal size={16} /> Filtros
                     </button>
                 </div>
 

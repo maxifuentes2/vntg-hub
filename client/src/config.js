@@ -5,3 +5,7 @@ export const ADMIN_EMAILS = [
     "brunogusk2503@gmail.com",
     "szufia76@gmail.com",
 ];
+
+export const SUPPORT_EMAILS = [
+    "soporte.vntghub@gmail.com", // Placeholder
+];

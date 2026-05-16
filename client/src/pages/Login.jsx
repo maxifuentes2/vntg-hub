@@ -144,8 +144,8 @@ export default function Login() {
 
                 {step === 1 ? (
                     <>
-                        <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Login</h1>
-                        <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Access your profile</p>
+                        <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Iniciar Sesión</h1>
+                        <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Accede a tu perfil</p>
 
                         {justRegistered && (
                             <div className="mb-4 p-3 bg-green-500/10 border border-green-500/50 text-green-500 text-xs font-bold uppercase italic">
@@ -162,7 +162,7 @@ export default function Login() {
                         <form className="space-y-4 text-left" onSubmit={handleLocalLogin}>
                             <input
                                 type="email"
-                                placeholder="EMAIL"
+                                placeholder="CORREO ELECTRÓNICO"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -174,7 +174,7 @@ export default function Login() {
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
-                                        placeholder="PASSWORD"
+                                        placeholder="CONTRASEÑA"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         onKeyUp={checkCapsLock}

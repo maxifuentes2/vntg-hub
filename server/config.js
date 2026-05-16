@@ -6,4 +6,7 @@ module.exports = {
         "brunogusk2503@gmail.com",
         "szufia76@gmail.com",
     ],
+    SUPPORT_EMAILS: [
+        "soporte.vntghub@gmail.com", // Placeholder
+    ],
 };
