@@ -102,6 +102,13 @@ const DetalleProducto = () => {
         fetchDatos();
     }, [slug]);
 
+    // Actualizar el título de la página dinámicamente con el nombre del producto
+    useEffect(() => {
+        if (producto && producto.title) {
+            document.title = `VNTG HUB - ${producto.title}`;
+        }
+    }, [producto]);
+
     const handleWheel = (e) => {
         if (!isModalOpen) return;
         const delta = e.deltaY * -0.001;

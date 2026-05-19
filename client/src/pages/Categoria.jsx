@@ -131,6 +131,14 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
         return "COLECCIÓN"; 
     };
 
+    // Actualizar el título de la página dinámicamente
+    useEffect(() => {
+        if (!loading) {
+            const titulo = renderTitulo();
+            document.title = `VNTG HUB - ${titulo}`;
+        }
+    }, [slug, categoriaInfo, searchQuery, loading]);
+
     const bannerImg = slug === 'all' 
         ? "/wallpaper.webp" 
         : (categoriaInfo?.banner_url || "/wallpaper.webp");

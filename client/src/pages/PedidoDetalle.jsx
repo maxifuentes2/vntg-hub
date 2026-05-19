@@ -34,6 +34,13 @@ export default function PedidoDetalle() {
             .catch(() => setLoading(false));
     }, [id, navigate]);
 
+    // Actualizar el título de la página dinámicamente con el número de orden
+    useEffect(() => {
+        if (pedido && pedido.id) {
+            document.title = `VNTG HUB - Orden #${pedido.id.slice(0, 8)}`;
+        }
+    }, [pedido]);
+
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
     if (!pedido) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark font-black italic uppercase tracking-widest text-zinc-500">Orden no encontrada</div>;
 

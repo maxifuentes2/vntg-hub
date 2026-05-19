@@ -19,8 +19,9 @@ import NotFound from './pages/NotFound';
 import AdminPanel from './pages/AdminPanel';
 import SupportPanel from './pages/SupportPanel';
 
-// NUEVA IMPORTACIÓN PARA EL RESET DE SCROLL
+// NUEVA IMPORTACIÓN PARA EL RESET DE SCROLL Y TÍTULOS DINÁMICOS
 import ScrollToTopOnNavigation from './components/ScrollToTopOnNavigation';
+import RouteTitleManager from './components/RouteTitleManager';
 
 // IMPORTACIONES DE SIDEBARS
 import CartSidebar from './components/CartSidebar'; 
@@ -58,8 +59,9 @@ function App() {
         <CartProvider>
           <WishListProvider> 
             <Router>
-              {/* COMPONENTE LÓGICO DE SCROLL: Asegura que cada navegación empiece desde arriba */}
+              {/* COMPONENTE LÓGICO DE SCROLL Y TÍTULO: Asegura que cada navegación empiece desde arriba y cambie el título */}
               <ScrollToTopOnNavigation />
+              <RouteTitleManager />
 
               <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300 relative">
                 {/* Background Liquid Elements */}
