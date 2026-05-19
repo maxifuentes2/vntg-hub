@@ -1,0 +1,14 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Desautorizar rutas privadas o paneles de administración
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /soporte
+Disallow: /soporte/*
+Disallow: /checkout
+Disallow: /mi-cuenta
+
+# Sitemaps
+Sitemap: https://vntg-hub.vercel.app/sitemap.xml
