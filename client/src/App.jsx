@@ -32,13 +32,19 @@ import CategorySidebar from './components/CategorySidebar';
 import { CartProvider } from './context/CartContext';
 import { WishListProvider } from './context/WishListContext';
 import { ToastProvider } from './context/ToastContext'; 
-import { SidebarProvider } from './context/SidebarContext'; 
+import { SidebarProvider, useSidebar } from './context/SidebarContext'; 
 
 // IMPORTACIONES DE AUTENTICACIÓN Y CHECKOUT
 import Checkout from './pages/Checkout';
 import RecuperarPassword from './pages/RecuperarPassword';
 import RestablecerPassword from './pages/RestablecerPassword';
 import MiCuenta from './pages/MiCuenta'; 
+
+function ChatbotWrapper() {
+  const { isCartOpen, isWishListOpen, isCategoryOpen } = useSidebar();
+  const isAnySidebarOpen = isCartOpen || isWishListOpen || isCategoryOpen;
+  return <Chatbot isSidebarOpen={isAnySidebarOpen} />;
+}
 
 function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false); 
@@ -108,7 +114,7 @@ function App() {
                 </main>
                 
                 <Footer />
-                <Chatbot isFilterOpen={isFilterOpen} /> 
+                <ChatbotWrapper /> 
                 <SubtleScrollToTop />
               </div>
             </Router>

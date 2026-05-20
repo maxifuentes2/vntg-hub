@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown, AlertTriangle } from 'lucide-react'; // Añadido AlertTriangle
+import { Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown, AlertTriangle } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function AdminPanel() {
+    const { addToast } = useToast();
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [orders, setOrders] = useState([]);
@@ -99,14 +101,22 @@ export default function AdminPanel() {
 
         const token = localStorage.getItem('vntg_token');
         try {
-            await fetch(url, {
+            const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ ...productForm, gallery: finalGallery })
             });
-            setIsProductModalOpen(false);
-            fetchData();
-        } catch (error) { console.error("Error al guardar:", error); }
+            if (res.ok) {
+                addToast({ title: productForm.title }, editingItem ? 'Producto actualizado' : 'Producto creado', 'success');
+                setIsProductModalOpen(false);
+                fetchData();
+            } else {
+                addToast({}, 'Error al guardar producto', 'error');
+            }
+        } catch (error) { 
+            addToast({}, 'Error de conexión', 'error');
+            console.error("Error al guardar:", error); 
+        }
     };
 
     // --- MANEJO DE ELIMINACIÓN ESTÉTICA ---
@@ -115,17 +125,30 @@ export default function AdminPanel() {
     };
 
     const executeDelete = async () => {
-        const { id, type } = confirmDelete;
-        const endpoint = type === 'product' ? 'products' : 'categories';
+        const { id, type, title } = confirmDelete;
         const token = localStorage.getItem('vntg_token');
+
+        let endpoint, label;
+        if (type === 'product') { endpoint = `products/${id}`; label = 'Producto'; }
+        else if (type === 'category') { endpoint = `categories/${id}`; label = 'Categoría'; }
+        else if (type === 'order') { endpoint = `orders/${id}`; label = 'Orden'; }
+
         try {
-            await fetch(`${API_URL}/api/admin/${endpoint}/${id}`, { 
+            const res = await fetch(`${API_URL}/api/admin/${endpoint}`, { 
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setConfirmDelete({ isOpen: false, id: null, title: '', type: '' });
-            fetchData();
-        } catch (error) { console.error("Error al eliminar:", error); }
+            if (res.ok) {
+                addToast({ title }, `${label} eliminado correctamente`, 'success');
+                setConfirmDelete({ isOpen: false, id: null, title: '', type: '' });
+                fetchData();
+            } else {
+                addToast({}, `Error al eliminar ${label}`, 'error');
+            }
+        } catch (error) { 
+            addToast({}, 'Error de conexión', 'error');
+            console.error("Error al eliminar:", error); 
+        }
     };
 
     // --- MANEJO DE CATEGORÍAS ---
@@ -142,7 +165,6 @@ export default function AdminPanel() {
 
     const handleSaveCategory = async (e) => {
         e.preventDefault();
-        // Si hay ID, es PUT (editar). Si no, es POST (crear)
         const method = categoryForm.id ? 'PUT' : 'POST';
         const url = categoryForm.id 
             ? `${API_URL}/api/admin/categories/${categoryForm.id}` 
@@ -150,27 +172,42 @@ export default function AdminPanel() {
 
         const token = localStorage.getItem('vntg_token');
         try {
-            await fetch(url, {
+            const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(categoryForm)
             });
-            setIsCategoryModalOpen(false);
-            fetchData();
-        } catch (error) { console.error("Error al guardar categoría:", error); }
+            if (res.ok) {
+                addToast({ title: categoryForm.name || 'Categoría' }, categoryForm.id ? 'Categoría actualizada' : 'Categoría creada', 'success');
+                setIsCategoryModalOpen(false);
+                fetchData();
+            } else {
+                addToast({}, 'Error al guardar categoría', 'error');
+            }
+        } catch (error) { 
+            addToast({}, 'Error de conexión', 'error');
+            console.error("Error al guardar categoría:", error); 
+        }
     };
 
     // --- MANEJO DE ÓRDENES ---
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         const token = localStorage.getItem('vntg_token');
+        const statusLabels = { pending: 'Pendiente', approved: 'Aprobado', preparing: 'En Preparación', shipped: 'Enviado', delivered: 'Entregado', cancelled: 'Cancelado' };
         try {
-            await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
+            const res = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ status: newStatus })
             });
-            fetchData();
+            if (res.ok) {
+                addToast({ title: `Orden ${orderId}` }, `Estado cambiado a ${statusLabels[newStatus] || newStatus}`, 'success');
+                fetchData();
+            } else {
+                addToast({}, 'Error al actualizar estado', 'error');
+            }
         } catch (error) {
+            addToast({}, 'Error de conexión', 'error');
             console.error("Error actualizando estado de la orden:", error);
         }
     };
@@ -339,6 +376,14 @@ export default function AdminPanel() {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <button
+                                        onClick={() => openConfirmDelete(order.id, `Orden ${order.id}`, 'order')}
+                                        className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                                        title="Eliminar orden permanentemente"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -493,12 +538,11 @@ export default function AdminPanel() {
                 </div>
             )}
 
-            {/* --- NUEVO: MODAL DE CONFIRMACIÓN ESTÉTICO --- */}
+            {/* --- MODAL DE CONFIRMACIÓN ESTÉTICO --- */}
             {confirmDelete.isOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex justify-center items-start p-4 pt-24 md:pt-40 overflow-y-auto">
                     <div className="bg-white dark:bg-[#0a0a0a] border border-brand-orange/30 p-4 sm:p-8 md:p-10 max-w-md w-full shadow-2xl relative overflow-hidden rounded-3xl group">
 
-                        {/* Decoración estética de VNTG HUB */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange to-transparent opacity-50"></div>
 
                         <div className="flex flex-col items-center text-center">
@@ -507,16 +551,28 @@ export default function AdminPanel() {
                             </div>
 
                             <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">
-                                ¿Confirmar Eliminación?
+                                {confirmDelete.type === 'order' ? '¿Cancelar Orden?' : '¿Confirmar Eliminación?'}
                             </h3>
 
-                            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
-                                Estás a punto de eliminar permanentemente: <br />
-                                <span className="text-brand-orange font-black not-italic uppercase block mt-2 text-base">
-                                    "{confirmDelete.title}"
-                                </span>
-                                Esta acción es irreversible y afectará a la base de datos de VNTG HUB.
-                            </p>
+                            {confirmDelete.type === 'order' ? (
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
+                                    Estás a punto de eliminar completamente la orden: <br />
+                                    <span className="text-brand-orange font-black not-italic block mt-2 text-base tracking-widest">
+                                        {confirmDelete.title}
+                                    </span>
+                                    <span className="block mt-3 text-zinc-600 dark:text-zinc-400">
+                                        Se restaurará el stock de los productos y la orden desaparecerá del sistema. <strong className="text-red-500 not-italic">Esta acción no se puede deshacer.</strong>
+                                    </span>
+                                </p>
+                            ) : (
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
+                                    Estás a punto de eliminar permanentemente: <br />
+                                    <span className="text-brand-orange font-black not-italic uppercase block mt-2 text-base">
+                                        "{confirmDelete.title}"
+                                    </span>
+                                    Esta acción es irreversible y afectará a la base de datos de VNTG HUB.
+                                </p>
+                            )}
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                                 <button
@@ -529,7 +585,7 @@ export default function AdminPanel() {
                                     onClick={executeDelete}
                                     className="px-6 py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-900 transition-all shadow-lg active:scale-95 rounded-xl"
                                 >
-                                    Eliminar
+                                    {confirmDelete.type === 'order' ? 'Eliminar Orden' : 'Eliminar'}
                                 </button>
                             </div>
                         </div>

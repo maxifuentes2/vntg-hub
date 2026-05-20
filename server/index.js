@@ -7,7 +7,6 @@ const bcrypt = require("bcryptjs");
 // nodemailer eliminado — emails delegados a n8n
 const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const jwt = require("jsonwebtoken");
 
 // --- INICIALIZACIÓN DE TABLAS ---
@@ -510,7 +509,7 @@ app.get("/api/orders/:userId", async (req, res) => {
     try {
         // CORRECCIÓN APLICADA AQUÍ: Se añadieron todos los estados válidos
         const [rows] = await db.query(
-            "SELECT * FROM orders WHERE user_id = ? AND status IN ('approved', 'preparing', 'shipped', 'delivered') ORDER BY created_at DESC",
+            "SELECT * FROM orders WHERE user_id = ? AND status IN ('pending', 'approved', 'preparing', 'shipped', 'delivered') ORDER BY created_at DESC",
             [userId],
         );
         res.json(rows);
@@ -520,6 +519,14 @@ app.get("/api/orders/:userId", async (req, res) => {
     }
 });
 
+// Generador de ID estilo patente (7 caracteres: 2 letras + 3 números + 2 letras)
+const generatePatenteId = () => {
+    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin O, I para evitar confusiones
+    const digits = "23456789"; // sin 0, 1 para evitar confusiones
+    const rand = (chars) => chars[Math.floor(Math.random() * chars.length)];
+    return `${rand(letters)}${rand(letters)}${rand(digits)}${rand(digits)}${rand(digits)}${rand(letters)}${rand(letters)}`;
+};
+
 // --- CHECKOUT ---
 app.post("/api/checkout", async (req, res) => {
     const { user, cart, shipping, shippingType } = req.body;
@@ -528,7 +535,14 @@ app.post("/api/checkout", async (req, res) => {
             "UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'",
             [user.id],
         );
-        const orderId = uuidv4();
+        // Generar ID único estilo patente (evitar colisiones)
+        let orderId = generatePatenteId();
+        let exists = true;
+        while (exists) {
+            const [dup] = await db.query("SELECT id FROM orders WHERE id = ?", [orderId]);
+            if (dup.length === 0) exists = false;
+            else orderId = generatePatenteId();
+        }
         let subtotal = 0;
         for (let item of cart) {
             const [prod] = await db.query(
@@ -903,10 +917,58 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
     }
 });
 
+// --- ELIMINACIÓN COMPLETA DE ORDEN (admin) ---
+app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [orderData] = await db.query("SELECT * FROM orders WHERE id = ?", [id]);
+        if (orderData.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+
+        // Restaurar stock de cada producto
+        const [items] = await db.query("SELECT * FROM order_items WHERE order_id = ?", [id]);
+        for (const item of items) {
+            await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+        }
+
+        // Eliminar registros relacionados y la orden
+        await db.query("DELETE FROM order_items WHERE order_id = ?", [id]);
+        await db.query("DELETE FROM orders WHERE id = ?", [id]);
+
+        res.json({ message: "Orden eliminada completamente del sistema" });
+    } catch (error) {
+        console.error("Error al eliminar orden:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==========================================
 
-// --- CHATBOT IA (GEMINI) ---
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// --- LOOKUP DE ORDEN POR ID (para chatbot / consulta pública) ---
+app.post("/api/orders/lookup", async (req, res) => {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: "Número de orden requerido" });
+
+    try {
+        const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [orderId]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+
+        const [items] = await db.query(`
+            SELECT oi.*, p.title, p.images
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        `, [orderId]);
+
+        res.json({ ...orders[0], items });
+    } catch (error) {
+        console.error("Error en lookup de orden:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+// --- CHATBOT IA (GROQ - LLAMA 3) ---
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = "llama-3.3-70b-versatile"; // modelo gratuito con alta cuota (30 RPM)
 
 app.post("/api/chat", async (req, res) => {
     const { message, history, userId, userEmail } = req.body;
@@ -918,10 +980,10 @@ app.post("/api/chat", async (req, res) => {
             "SELECT title, franchise, price, stock FROM products WHERE stock > 0",
         );
 
-        // 2. Armamos una lista de texto legible para la IA
+        // 2. Armamos una lista de texto legible para la IA (con slugs para enlaces directos)
         const catalogo = productos
             .map(
-                (p) => `- ${p.title} (Franquicia: ${p.franchise}): $${p.price}`,
+                (p) => `- ${p.title} (Franquicia: ${p.franchise}): $${p.price} - URL: /producto/${slugify(p.title)}`,
             )
             .join("\n");
 
@@ -948,35 +1010,125 @@ app.post("/api/chat", async (req, res) => {
             }
         }
 
-        // 4. Le inyectamos el catálogo y contexto al cerebro
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            systemInstruction: `Eres el agente de soporte oficial de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, profesional y resolutivo. Usas un estilo 'racing/automovilismo' ocasionalmente.
-            Ayudas a los clientes con dudas sobre envíos (normal $9426, prioritario $17276), medios de pago y estado de órdenes. Respuestas cortas y directas.
+        const systemPrompt = `Eres el agente de soporte oficial de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, profesional y resolutivo. Respuestas cortas y directas. Siempre respondes en español.
+
+            === INFORMACIÓN DE ENVÍOS ===
+            - Envío normal: $9,426.05 ARS
+            - Envío prioritario: $17,276.99 ARS
+            - Envío GRATIS en compras superiores a $200,000 ARS
+            - Los envíos se realizan a todo el país
+            - Los artículos se envían en bolsas plástica y caja de cartón rígido
+
+            === MÉTODOS DE PAGO ===
+            - Mercado Pago (tarjetas de crédito, débito, transferencia)
+            - Transferencia bancaria
+            - Efectivo (en puntos de pago habilitados)
+
+            === POLÍTICA DE DEVOLUCIONES ===
+            - Se aceptan devoluciones dentro de los 30 días posteriores a la recepción
+            - El producto debe estar sin usar, en su estado original y con todas las etiquetas
+            - Los gastos de envío de la devolución corren por cuenta del cliente
+            - Para iniciar una devolución, contactar a soportehubvntg@gmail.com
 
             CONTEXTO DEL USUARIO ACTUAL:
             ${orderContext}
-            Si el usuario pregunta por el estado de sus pedidos o compras recientes, usa estrictamente esta información para responderle. (Ej: si el estado es 'pending', dile que estamos esperando acreditación; si es 'shipped', dile que ya está en camino).
+            Si el usuario pregunta por el estado de sus pedidos o compras recientes, usa estrictamente esta información para responderle. (Ej: pending = estamos esperando acreditación; shipped = ya está en camino).
 
-            CATÁLOGO ACTUAL DE PRODUCTOS:
+            CATÁLOGO ACTUAL DE PRODUCTOS (incluye URL directa):
             ${catalogo}
-            Si te piden algo que no está en la lista, diles amablemente que por el momento no hay stock en el sistema de ese artículo.
+            IMPORTANTE: Cuando un usuario pregunte por un artículo específico, devuélvele el enlace directo usando la URL incluida en el catálogo. Ejemplo: "Tenemos [Nike Air Max](/producto/nike-air-max) en stock a $15,000". Siempre incluye el link al producto cuando hables de él.
+
+            CONSULTA DE ÓRDENES POR PATENTE:
+            El número de orden (ID) tiene formato de patente argentina: 7 caracteres alfanuméricos, ej: "AB123CD". Cuando el usuario quiera saber el estado de su orden y te proporcione esa patente, respondé incluyendo el marcador [LOOKUP_ORDER:PATENTE] (reemplazando PATENTE por el valor). El sistema buscará automáticamente la orden y te mostrará la información.
 
             DERIVACIÓN A SOPORTE HUMANO:
-            Si el problema es complejo (devoluciones, quejas severas, reembolsos) indica al usuario que debe enviar un correo a soportehubvntg@gmail.com para que un humano del equipo del Hub lo asista.
-            
-            DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`,
+            Si el problema es complejo (devoluciones, quejas severas, reembolsos) o el usuario lo solicita explícitamente, indícale que puede usar la opción "Hablar con un humano" en el chat para llenar un formulario de contacto, o bien escribir a soportehubvntg@gmail.com.
+
+            DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`;
+
+        // 5. Convertir el historial de formato Gemini a formato OpenAI/Groq
+        const groqMessages = [
+            { role: "system", content: systemPrompt },
+        ];
+
+        if (history && Array.isArray(history)) {
+            for (const msg of history) {
+                groqMessages.push({
+                    role: msg.role === "model" ? "assistant" : "user",
+                    content: msg.parts?.[0]?.text || "",
+                });
+            }
+        }
+
+        groqMessages.push({ role: "user", content: message });
+
+        // 6. Llamar a Groq API
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${GROQ_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: groqMessages,
+                temperature: 0.7,
+                max_tokens: 1024,
+            }),
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
 
-        // 5. Iniciamos el chat con el historial previo
-        const chat = model.startChat({
-            history: history || [],
-        });
+        if (!groqRes.ok) {
+            const errText = await groqRes.text();
+            console.error("Error en Groq API:", groqRes.status, errText, "API Key starts with:", GROQ_API_KEY?.slice(0, 8));
 
-        const result = await chat.sendMessage(message);
-        let response = result.response.text();
+            if (groqRes.status === 429) {
+                return res.status(429).json({
+                    reply: "Estoy recibiendo muchos mensajes ahora mismo. Por favor, espera unos segundos e intenta de nuevo. ⏳",
+                });
+            }
 
-        // 6. Verificamos si el bot decidió terminar la charla
+            if (groqRes.status === 401) {
+                return res.status(500).json({
+                    reply: "Error de autenticación con el motor de IA. Verificá la API key.",
+                });
+            }
+
+            return res.status(500).json({
+                reply: "Error interno del sistema. Intenta de nuevo más tarde.",
+            });
+        }
+
+        const groqData = await groqRes.json();
+        let response = groqData.choices?.[0]?.message?.content || "";
+
+        // 7. Procesamos el marcador LOOKUP_ORDER:ID si está presente
+        const lookupMatch = response.match(/\[LOOKUP_ORDER:(\d+)\]/);
+        let orderData = null;
+        if (lookupMatch) {
+            const orderId = lookupMatch[1];
+            response = response.replace(`[LOOKUP_ORDER:${orderId}]`, "").trim();
+            try {
+                const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [orderId]);
+                if (orders.length > 0) {
+                    const [items] = await db.query(`
+                        SELECT oi.*, p.title, p.images
+                        FROM order_items oi
+                        JOIN products p ON oi.product_id = p.id
+                        WHERE oi.order_id = ?
+                    `, [orderId]);
+                    orderData = { ...orders[0], items };
+                }
+            } catch (lookupErr) {
+                console.error("Error en LOOKUP_ORDER:", lookupErr);
+            }
+        }
+
+        // 8. Verificamos si el bot decidió terminar la charla
         let finished = false;
         if (response.includes("[CHAT_FINISHED]")) {
             finished = true;
@@ -985,40 +1137,39 @@ app.post("/api/chat", async (req, res) => {
             // Si tenemos el email del usuario, generamos y enviamos un resumen
             if (userEmail) {
                 try {
-                    const summaryModel = genAI.getGenerativeModel({
-                        model: "gemini-1.5-flash",
+                    const summaryRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${GROQ_API_KEY}`,
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            model: GROQ_MODEL,
+                            messages: [
+                                { role: "system", content: "Resumís conversaciones de soporte técnico en 1-2 párrafos concisos, solo texto claro y formal." },
+                                { role: "user", content: `Resume esta conversación:\n\nHistorial:\n${JSON.stringify(history)}\n\nCliente: ${message}\nSoporte: ${response}` },
+                            ],
+                            temperature: 0.3,
+                            max_tokens: 512,
+                        }),
                     });
-                    const summaryPrompt = `Resume brevemente esta conversación de soporte técnico en 1 o 2 párrafos concisos para enviársela al cliente por correo electrónico como un comprobante de su consulta. No uses formato markdown complejo, solo texto claro y formal:\n\nHistorial:\n${JSON.stringify(history)}\n\nCliente: ${message}\nSoporte: ${response}`;
-                    const summaryResult =
-                        await summaryModel.generateContent(summaryPrompt);
-                    const summaryText = summaryResult.response.text();
+                    const summaryData = await summaryRes.json();
+                    const summaryText = summaryData.choices?.[0]?.message?.content || "";
 
-                    await triggerN8nEmail("chat_summary", userEmail, {
-                        summary: summaryText,
-                    });
+                    if (summaryText) {
+                        await triggerN8nEmail("chat_summary", userEmail, {
+                            summary: summaryText,
+                        });
+                    }
                 } catch (summaryError) {
-                    console.error(
-                        "Error al generar/enviar resumen del chat:",
-                        summaryError,
-                    );
+                    console.error("Error al generar/enviar resumen del chat:", summaryError);
                 }
             }
         }
 
-        res.json({ reply: response, finished });
+        res.json({ reply: response, finished, orderData });
     } catch (error) {
-        console.error("Error en Gemini API:", error);
-
-        // Manejar específicamente errores de cuota (429 Too Many Requests)
-        if (
-            error.status === 429 ||
-            (error.message && error.message.includes("429"))
-        ) {
-            return res.status(429).json({
-                reply: "Estoy recibiendo muchos mensajes ahora mismo. Por favor, espera unos segundos e intenta de nuevo. ⏳",
-            });
-        }
-
+        console.error("Error en Groq API:", error);
         res.status(500).json({
             reply: "Error interno del sistema. Intenta de nuevo más tarde.",
         });

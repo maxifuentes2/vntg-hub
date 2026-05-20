@@ -26,11 +26,15 @@ export const ToastProvider = ({ children }) => {
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 items-end pointer-events-none">
                 {toasts.map((toast) => (
                     <div key={toast.id} className={`pointer-events-auto liquid-glass rounded-2xl overflow-hidden flex items-center w-[90vw] sm:w-[340px] h-[85px] transition-all duration-500 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
-                        {toast.product && (
-                            <div className="w-[85px] h-[85px] shrink-0 bg-white/5 border-r border-white/10">
+                        <div className="w-[85px] h-[85px] shrink-0 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                            {toast.product?.images ? (
                                 <img src={toast.product.images} className="w-full h-full object-cover opacity-90" alt="" />
-                            </div>
-                        )}
+                            ) : toast.type === 'error' ? (
+                                <AlertCircle size={32} className="text-red-500" />
+                            ) : (
+                                <CheckCircle size={32} className="text-emerald-500" />
+                            )}
+                        </div>
                         <div className="flex-1 px-5 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                                 {toast.type === 'error' ? (

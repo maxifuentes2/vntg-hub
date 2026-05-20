@@ -12,10 +12,12 @@ import {
     Loader2,
     ArrowLeft
 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function SupportPanel() {
+    const { addToast } = useToast();
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -69,7 +71,6 @@ export default function SupportPanel() {
             });
 
             if (res.ok) {
-                // Actualizar estado local
                 setMessages(messages.map(m => 
                     m.id === selectedMsg.id 
                     ? { ...m, status: 'replied', respuesta: replyText } 
@@ -77,11 +78,12 @@ export default function SupportPanel() {
                 ));
                 setSelectedMsg({ ...selectedMsg, status: 'replied', respuesta: replyText });
                 setReplyText('');
-                alert("Respuesta enviada correctamente");
+                addToast({ title: selectedMsg.nombre }, 'Respuesta enviada correctamente', 'success');
             } else {
-                alert("Error al enviar respuesta");
+                addToast({}, 'Error al enviar respuesta', 'error');
             }
         } catch (error) {
+            addToast({}, 'Error de conexión al enviar respuesta', 'error');
             console.error("Error replying:", error);
         } finally {
             setSendingReply(false);
