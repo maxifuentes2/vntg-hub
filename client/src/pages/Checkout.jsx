@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { Wallet, MercadoPagoProvider } from '@mercadopago/sdk-react';
+import { Wallet, initMercadoPago } from '@mercadopago/sdk-react';
 import { ShieldCheck, MapPin, ArrowLeft } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -46,6 +46,12 @@ export default function Checkout() {
         const pendingOrder = sessionStorage.getItem('vntg_pending_order');
         if (pendingOrder && !orderId) {
             navigate(`/pedido/${pendingOrder}`);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (MP_PUBLIC_KEY) {
+            initMercadoPago(MP_PUBLIC_KEY);
         }
     }, []);
 
@@ -204,14 +210,6 @@ export default function Checkout() {
             </div>
         </div>
     );
-
-    if (MP_PUBLIC_KEY && preferenceId) {
-        return (
-            <MercadoPagoProvider publicKey={MP_PUBLIC_KEY}>
-                {checkoutContent}
-            </MercadoPagoProvider>
-        );
-    }
 
     return checkoutContent;
 }
