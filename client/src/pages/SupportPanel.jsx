@@ -231,7 +231,7 @@ export default function SupportPanel() {
                                                 disabled={sendingReply || !replyText.trim()}
                                                 className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all disabled:opacity-50 rounded-2xl shadow-lg active:scale-95"
                                             >
-                                                {sendingReply ? <Loader2 className="animate-spin" /> : <><Send size={18} /> Enviar Respuesta por n8n</>}
+                                                {sendingReply ? <Loader2 className="animate-spin" /> : <><Send size={18} /> Enviar Respuesta</>}
                                             </button>
                                         </form>
                                     </div>
