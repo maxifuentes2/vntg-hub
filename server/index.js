@@ -595,7 +595,7 @@ app.post("/api/checkout", async (req, res) => {
                           ]
                         : []),
                 ],
-                notification_url: "https://vntg-hub.vercel.app/api/webhooks/mercadopago",
+                notification_url: "https://vntg-hub.onrender.com/api/webhooks/mercadopago",
                 auto_return: "approved",
                 back_urls: {
                     success: `https://vntg-hub.vercel.app/pedido/${orderId}`,
