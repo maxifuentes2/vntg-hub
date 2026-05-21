@@ -30,6 +30,20 @@ const initDB = async () => {
             ALTER TABLE users ADD COLUMN IF NOT EXISTS role ENUM('user', 'admin', 'support') DEFAULT 'user'
         `);
         console.log("✅ Columna role en users verificada");
+
+        // Tabla de carritos persistidos por usuario
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS cart_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                product_id INT NOT NULL,
+                quantity INT NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_user_product (user_id, product_id)
+            )
+        `);
+        console.log("✅ Tabla cart_items lista");
     } catch (err) {
         console.error("❌ Error al inicializar tablas:", err);
     }
@@ -609,6 +623,48 @@ app.post("/api/checkout", async (req, res) => {
         res.json({ init_point: response.init_point, preferenceId: response.id, orderId });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// --- CARRITO PERSISTIDO (SINCRONIZACIÓN CUENTA) ---
+// ==========================================
+
+app.get("/api/cart/:userId", async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const [rows] = await db.query(
+            `SELECT ci.product_id, ci.quantity, p.title, p.price, p.stock, p.images
+             FROM cart_items ci
+             JOIN products p ON ci.product_id = p.id
+             WHERE ci.user_id = ?`,
+            [userId]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Error al obtener carrito:", error);
+        res.status(500).json({ error: "Error al obtener carrito" });
+    }
+});
+
+app.post("/api/cart/sync", async (req, res) => {
+    const { userId, items } = req.body;
+    if (!userId || !Array.isArray(items)) {
+        return res.status(400).json({ error: "Datos inválidos" });
+    }
+    try {
+        await db.query("DELETE FROM cart_items WHERE user_id = ?", [userId]);
+        if (items.length > 0) {
+            const values = items.map(i => [userId, i.product_id, i.quantity]);
+            await db.query(
+                "INSERT INTO cart_items (user_id, product_id, quantity) VALUES ?",
+                [values]
+            );
+        }
+        res.json({ message: "Carrito sincronizado" });
+    } catch (error) {
+        console.error("Error al sincronizar carrito:", error);
+        res.status(500).json({ error: "Error al sincronizar carrito" });
     }
 });
 

@@ -30,7 +30,7 @@ export default function Navbar() {
     // Conexión con el estado global de los sidebars
     const { openCart, openWishList, openCategory } = useSidebar();
     const { wishListCount } = useWishList();
-    const { cartCount } = useCart();
+    const { cartCount, cart, syncCartToServer } = useCart();
     const navigate = useNavigate(); 
     const location = useLocation();
 
@@ -117,7 +117,8 @@ export default function Navbar() {
         setSearchResults([]);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await syncCartToServer(cart);
         localStorage.removeItem('vntg_user');
         setUser(null);
         setIsUserMenuOpen(false);
