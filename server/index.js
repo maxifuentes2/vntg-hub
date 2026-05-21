@@ -6,7 +6,7 @@ const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require("bcryptjs");
 // nodemailer eliminado — emails delegados a n8n
 const { v4: uuidv4 } = require("uuid");
-const { MercadoPagoConfig, Preference } = require("mercadopago");
+const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 
 // --- INICIALIZACIÓN DE TABLAS ---
@@ -65,6 +65,7 @@ app.use(
     }),
 );
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Función para generar slugs URL-friendly desde nombres/títulos
 const slugify = (text) => {
@@ -594,6 +595,7 @@ app.post("/api/checkout", async (req, res) => {
                           ]
                         : []),
                 ],
+                notification_url: "https://vntg-hub.vercel.app/api/webhooks/mercadopago",
                 auto_return: "approved",
                 back_urls: {
                     success: `https://vntg-hub.vercel.app/pedido/${orderId}`,
@@ -607,6 +609,34 @@ app.post("/api/checkout", async (req, res) => {
         res.json({ init_point: response.init_point, preferenceId: response.id, orderId });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
+// ==========================================
+
+app.post("/api/webhooks/mercadopago", async (req, res) => {
+    try {
+        const { type, data } = req.body;
+        if (type !== "payment" || !data?.id) {
+            return res.status(200).send("OK");
+        }
+        const payment = await new Payment(mpClient).get({ id: data.id });
+        const orderId = payment.external_reference;
+        if (!orderId) {
+            return res.status(200).send("OK");
+        }
+        let status = payment.status;
+        let dbStatus = "pending";
+        if (status === "approved") dbStatus = "approved";
+        else if (status === "rejected" || status === "cancelled" || status === "refunded") dbStatus = "cancelled";
+        else dbStatus = "pending";
+        await db.query("UPDATE orders SET status = ?, payment_id = ? WHERE id = ?", [dbStatus, data.id, orderId]);
+        res.status(200).send("OK");
+    } catch (error) {
+        console.error("Error en webhook MP:", error.message);
+        res.status(200).send("OK");
     }
 });
 
