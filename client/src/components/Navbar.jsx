@@ -120,6 +120,7 @@ export default function Navbar() {
     const handleLogout = async () => {
         await syncCartToServer(cart);
         localStorage.removeItem('vntg_user');
+        localStorage.removeItem('vntg_token');
         setUser(null);
         setIsUserMenuOpen(false);
         navigate('/');

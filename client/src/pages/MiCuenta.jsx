@@ -18,9 +18,12 @@ export default function MiCuenta() {
         if (!stored) return navigate('/login');
         
         const parsed = JSON.parse(stored);
+        const token = localStorage.getItem('vntg_token');
         setUser(parsed);
 
-        fetch(`${API_URL}/api/orders/${parsed.id}`)
+        fetch(`${API_URL}/api/orders/${parsed.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
             .then(res => res.json())
             .then(data => {
                 setOrders(Array.isArray(data) ? data : []);
@@ -43,9 +46,10 @@ export default function MiCuenta() {
         try {
             const updatedUser = { ...user, [field]: tempValue };
             
+            const token = localStorage.getItem('vntg_token');
             const res = await fetch(`${API_URL}/api/auth/update-profile`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
                     userId: user.id, 
                     field: field, 

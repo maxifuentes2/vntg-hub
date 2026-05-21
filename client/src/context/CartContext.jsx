@@ -45,6 +45,8 @@ export const CartProvider = ({ children }) => {
         return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
+    const getToken = () => localStorage.getItem('vntg_token');
+
     // Sincronizar al servidor
     const syncCartToServer = useCallback(async (itemsToSync) => {
         const currentUser = (() => {
@@ -54,10 +56,12 @@ export const CartProvider = ({ children }) => {
             } catch { return null; }
         })();
         if (!currentUser || !itemsToSync) return;
+        const token = getToken();
+        if (!token) return;
         try {
             await fetch(`${API_URL}/api/cart/sync`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     userId: currentUser.id,
                     items: itemsToSync.map(i => ({ product_id: i.id, quantity: i.cantidad }))
@@ -77,8 +81,12 @@ export const CartProvider = ({ children }) => {
         if (!storedUser) return;
 
         const fetchServerCart = async () => {
+            const token = getToken();
+            if (!token) return;
             try {
-                const res = await fetch(`${API_URL}/api/cart/${storedUser.id}`);
+                const res = await fetch(`${API_URL}/api/cart/${storedUser.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (!res.ok) return;
                 const serverItems = await res.json();
                 if (!serverItems.length) return;

@@ -85,10 +85,21 @@ app.use(
     cors({
         origin: ["http://localhost:5173", "https://vntg-hub.vercel.app"],
         credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
     }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+// --- SEGURIDAD: Cabeceras HTTP ---
+app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "0");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    next();
+});
 
 // Función para generar slugs URL-friendly desde nombres/títulos
 const slugify = (text) => {
@@ -101,6 +112,20 @@ const slugify = (text) => {
         .trim()
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-");
+};
+
+// --- MIDDLEWARE: Verificación de JWT para usuarios autenticados ---
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "No autorizado" });
+    const token = authHeader.split(" ")[1];
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "vntg_secret_key");
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ error: "Token inválido" });
+    }
 };
 
 // --- PRODUCTOS ---
@@ -254,58 +279,62 @@ app.get("/api/categories", async (req, res) => {
     }
 });
 
-// --- RUTAS DE WISHLIST ---
-app.get("/api/wishlist/:userId", async (req, res) => {
+// --- RUTAS DE WISHLIST (protegidas con JWT) ---
+app.get("/api/wishlist/:userId", verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query(
             "SELECT p.* FROM wishlist w JOIN products p ON w.product_id = p.id WHERE w.user_id = ?",
-            [req.params.userId],
+            [req.user.id],
         );
         res.json(rows);
     } catch (e) {
-        res.status(500).json({ error: "Error" });
+        res.status(500).json({ error: "Error al obtener wishlist" });
     }
 });
 
-app.post("/api/wishlist", async (req, res) => {
-    const { userId, productId } = req.body;
+app.post("/api/wishlist", verifyToken, async (req, res) => {
+    const { productId } = req.body;
+    if (!productId) return res.status(400).json({ error: "Producto requerido" });
     try {
         await db.query(
             "INSERT IGNORE INTO wishlist (user_id, product_id) VALUES (?, ?)",
-            [userId, productId],
+            [req.user.id, productId],
         );
         res.json({ message: "Ok" });
     } catch (e) {
-        res.status(500).json({ error: "Error" });
+        res.status(500).json({ error: "Error al guardar en wishlist" });
     }
 });
 
-app.delete("/api/wishlist/:userId/:productId", async (req, res) => {
+app.delete("/api/wishlist/:userId/:productId", verifyToken, async (req, res) => {
     try {
         await db.query(
             "DELETE FROM wishlist WHERE user_id = ? AND product_id = ?",
-            [req.params.userId, req.params.productId],
+            [req.user.id, req.params.productId],
         );
         res.json({ message: "Ok" });
     } catch (e) {
-        res.status(500).json({ error: "Error" });
+        res.status(500).json({ error: "Error al eliminar de wishlist" });
     }
 });
 
-// --- PERFIL DE USUARIO ---
-app.put("/api/auth/update-profile", async (req, res) => {
-    const { userId, field, value } = req.body;
+// --- PERFIL DE USUARIO (protegido con JWT) ---
+app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
+    const { field, value } = req.body;
     const allowedFields = ["address", "city", "province", "zip_code", "phone"];
     if (!allowedFields.includes(field)) {
         return res.status(400).json({ error: "Campo no permitido" });
     }
+    if (typeof value !== "string" || value.length > 255) {
+        return res.status(400).json({ error: "Valor inválido" });
+    }
     try {
         await db.query(`UPDATE users SET ${field} = ? WHERE id = ?`, [
             value,
-            userId,
+            req.user.id,
         ]);
         const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [
-            userId,
+            req.user.id,
         ]);
         if (rows.length === 0) {
             return res.status(404).json({ error: "Usuario no encontrado" });
@@ -500,8 +529,8 @@ app.post("/api/auth/google", async (req, res) => {
     }
 });
 
-// --- DETALLE DE ORDEN ESPECÍFICA ---
-app.get("/api/orders/detail/:id", async (req, res) => {
+// --- DETALLE DE ORDEN ESPECÍFICA (protegida con JWT) ---
+app.get("/api/orders/detail/:id", verifyToken, async (req, res) => {
     const { id } = req.params;
     try {
         const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [
@@ -509,6 +538,10 @@ app.get("/api/orders/detail/:id", async (req, res) => {
         ]);
         if (orders.length === 0)
             return res.status(404).json({ error: "Orden no encontrada" });
+
+        if (orders[0].user_id !== req.user.id) {
+            return res.status(403).json({ error: "No tienes acceso a esta orden" });
+        }
 
         const [items] = await db.query(
             `
@@ -527,14 +560,13 @@ app.get("/api/orders/detail/:id", async (req, res) => {
     }
 });
 
-// --- HISTORIAL DE ÓRDENES (Usuario normal) ---
-app.get("/api/orders/:userId", async (req, res) => {
-    const { userId } = req.params;
+// --- HISTORIAL DE ÓRDENES (Usuario normal, protegido con JWT) ---
+app.get("/api/orders/:userId", verifyToken, async (req, res) => {
     try {
         // CORRECCIÓN APLICADA AQUÍ: Se añadieron todos los estados válidos
         const [rows] = await db.query(
             "SELECT * FROM orders WHERE user_id = ? AND status IN ('pending', 'approved', 'preparing', 'ready', 'shipped', 'delivered') ORDER BY created_at DESC",
-            [userId],
+            [req.user.id],
         );
         res.json(rows);
     } catch (error) {
@@ -551,13 +583,16 @@ const generatePatenteId = () => {
     return `${rand(letters)}${rand(letters)}${rand(digits)}${rand(digits)}${rand(digits)}${rand(letters)}${rand(letters)}`;
 };
 
-// --- CHECKOUT ---
-app.post("/api/checkout", async (req, res) => {
-    const { user, cart, shipping, shippingType } = req.body;
+// --- CHECKOUT (protegido con JWT) ---
+app.post("/api/checkout", verifyToken, async (req, res) => {
+    const { cart, shipping, shippingType } = req.body;
+    if (!Array.isArray(cart) || cart.length === 0) {
+        return res.status(400).json({ error: "Carrito vacío" });
+    }
     try {
         await db.query(
             "UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'",
-            [user.id],
+            [req.user.id],
         );
         // Generar ID único estilo número de orden (evitar colisiones)
         let orderId = generatePatenteId();
@@ -585,7 +620,7 @@ app.post("/api/checkout", async (req, res) => {
         const totalFinal = subtotal + shippingCost;
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
-            [orderId, user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
         );
         for (let item of cart) {
             await db.query(
@@ -631,23 +666,23 @@ app.post("/api/checkout", async (req, res) => {
         });
         res.json({ init_point: response.init_point, preferenceId: response.id, orderId });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en checkout:", error);
+        res.status(500).json({ error: "Error al procesar el pago" });
     }
 });
 
 // ==========================================
-// --- CARRITO PERSISTIDO (SINCRONIZACIÓN CUENTA) ---
+// --- CARRITO PERSISTIDO (protegido con JWT) ---
 // ==========================================
 
-app.get("/api/cart/:userId", async (req, res) => {
-    const { userId } = req.params;
+app.get("/api/cart/:userId", verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT ci.product_id, ci.quantity, p.title, p.price, p.stock, p.images
              FROM cart_items ci
              JOIN products p ON ci.product_id = p.id
              WHERE ci.user_id = ?`,
-            [userId]
+            [req.user.id]
         );
         res.json(rows);
     } catch (error) {
@@ -656,15 +691,20 @@ app.get("/api/cart/:userId", async (req, res) => {
     }
 });
 
-app.post("/api/cart/sync", async (req, res) => {
-    const { userId, items } = req.body;
-    if (!userId || !Array.isArray(items)) {
+app.post("/api/cart/sync", verifyToken, async (req, res) => {
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
         return res.status(400).json({ error: "Datos inválidos" });
     }
+    for (const item of items) {
+        if (!item.product_id || typeof item.quantity !== "number" || item.quantity < 1) {
+            return res.status(400).json({ error: "Item inválido en el carrito" });
+        }
+    }
     try {
-        await db.query("DELETE FROM cart_items WHERE user_id = ?", [userId]);
+        await db.query("DELETE FROM cart_items WHERE user_id = ?", [req.user.id]);
         if (items.length > 0) {
-            const values = items.map(i => [userId, i.product_id, i.quantity]);
+            const values = items.map(i => [req.user.id, i.product_id, i.quantity]);
             await db.query(
                 "INSERT INTO cart_items (user_id, product_id, quantity) VALUES ?",
                 [values]
@@ -802,7 +842,7 @@ app.post("/api/admin/products", verifyAdmin, async (req, res) => {
         );
         res.json({ message: "Producto creado exitosamente" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Error al crear producto" });
     }
 });
 
@@ -866,7 +906,8 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
         }
         res.json({ message: "Producto actualizado" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error al actualizar producto:", error);
+        res.status(500).json({ error: "Error al actualizar producto" });
     }
 });
 
@@ -876,7 +917,8 @@ app.delete("/api/admin/products/:id", verifyAdmin, async (req, res) => {
         await db.query("DELETE FROM products WHERE id=?", [id]);
         res.json({ message: "Producto eliminado" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error al eliminar producto:", error);
+        res.status(500).json({ error: "Error al eliminar producto" });
     }
 });
 
@@ -897,7 +939,8 @@ app.post("/api/admin/categories", verifyAdmin, async (req, res) => {
         await db.query("INSERT INTO categories (name) VALUES (?)", [name]);
         res.json({ message: "Categoría creada" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error al crear categoría:", error);
+        res.status(500).json({ error: "Error al crear categoría" });
     }
 });
 
@@ -911,7 +954,8 @@ app.put("/api/admin/categories/:id", verifyAdmin, async (req, res) => {
         ]);
         res.json({ message: "Categoría actualizada" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error al actualizar categoría:", error);
+        res.status(500).json({ error: "Error al actualizar categoría" });
     }
 });
 
@@ -921,7 +965,8 @@ app.delete("/api/admin/categories/:id", verifyAdmin, async (req, res) => {
         await db.query("DELETE FROM categories WHERE id=?", [id]);
         res.json({ message: "Categoría eliminada" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error al eliminar categoría:", error);
+        res.status(500).json({ error: "Error al eliminar categoría" });
     }
 });
 
@@ -1017,7 +1062,8 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
 
         res.json({ message: "Estado de orden actualizado y correo enviado" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error al actualizar estado de orden:", error);
+        res.status(500).json({ error: "Error al actualizar estado de orden" });
     }
 });
 
@@ -1041,7 +1087,7 @@ app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
         res.json({ message: "Orden eliminada completamente del sistema" });
     } catch (error) {
         console.error("Error al eliminar orden:", error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Error al eliminar orden" });
     }
 });
 
@@ -1188,7 +1234,7 @@ app.post("/api/chat", async (req, res) => {
 
         if (!groqRes.ok) {
             const errText = await groqRes.text();
-            console.error("Error en Groq API:", groqRes.status, errText, "API Key starts with:", GROQ_API_KEY?.slice(0, 8));
+            console.error("Error en Groq API:", groqRes.status, errText);
 
             if (groqRes.status === 429) {
                 return res.status(429).json({

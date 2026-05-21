@@ -33,7 +33,10 @@ export default function PedidoDetalle() {
             return;
         }
 
-        fetch(`${API_URL}/api/orders/detail/${id}`)
+        const token = localStorage.getItem('vntg_token');
+        fetch(`${API_URL}/api/orders/detail/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
             .then(res => {
                 if (!res.ok) throw new Error("No encontrado");
                 return res.json();

@@ -46,9 +46,10 @@ export default function Checkout() {
         setError('');
 
         try {
+            const token = localStorage.getItem('vntg_token');
             const res = await fetch(`${API_URL}/api/checkout`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
                 body: JSON.stringify({
                     user,
                     cart,

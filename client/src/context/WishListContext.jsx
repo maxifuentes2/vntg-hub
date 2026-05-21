@@ -12,10 +12,15 @@ export function WishListProvider({ children }) {
     // Obtener usuario activo
     const getActiveUser = () => JSON.parse(localStorage.getItem('vntg_user'));
 
+    const getToken = () => localStorage.getItem('vntg_token');
+
     useEffect(() => {
         const user = getActiveUser();
-        if (user) {
-            fetch(`${API_URL}/api/wishlist/${user.id}`)
+        const token = getToken();
+        if (user && token) {
+            fetch(`${API_URL}/api/wishlist/${user.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
                 .then(res => res.json())
                 .then(data => setWishListItems(Array.isArray(data) ? data : []))
                 .catch(err => console.error("Error cargando wishlist:", err));
@@ -39,7 +44,7 @@ export function WishListProvider({ children }) {
         try {
             const response = await fetch(`${API_URL}/api/wishlist`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
                 body: JSON.stringify({ userId: user.id, productId: product.id })
             });
 
@@ -54,9 +59,10 @@ export function WishListProvider({ children }) {
 
     const removeFromWishList = async (id) => {
         const user = getActiveUser();
-        if (user) {
+        const token = getToken();
+        if (user && token) {
             try {
-                await fetch(`${API_URL}/api/wishlist/${user.id}/${id}`, { method: 'DELETE' });
+                await fetch(`${API_URL}/api/wishlist/${user.id}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             } catch (e) { console.error(e); }
         }
         setWishListItems((prevItems) => prevItems.filter(item => String(item.id) !== String(id)));
