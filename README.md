@@ -1,68 +1,125 @@
-# 🛒 VNTG Hub - E-commerce de Coleccionables
+# VNTG Hub - E-commerce de Coleccionables
 
-## 📄 Descripción del Proyecto
-Plataforma de comercio electrónico de alta gama diseñada para coleccionistas de cultura pop. El sistema ofrece una experiencia premium con diseño *glassmorphism*, modo oscuro nativo y una interfaz ultra-reactiva.
+Plataforma de comercio electrónico para coleccionistas de cultura pop con diseño glassmorphism, modo oscuro y chatbot IA.
 
-## 🚀 Stack Tecnológico
+## Stack Tecnológico
 
 ### Frontend
-* **Core**: React.js 18.
-* **Estilos**: Tailwind CSS (Diseño moderno, premium y responsivo).
-* **Iconos**: Lucide React.
-* **Estado Global**: React Context API (Carrito, Wishlist, Notificaciones).
-* **Herramienta de Construcción**: Vite.
+- **Core**: React 19 + Vite 8
+- **Estilos**: Tailwind CSS 4
+- **Iconos**: Lucide React
+- **Estado Global**: React Context API (Carrito, Wishlist)
+- **Autenticación**: Clerk + Google OAuth
 
 ### Backend & DB
-* **Entorno**: Node.js + Express.
-* **Base de Datos**: MySQL (Gestión de productos, órdenes y usuarios).
-* **Seguridad**: Autenticación basada en JWT y encriptación con Bcryptjs.
+- **Entorno**: Node.js + Express 5 (CommonJS)
+- **Base de Datos**: MySQL (TiDB Cloud)
+- **Seguridad**: JWT + Bcryptjs
+- **IA**: Groq (Llama 3) para chatbot, Google Gemini para utilitarios
 
-### 🔌 Integraciones Clave
-* **Mercado Pago API**: Integración completa para pagos seguros con tarjetas y otros medios.
-* **Google Gemini AI**: Chatbot inteligente de soporte integrado para resolver dudas en tiempo real.
-* **n8n**: Orquestación de flujos de trabajo para el envío automatizado de correos electrónicos (Bienvenida, Recuperación, Confirmación de compra).
+### Integraciones
+- **Mercado Pago**: Pagos con tarjetas y otros medios
+- **Google OAuth**: Inicio de sesión con Google
+- **n8n**: Automatización de emails (bienvenida, recuperación, confirmación)
 
-## 📁 Estructura y Setup
-El proyecto está organizado en dos módulos: `/client` (Frontend) y `/server` (Backend).
+## Estructura
 
-### Requisitos Previos
-* Node.js (v18+)
-* MySQL
-* PNPM (Recomendado) o NPM
+```
+vntg-hub/
+├── client/          # Frontend React + Vite
+│   ├── src/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── pages/
+│   │   └── main.jsx
+│   ├── .env
+│   ├── .env.production
+│   └── package.json
+├── server/          # Backend Express
+│   ├── index.js
+│   ├── db.js
+│   ├── escaner.js
+│   ├── .env
+│   └── package.json
+└── README.md
+```
 
-### Instalación
-1. Clonar el repositorio.
-2. Configurar los archivos `.env` tanto en `/client` como en `/server` (usar `.env.example` como guía).
+## Requisitos
 
-#### Ejecución en Desarrollo:
-1. **Servidor**:
-   ```bash
-   cd server
-   pnpm install
-   pnpm run dev
-   ```
-2. **Cliente**:
-   ```bash
-   cd client
-   pnpm install
-   pnpm run dev
-   ```
+- Node.js v18+
+- pnpm (obligatorio)
 
-## ⚠️ Reglas de Desarrollo
-1. **Ramas**: No subir cambios directamente a `main`. Usar ramas descriptivas (ej: `feat/panel-soporte`).
-2. **Pull Requests**: Todo cambio debe ser revisado antes de integrarse.
-3. **Seguridad**: El archivo `.env` está en `.gitignore`. No compartir credenciales.
+## Instalación
+
+```bash
+# Clonar
+git clone https://github.com/maxifuentes2/vntg-hub.git
+cd vntg-hub
+
+# Servidor
+cd server
+pnpm install
+pnpm run dev    # http://localhost:5000
+
+# Cliente (otra terminal)
+cd client
+pnpm install
+pnpm run dev    # http://localhost:5173
+```
+
+## Variables de Entorno
+
+Copiar los archivos `.env.example` (crearlos si no existen) y completar con los valores reales provistos por el equipo.
+
+### server/.env
+
+```env
+DB_HOST=
+DB_PORT=4000
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+JWT_SECRET=
+GOOGLE_CLIENT_ID=
+MP_ACCESS_TOKEN=
+GROQ_API_KEY=
+GEMINI_API_KEY=
+N8N_WEBHOOK_URL=
+PORT=5000
+```
+
+### client/.env
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=
+VITE_MP_PUBLIC_KEY=
+```
+
+### client/.env.production
+
+```env
+VITE_API_URL=https://vntg-hub.onrender.com
+VITE_MP_PUBLIC_KEY=
+```
+
+## Reglas de Desarrollo
+
+1. No subir cambios directamente a `main`. Usar ramas descriptivas (`feat/...`, `fix/...`).
+2. Los archivos `.env` están en `.gitignore`. No compartir credenciales en el repo.
+3. Usar pnpm, no npm.
 
 ---
 
-## 🎓 Créditos
-Este proyecto es desarrollado por estudiantes de la Universidad del Aconcagua (Mendoza, Argentina):
+## Créditos
 
-* Máximo Fuentes
-* Enzo Bautista Delluniversidad
-* Ignacio Povolo
-* Gaspar Barroso
-* Santiago Zufia
-* Bruno Guzmán
+Proyecto desarrollado por estudiantes de la Universidad del Aconcagua (Mendoza, Argentina):
+
+- Máximo Fuentes
+- Enzo Bautista Delluniversidad
+- Ignacio Povolo
+- Gaspar Barroso
+- Santiago Zufia
+- Bruno Guzmán
 
 © 2026 VNTG Hub Team
