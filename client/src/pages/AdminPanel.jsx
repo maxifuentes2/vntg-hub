@@ -10,6 +10,49 @@ export default function AdminPanel() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [orders, setOrders] = useState([]);
+    const [selectedOrders, setSelectedOrders] = useState(new Set());
+
+    const getOrderShippingType = (order) => {
+        try {
+            const info = JSON.parse(order.shipping_info || '{}');
+            return info.shippingType;
+        } catch { return null; }
+    };
+
+    const getStatusOptions = (order) => {
+        if (getOrderShippingType(order) === 'retiro') {
+            return [
+                { value: 'pending', label: 'Pendiente' },
+                { value: 'approved', label: 'Aprobado' },
+                { value: 'preparing', label: 'En Preparación' },
+                { value: 'ready', label: 'Listo para Retirar' },
+            ];
+        }
+        return [
+            { value: 'pending', label: 'Pendiente' },
+            { value: 'approved', label: 'Aprobado' },
+            { value: 'preparing', label: 'En Preparación' },
+            { value: 'shipped', label: 'Enviado' },
+            { value: 'delivered', label: 'Entregado' },
+        ];
+    };
+
+    const toggleOrderSelection = (orderId) => {
+        setSelectedOrders(prev => {
+            const next = new Set(prev);
+            if (next.has(orderId)) next.delete(orderId);
+            else next.add(orderId);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedOrders.size === orders.length) {
+            setSelectedOrders(new Set());
+        } else {
+            setSelectedOrders(new Set(orders.map(o => o.id)));
+        }
+    };
     const [activeTab, setActiveTab] = useState('products');
     const navigate = useNavigate();
 
@@ -121,12 +164,30 @@ export default function AdminPanel() {
 
     // --- MANEJO DE ELIMINACIÓN ESTÉTICA ---
     const openConfirmDelete = (id, title, type) => {
-        setConfirmDelete({ isOpen: true, id, title, type });
+        setConfirmDelete({ isOpen: true, id, ids: null, title, type });
     };
 
     const executeDelete = async () => {
-        const { id, type, title } = confirmDelete;
+        const { id, ids, type, title } = confirmDelete;
         const token = localStorage.getItem('vntg_token');
+
+        if (type === 'orders' && ids?.length) {
+            try {
+                await Promise.all(ids.map(orderId =>
+                    fetch(`${API_URL}/api/admin/orders/${orderId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ));
+                addToast({ title: `Se eliminaron ${ids.length} órdenes` }, 'Órdenes eliminadas', 'success');
+                setConfirmDelete({ isOpen: false, id: null, ids: null, title: '', type: '' });
+                setSelectedOrders(new Set());
+                fetchData();
+            } catch (error) {
+                addToast({}, 'Error al eliminar órdenes', 'error');
+            }
+            return;
+        }
 
         let endpoint, label;
         if (type === 'product') { endpoint = `products/${id}`; label = 'Producto'; }
@@ -140,7 +201,7 @@ export default function AdminPanel() {
             });
             if (res.ok) {
                 addToast({ title }, `${label} eliminado correctamente`, 'success');
-                setConfirmDelete({ isOpen: false, id: null, title: '', type: '' });
+                setConfirmDelete({ isOpen: false, id: null, ids: null, title: '', type: '' });
                 fetchData();
             } else {
                 addToast({}, `Error al eliminar ${label}`, 'error');
@@ -320,39 +381,79 @@ export default function AdminPanel() {
                 {/* VISTA ÓRDENES */}
                 {activeTab === 'orders' && (
                     <div className="space-y-4">
+                        {orders.length > 0 && (
+                            <div className="flex items-center justify-between gap-4 mb-2">
+                                <label className="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-zinc-500 uppercase italic">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedOrders.size === orders.length}
+                                        onChange={toggleSelectAll}
+                                        className="w-4 h-4 accent-brand-orange cursor-pointer"
+                                    />
+                                    Seleccionar todos
+                                </label>
+                                {selectedOrders.size > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            const ids = Array.from(selectedOrders);
+                                            setConfirmDelete({
+                                                isOpen: true,
+                                                id: null,
+                                                ids,
+                                                title: `${ids.length} órdenes`,
+                                                type: 'orders'
+                                            });
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase italic tracking-wider"
+                                    >
+                                        <Trash2 size={14} /> Eliminar seleccionadas ({selectedOrders.size})
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         {orders.length === 0 && (
                             <p className="text-center text-zinc-500 dark:text-zinc-400 italic py-10">No hay órdenes registradas.</p>
                         )}
-                        {orders.map(order => (
+                        {orders.map(order => {
+                            const statusOptions = getStatusOptions(order);
+                            return (
                             <div key={order.id} className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 p-5 flex flex-col md:flex-row justify-between gap-4 md:items-center rounded-2xl shadow-lg">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">Orden: {order.id.slice(0, 8)}...</h3>
-                                        <span className={`px-2 py-1 text-[9px] font-bold uppercase rounded ${order.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                                                order.status === 'preparing' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' :
-                                                    order.status === 'ready' ? 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20' :
-                                                        order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
-                                                            order.status === 'delivered' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
-                                                                order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                                                                    'bg-red-500/10 text-red-500 border border-red-500/20'
-                                            }`}>
-                                            {order.status === 'approved' ? 'Aprobado' :
-                                                order.status === 'preparing' ? 'En Preparación' :
-                                                    order.status === 'ready' ? 'Listo para Retirar' :
-                                                        order.status === 'shipped' ? 'Enviado' :
-                                                            order.status === 'delivered' ? 'Entregado' :
-                                                                order.status === 'pending' ? 'Pendiente' : 'Cancelado'}
-                                        </span>
+                                <div className="flex items-start gap-3 flex-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedOrders.has(order.id)}
+                                        onChange={() => toggleOrderSelection(order.id)}
+                                        className="w-4 h-4 accent-brand-orange cursor-pointer mt-1 shrink-0"
+                                    />
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">Orden: {order.id.slice(0, 8)}...</h3>
+                                            <span className={`px-2 py-1 text-[9px] font-bold uppercase rounded ${order.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                                                    order.status === 'preparing' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' :
+                                                        order.status === 'ready' ? 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20' :
+                                                            order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                                                                order.status === 'delivered' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
+                                                                    order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
+                                                                        'bg-red-500/10 text-red-500 border border-red-500/20'
+                                                }`}>
+                                                {order.status === 'approved' ? 'Aprobado' :
+                                                    order.status === 'preparing' ? 'En Preparación' :
+                                                        order.status === 'ready' ? 'Listo para Retirar' :
+                                                            order.status === 'shipped' ? 'Enviado' :
+                                                                order.status === 'delivered' ? 'Entregado' :
+                                                                    order.status === 'pending' ? 'Pendiente' : 'Cancelado'}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-zinc-500">
+                                            <strong className="dark:text-zinc-300">Cliente:</strong> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})
+                                        </p>
+                                        <p className="text-[11px] text-zinc-500 mt-1">
+                                            <strong className="dark:text-zinc-300">Fecha:</strong> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)
+                                        </p>
                                     </div>
-                                    <p className="text-[11px] text-zinc-500">
-                                        <strong className="dark:text-zinc-300">Cliente:</strong> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})
-                                    </p>
-                                    <p className="text-[11px] text-zinc-500 mt-1">
-                                        <strong className="dark:text-zinc-300">Fecha:</strong> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)
-                                    </p>
                                 </div>
 
-                                <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-6 ml-7 md:ml-0">
                                     <div className="text-right">
                                         <p className="text-[10px] font-bold text-zinc-500 uppercase">Total</p>
                                         <p className="text-brand-orange font-black italic text-lg">${Number(order.total).toLocaleString()}</p>
@@ -366,13 +467,9 @@ export default function AdminPanel() {
                                                 onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
                                                 className="appearance-none w-36 bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/10 rounded-lg p-2.5 pr-8 text-[11px] font-black uppercase italic text-zinc-900 dark:text-white outline-none focus:border-brand-orange cursor-pointer transition-colors"
                                             >
-                                                <option value="pending" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Pendiente</option>
-                                                <option value="approved" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Aprobado</option>
-                                                <option value="preparing" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">En Preparación</option>
-                                                <option value="ready" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Listo para Retirar</option>
-                                                <option value="shipped" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Enviado</option>
-                                                <option value="delivered" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Entregado</option>
-                                                <option value="cancelled" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Cancelado</option>
+                                                {statusOptions.map(opt => (
+                                                    <option key={opt.value} value={opt.value} className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">{opt.label}</option>
+                                                ))}
                                             </select>
                                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-brand-orange">
                                                 <ChevronDown size={14} />
@@ -389,7 +486,8 @@ export default function AdminPanel() {
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -554,10 +652,17 @@ export default function AdminPanel() {
                             </div>
 
                             <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">
-                                {confirmDelete.type === 'order' ? '¿Cancelar Orden?' : '¿Confirmar Eliminación?'}
+                                {confirmDelete.type === 'order' || confirmDelete.type === 'orders' ? '¿Eliminar Orden?' : '¿Confirmar Eliminación?'}
                             </h3>
 
-                            {confirmDelete.type === 'order' ? (
+                            {confirmDelete.type === 'orders' ? (
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
+                                    Estás a punto de eliminar <strong className="text-brand-orange not-italic">{confirmDelete.ids?.length}</strong> órdenes permanentemente.
+                                    <span className="block mt-3 text-zinc-600 dark:text-zinc-400">
+                                        Se restaurará el stock de los productos y las órdenes desaparecerán del sistema. <strong className="text-red-500 not-italic">Esta acción no se puede deshacer.</strong>
+                                    </span>
+                                </p>
+                            ) : confirmDelete.type === 'order' ? (
                                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
                                     Estás a punto de eliminar completamente la orden: <br />
                                     <span className="text-brand-orange font-black not-italic block mt-2 text-base tracking-widest">
@@ -579,7 +684,7 @@ export default function AdminPanel() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                                 <button
-                                    onClick={() => setConfirmDelete({ isOpen: false, id: null, title: '', type: '' })}
+                                    onClick={() => setConfirmDelete({ isOpen: false, id: null, ids: null, title: '', type: '' })}
                                     className="px-6 py-4 bg-zinc-200 dark:bg-white/5 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-white/10 transition-all border border-transparent rounded-xl"
                                 >
                                     Cancelar
