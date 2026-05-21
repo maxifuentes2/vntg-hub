@@ -10,7 +10,9 @@ import {
     Filter,
     ChevronRight,
     Loader2,
-    ArrowLeft
+    ArrowLeft,
+    Trash2,
+    XCircle
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -24,7 +26,7 @@ export default function SupportPanel() {
     const [selectedMsg, setSelectedMsg] = useState(null);
     const [replyText, setReplyText] = useState('');
     const [sendingReply, setSendingReply] = useState(false);
-    const [filter, setFilter] = useState('all'); // all, pending, replied
+    const [filter, setFilter] = useState('all'); // all, pending, replied, finished
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
@@ -90,6 +92,42 @@ export default function SupportPanel() {
         }
     };
 
+    const handleFinishChat = async (msgId) => {
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const res = await fetch(`${API_URL}/api/support/messages/${msgId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status: 'finished' })
+            });
+            if (res.ok) {
+                setMessages(messages.map(m => m.id === msgId ? { ...m, status: 'finished' } : m));
+                if (selectedMsg?.id === msgId) setSelectedMsg({ ...selectedMsg, status: 'finished' });
+                addToast({}, 'Chat marcado como terminado', 'success');
+            }
+        } catch (error) {
+            addToast({}, 'Error al finalizar chat', 'error');
+        }
+    };
+
+    const handleDeleteMessage = async (msgId) => {
+        if (!confirm('¿Eliminar este mensaje permanentemente?')) return;
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const res = await fetch(`${API_URL}/api/support/messages/${msgId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setMessages(messages.filter(m => m.id !== msgId));
+                if (selectedMsg?.id === msgId) setSelectedMsg(null);
+                addToast({}, 'Mensaje eliminado', 'success');
+            }
+        } catch (error) {
+            addToast({}, 'Error al eliminar mensaje', 'error');
+        }
+    };
+
     const filteredMessages = messages.filter(m => {
         const matchesFilter = filter === 'all' || m.status === filter;
         const matchesSearch = m.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -131,13 +169,13 @@ export default function SupportPanel() {
                                 />
                             </div>
                             <div className="flex gap-2">
-                                {['all', 'pending', 'replied'].map(f => (
+                                {['all', 'pending', 'replied', 'finished'].map(f => (
                                     <button 
                                         key={f}
                                         onClick={() => setFilter(f)}
                                         className={`flex-1 py-2 text-[10px] font-black uppercase italic border transition-all rounded-lg ${filter === f ? 'bg-brand-blue text-white border-brand-blue shadow-lg shadow-blue-500/20' : 'bg-transparent border-zinc-200 dark:border-white/5 text-zinc-500 hover:border-brand-blue'}`}
                                     >
-                                        {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : 'Respondidos'}
+                                        {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : f === 'replied' ? 'Respondidos' : 'Terminados'}
                                     </button>
                                 ))}
                             </div>
@@ -151,11 +189,13 @@ export default function SupportPanel() {
                                     <div 
                                         key={msg.id} 
                                         onClick={() => setSelectedMsg(msg)}
-                                        className={`p-5 bg-white/40 dark:bg-black/20 backdrop-blur-md border rounded-2xl cursor-pointer transition-all group relative overflow-hidden shadow-sm ${selectedMsg?.id === msg.id ? 'border-brand-blue shadow-blue-500/10 scale-[1.02]' : 'border-white/10 dark:border-white/5 hover:border-brand-blue/50'}`}
+                                        className={`p-5 bg-white/40 dark:bg-black/20 backdrop-blur-md border rounded-2xl cursor-pointer transition-all group relative overflow-hidden shadow-sm ${msg.status === 'finished' ? 'opacity-60 hover:opacity-100' : ''} ${selectedMsg?.id === msg.id ? 'border-brand-blue shadow-blue-500/10 scale-[1.02]' : 'border-white/10 dark:border-white/5 hover:border-brand-blue/50'}`}
                                     >
-                                        {msg.status === 'pending' && (
+                                        {msg.status === 'pending' ? (
                                             <div className="absolute top-0 right-0 w-2 h-full bg-brand-orange"></div>
-                                        )}
+                                        ) : msg.status === 'finished' ? (
+                                            <div className="absolute top-0 right-0 w-2 h-full bg-zinc-400"></div>
+                                        ) : null}
                                         <div className="flex justify-between items-start mb-2">
                                             <p className="text-[10px] font-black text-brand-blue uppercase italic">{msg.email}</p>
                                             <p className="text-[9px] font-bold text-zinc-500">{new Date(msg.created_at).toLocaleDateString()}</p>
@@ -178,13 +218,33 @@ export default function SupportPanel() {
                         {selectedMsg ? (
                             <div className="bg-white/40 dark:bg-black/20 backdrop-blur-2xl border border-white/20 dark:border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-full min-h-[600px]">
                                 {/* Cabecera Detalle */}
-                                <div className="p-8 border-b border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-white/5 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] mb-1">Consulta #{selectedMsg.id}</p>
-                                        <h2 className="text-2xl font-black italic uppercase tracking-tighter">{selectedMsg.nombre}</h2>
-                                    </div>
-                                    <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase italic ${selectedMsg.status === 'pending' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}>
-                                        {selectedMsg.status === 'pending' ? 'Pendiente' : 'Respondido'}
+                                <div className="p-8 border-b border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-white/5">
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] mb-1">Consulta #{selectedMsg.id}</p>
+                                            <h2 className="text-2xl font-black italic uppercase tracking-tighter">{selectedMsg.nombre}</h2>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {selectedMsg.status !== 'finished' && (
+                                                <button
+                                                    onClick={() => handleFinishChat(selectedMsg.id)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase italic rounded-lg bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white transition-all border border-zinc-500/20"
+                                                    title="Marcar como terminado"
+                                                >
+                                                    <XCircle size={14} /> Terminar
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDeleteMessage(selectedMsg.id)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase italic rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                                                title="Eliminar mensaje"
+                                            >
+                                                <Trash2 size={14} /> Eliminar
+                                            </button>
+                                            <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase italic ${selectedMsg.status === 'pending' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' : selectedMsg.status === 'replied' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-zinc-500/10 text-zinc-500 border border-zinc-500/20'}`}>
+                                                {selectedMsg.status === 'pending' ? 'Pendiente' : selectedMsg.status === 'replied' ? 'Respondido' : 'Terminado'}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

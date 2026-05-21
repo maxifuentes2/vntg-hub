@@ -31,6 +31,15 @@ const initDB = async () => {
         `);
         console.log("✅ Columna role en users verificada");
 
+        // Agregar 'finished' al ENUM de support_messages si no existe
+        try {
+            await db.query("ALTER TABLE support_messages MODIFY COLUMN status ENUM('pending', 'replied', 'finished') DEFAULT 'pending'");
+            console.log("✅ Columna status en support_messages actualizada");
+        } catch (e) {
+            // Puede fallar si el ENUM ya incluye 'finished'
+            console.log("ℹ️ Columna status ya actualizada previamente");
+        }
+
         // Tabla de carritos persistidos por usuario
         await db.query(`
             CREATE TABLE IF NOT EXISTS cart_items (
@@ -1338,6 +1347,30 @@ app.post("/api/support/reply/:id", verifySupport, async (req, res) => {
     } catch (error) {
         console.error("Error al responder mensaje:", error);
         res.status(500).json({ error: "Error al enviar la respuesta" });
+    }
+});
+
+app.put("/api/support/messages/:id/status", verifySupport, async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ error: "Estado requerido" });
+    try {
+        await db.query("UPDATE support_messages SET status = ? WHERE id = ?", [status, id]);
+        res.json({ message: "Estado actualizado" });
+    } catch (error) {
+        console.error("Error al actualizar estado:", error);
+        res.status(500).json({ error: "Error al actualizar estado" });
+    }
+});
+
+app.delete("/api/support/messages/:id", verifySupport, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("DELETE FROM support_messages WHERE id = ?", [id]);
+        res.json({ message: "Mensaje eliminado" });
+    } catch (error) {
+        console.error("Error al eliminar mensaje:", error);
+        res.status(500).json({ error: "Error al eliminar mensaje" });
     }
 });
 
