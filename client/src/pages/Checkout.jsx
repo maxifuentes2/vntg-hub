@@ -45,13 +45,7 @@ export default function Checkout() {
     useEffect(() => {
         const pendingOrder = sessionStorage.getItem('vntg_pending_order');
         if (pendingOrder && !orderId) {
-            navigate(`/pedido/${pendingOrder}`);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (MP_PUBLIC_KEY) {
-            initMercadoPago(MP_PUBLIC_KEY);
+            sessionStorage.removeItem('vntg_pending_order');
         }
     }, []);
 
@@ -59,6 +53,7 @@ export default function Checkout() {
         e.preventDefault();
         setLoading(true);
         setError('');
+        sessionStorage.removeItem('vntg_pending_order');
 
         try {
             const res = await fetch(`${API_URL}/api/checkout`, {
