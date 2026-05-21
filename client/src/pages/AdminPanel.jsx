@@ -193,7 +193,7 @@ export default function AdminPanel() {
     // --- MANEJO DE ÓRDENES ---
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         const token = localStorage.getItem('vntg_token');
-        const statusLabels = { pending: 'Pendiente', approved: 'Aprobado', preparing: 'En Preparación', shipped: 'Enviado', delivered: 'Entregado', cancelled: 'Cancelado' };
+        const statusLabels = { pending: 'Pendiente', approved: 'Aprobado', preparing: 'En Preparación', ready: 'Listo para Retirar', shipped: 'Enviado', delivered: 'Entregado', cancelled: 'Cancelado' };
         try {
             const res = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
                 method: 'PUT',
@@ -330,16 +330,18 @@ export default function AdminPanel() {
                                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">Orden: {order.id.slice(0, 8)}...</h3>
                                         <span className={`px-2 py-1 text-[9px] font-bold uppercase rounded ${order.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
                                                 order.status === 'preparing' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' :
-                                                    order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
-                                                        order.status === 'delivered' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
-                                                            order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                                                                'bg-red-500/10 text-red-500 border border-red-500/20'
+                                                    order.status === 'ready' ? 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20' :
+                                                        order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                                                            order.status === 'delivered' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
+                                                                order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
+                                                                    'bg-red-500/10 text-red-500 border border-red-500/20'
                                             }`}>
                                             {order.status === 'approved' ? 'Aprobado' :
                                                 order.status === 'preparing' ? 'En Preparación' :
-                                                    order.status === 'shipped' ? 'Enviado' :
-                                                        order.status === 'delivered' ? 'Entregado' :
-                                                            order.status === 'pending' ? 'Pendiente' : 'Cancelado'}
+                                                    order.status === 'ready' ? 'Listo para Retirar' :
+                                                        order.status === 'shipped' ? 'Enviado' :
+                                                            order.status === 'delivered' ? 'Entregado' :
+                                                                order.status === 'pending' ? 'Pendiente' : 'Cancelado'}
                                         </span>
                                     </div>
                                     <p className="text-[11px] text-zinc-500">
@@ -367,6 +369,7 @@ export default function AdminPanel() {
                                                 <option value="pending" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Pendiente</option>
                                                 <option value="approved" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Aprobado</option>
                                                 <option value="preparing" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">En Preparación</option>
+                                                <option value="ready" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Listo para Retirar</option>
                                                 <option value="shipped" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Enviado</option>
                                                 <option value="delivered" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Entregado</option>
                                                 <option value="cancelled" className="bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white font-black italic">Cancelado</option>

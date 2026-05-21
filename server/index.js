@@ -524,7 +524,7 @@ app.get("/api/orders/:userId", async (req, res) => {
     try {
         // CORRECCIÓN APLICADA AQUÍ: Se añadieron todos los estados válidos
         const [rows] = await db.query(
-            "SELECT * FROM orders WHERE user_id = ? AND status IN ('pending', 'approved', 'preparing', 'shipped', 'delivered') ORDER BY created_at DESC",
+            "SELECT * FROM orders WHERE user_id = ? AND status IN ('pending', 'approved', 'preparing', 'ready', 'shipped', 'delivered') ORDER BY created_at DESC",
             [userId],
         );
         res.json(rows);
@@ -576,7 +576,7 @@ app.post("/api/checkout", async (req, res) => {
         const totalFinal = subtotal + shippingCost;
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
-            [orderId, user.id, totalFinal, JSON.stringify(shipping)],
+            [orderId, user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
         );
         for (let item of cart) {
             await db.query(
@@ -971,6 +971,13 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
                 subject = "Estamos preparando tu pedido";
                 title = "En Preparación";
                 message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0, 8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
+                break;
+            case "ready":
+                subject = "¡Tu pedido está listo para retirar!";
+                title = "Listo para Retirar";
+                message = `Hola ${order.name}, tu pedido #${id.slice(0, 8)} ya está listo para que pases a retirarlo por nuestro local. ¡Te esperamos!`;
+                btnText = "Ver mi pedido";
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case "shipped":
                 subject = "¡Tu pedido va en camino!";

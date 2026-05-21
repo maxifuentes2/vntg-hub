@@ -45,16 +45,21 @@ export default function PedidoDetalle() {
     if (!pedido) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark font-black italic uppercase tracking-widest text-zinc-500">Orden no encontrada</div>;
 
     const infoEnvio = pedido.shipping_info ? JSON.parse(pedido.shipping_info) : {};
+    const esRetiro = infoEnvio.shippingType === 'retiro';
     
     // Lógica del mapa de estados
-    const estados = [
+    const estados = esRetiro ? [
+        { key: 'approved', label: 'Aprobado', icon: CheckCircle2 },
+        { key: 'preparing', label: 'En Preparación', icon: Package },
+        { key: 'ready', label: 'Listo para Retirar', icon: Home },
+    ] : [
         { key: 'approved', label: 'Aprobado', icon: CheckCircle2 },
         { key: 'preparing', label: 'En Preparación', icon: Package },
         { key: 'shipped', label: 'Enviado', icon: Truck },
         { key: 'delivered', label: 'Entregado', icon: Home }
     ];
     
-    const currentIndex = estados.findIndex(e => e.key === pedido.status);
+    const currentIndex = pedido.status === 'pending' ? -1 : estados.findIndex(e => e.key === pedido.status);
 
     return (
         <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 font-sans text-zinc-900 dark:text-white">
@@ -134,15 +139,23 @@ export default function PedidoDetalle() {
                         </div>
                     </div>
 
-                    {/* DIRECCIÓN */}
+                    {/* DIRECCIÓN / RETIRO */}
                     <div className="bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/5 p-4 sm:p-8 rounded-2xl shadow-xl h-fit">
-                        <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-2"><MapPin size={14} className="text-brand-orange"/> Envío</h2>
-                        <div className="space-y-3">
-                            <p className="text-sm font-bold"><span className="text-zinc-500">Nombre:</span> {infoEnvio.nombre} {infoEnvio.apellido}</p>
-                            <p className="text-sm font-bold"><span className="text-zinc-500">Dirección:</span> {infoEnvio.direccion}, {infoEnvio.ciudad}</p>
-                            <p className="text-sm font-bold"><span className="text-zinc-500">Provincia:</span> {infoEnvio.provincia} ({infoEnvio.codigoPostal})</p>
-                            <p className="text-sm font-bold"><span className="text-zinc-500">DNI:</span> {infoEnvio.dni}</p>
-                        </div>
+                        <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-2"><MapPin size={14} className="text-brand-orange"/> {esRetiro ? 'Retiro en Local' : 'Envío'}</h2>
+                        {esRetiro ? (
+                            <div className="space-y-3">
+                                <p className="text-sm font-bold">Pasá a retirar tu pedido por nuestro local.</p>
+                                <p className="text-sm font-bold"><span className="text-zinc-500">Nombre:</span> {infoEnvio.nombre}</p>
+                                <p className="text-sm font-bold"><span className="text-zinc-500">Teléfono:</span> {infoEnvio.telefono}</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <p className="text-sm font-bold"><span className="text-zinc-500">Nombre:</span> {infoEnvio.nombre} {infoEnvio.apellido}</p>
+                                <p className="text-sm font-bold"><span className="text-zinc-500">Dirección:</span> {infoEnvio.direccion}, {infoEnvio.ciudad}</p>
+                                <p className="text-sm font-bold"><span className="text-zinc-500">Provincia:</span> {infoEnvio.provincia} ({infoEnvio.codigoPostal})</p>
+                                <p className="text-sm font-bold"><span className="text-zinc-500">Teléfono:</span> {infoEnvio.telefono}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

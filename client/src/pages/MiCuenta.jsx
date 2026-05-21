@@ -149,11 +149,12 @@ export default function MiCuenta() {
                                             <span className={`text-[10px] font-black uppercase italic px-3 py-1 rounded-full ${
                                                 order.status === 'approved' ? 'bg-green-500/10 text-green-500' :
                                                 order.status === 'preparing' ? 'bg-brand-orange/10 text-brand-orange' :
+                                                order.status === 'ready' ? 'bg-cyan-500/10 text-cyan-500' :
                                                 order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500' :
                                                 order.status === 'delivered' ? 'bg-purple-500/10 text-purple-500' :
                                                 'bg-zinc-500/10 text-zinc-500'
                                             }`}>
-                                                {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'En Preparación' : order.status === 'shipped' ? 'Enviado' : 'Entregado'}
+                                                {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'En Preparación' : order.status === 'ready' ? 'Listo para Retirar' : order.status === 'shipped' ? 'Enviado' : order.status === 'delivered' ? 'Entregado' : 'Pendiente'}
                                             </span>
                                             <p className="text-xl font-black italic mt-1">${parseFloat(order.total).toLocaleString('es-AR')}</p>
                                         </div>
