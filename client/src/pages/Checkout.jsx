@@ -6,7 +6,7 @@ import { ShieldCheck, MapPin, ArrowLeft } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Checkout() {
-    const { cart, finalTotal, shippingType, getShippingCost, clearCart } = useCart();
+    const { cart, finalTotal, shippingType, getShippingCost, clearCart, refreshCartPrices } = useCart();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -36,6 +36,8 @@ export default function Checkout() {
         });
 
         if (cart.length === 0) navigate('/');
+
+        refreshCartPrices(API_URL);
     }, [cart.length, navigate]);
 
     const handleCheckout = async (e) => {
