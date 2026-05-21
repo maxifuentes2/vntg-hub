@@ -8,7 +8,7 @@ const FAQ_OPTIONS = [
   { label: "Métodos de envío", question: "¿Cuáles son los métodos de envío disponibles?" },
   { label: "Medios de pago", question: "¿Qué medios de pago aceptan?" },
   { label: "Devoluciones", question: "¿Cuál es la política de devoluciones?" },
-  { label: "Estado de mi orden", question: "Quiero consultar el estado de mi orden por patente" },
+  { label: "Estado de mi orden", question: "Quiero consultar el estado de mi orden" },
   { label: "Buscar producto", question: "¿Qué productos tienen disponible?" },
 ];
 
@@ -174,7 +174,7 @@ export default function Chatbot({ isSidebarOpen }) {
         }).join('\n');
 
         setMessages(prev => [...prev, {
-          text: `📋 **Tus órdenes recientes**\n\n${ordersText}\n\nPara ver detalles de una orden, decime su patente.`,
+          text: `📋 **Tus órdenes recientes**\n\n${ordersText}\n\nPara ver detalles de una orden, decime su número de orden.`,
           isBot: true
         }]);
       }
@@ -203,7 +203,7 @@ export default function Chatbot({ isSidebarOpen }) {
       const data = await res.json();
 
       if (data.error) {
-        setMessages(prev => [...prev, { text: `No encontré ninguna orden con la patente ${orderId}. Verificá la patente e intentá de nuevo.`, isBot: true }]);
+        setMessages(prev => [...prev, { text: `No encontré ninguna orden con el número ${orderId}. Verificá el número e intentá de nuevo.`, isBot: true }]);
       } else {
         const statusMap = { pending: "⏳ Pendiente de pago", approved: "✅ Aprobado", preparing: "📦 Preparando", shipped: "🚚 En camino", delivered: "📬 Entregado" };
         const itemsText = data.items.map(item => `• ${item.title} x${item.quantity || 1}`).join('\n');
@@ -383,7 +383,7 @@ export default function Chatbot({ isSidebarOpen }) {
               <h4 className="text-xs font-black italic uppercase tracking-tighter mb-3 text-zinc-800 dark:text-white">
                 Consultar estado de orden
               </h4>
-              <p className="text-[10px] text-zinc-500 mb-3">Ingresá la patente de tu pedido (ej: AB123CD):</p>
+              <p className="text-[10px] text-zinc-500 mb-3">Ingresá el número de tu pedido (ej: AB123CD):</p>
               <div className="flex gap-2">
                 <input
                   type="text" placeholder="Ej: AB123CD" value={orderLookupInput}
@@ -399,7 +399,7 @@ export default function Chatbot({ isSidebarOpen }) {
               </div>
               <div className="mt-2 flex gap-2">
                 <button onClick={handleMyOrders} disabled={isLoading} className="flex-1 px-3 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-zinc-100 dark:bg-zinc-800 border border-brand-orange/30 text-brand-orange rounded-full hover:bg-brand-orange hover:text-white transition-all disabled:opacity-50 text-center">
-                  No sé mi patente
+                  No sé mi número de orden
                 </button>
                 <button onClick={() => setShowOrderLookup(false)} className="px-3 py-2 text-[10px] font-bold italic text-zinc-500 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">Cancelar</button>
               </div>

@@ -543,7 +543,7 @@ app.get("/api/orders/:userId", async (req, res) => {
     }
 });
 
-// Generador de ID estilo patente (7 caracteres: 2 letras + 3 números + 2 letras)
+// Generador de ID estilo número de orden (7 caracteres: 2 letras + 3 números + 2 letras)
 const generatePatenteId = () => {
     const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin O, I para evitar confusiones
     const digits = "23456789"; // sin 0, 1 para evitar confusiones
@@ -559,7 +559,7 @@ app.post("/api/checkout", async (req, res) => {
             "UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'",
             [user.id],
         );
-        // Generar ID único estilo patente (evitar colisiones)
+        // Generar ID único estilo número de orden (evitar colisiones)
         let orderId = generatePatenteId();
         let exists = true;
         while (exists) {
@@ -1142,8 +1142,8 @@ app.post("/api/chat", async (req, res) => {
             ${catalogo}
             IMPORTANTE: Cuando un usuario pregunte por un artículo específico, devuélvele el enlace directo usando la URL incluida en el catálogo. Ejemplo: "Tenemos [Nike Air Max](/producto/nike-air-max) en stock a $15,000". Siempre incluye el link al producto cuando hables de él.
 
-            CONSULTA DE ÓRDENES POR PATENTE:
-            El número de orden (ID) tiene formato de patente argentina: 7 caracteres alfanuméricos, ej: "AB123CD". Cuando el usuario quiera saber el estado de su orden y te proporcione esa patente, respondé incluyendo el marcador [LOOKUP_ORDER:PATENTE] (reemplazando PATENTE por el valor). El sistema buscará automáticamente la orden y te mostrará la información.
+            CONSULTA DE ÓRDENES POR NÚMERO:
+            El número de orden (ID) tiene 7 caracteres alfanuméricos, ej: "AB123CD". Cuando el usuario quiera saber el estado de su orden y te proporcione ese número, respondé incluyendo el marcador [LOOKUP_ORDER:NUMERO] (reemplazando NUMERO por el valor). El sistema buscará automáticamente la orden y te mostrará la información.
 
             DERIVACIÓN A SOPORTE HUMANO:
             Si el problema es complejo (devoluciones, quejas severas, reembolsos) o el usuario lo solicita explícitamente, indícale que puede usar la opción "Hablar con un humano" en el chat para llenar un formulario de contacto, o bien escribir a soportehubvntg@gmail.com.
@@ -1210,8 +1210,8 @@ app.post("/api/chat", async (req, res) => {
         const groqData = await groqRes.json();
         let response = groqData.choices?.[0]?.message?.content || "";
 
-        // 7. Procesamos el marcador LOOKUP_ORDER:ID si está presente
-        const lookupMatch = response.match(/\[LOOKUP_ORDER:(\d+)\]/);
+        // 7. Procesamos el marcador LOOKUP_ORDER:NUMERO si está presente
+        const lookupMatch = response.match(/\[LOOKUP_ORDER:(\w+)\]/);
         let orderData = null;
         if (lookupMatch) {
             const orderId = lookupMatch[1];
