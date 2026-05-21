@@ -39,7 +39,7 @@ export default function Checkout() {
             telefono: parsed.phone || ''
         });
 
-        if (cart.length === 0) navigate('/');
+        if (cart.length === 0 && !preferenceId) navigate('/');
     }, [cart.length, navigate]);
 
     useEffect(() => {
@@ -73,10 +73,10 @@ export default function Checkout() {
             if (res.ok && data.init_point) {
                 setOrderId(data.orderId);
                 sessionStorage.setItem('vntg_pending_order', data.orderId);
-                clearCart();
                 if (MP_PUBLIC_KEY && data.preferenceId) {
                     setPreferenceId(data.preferenceId);
                 } else {
+                    clearCart();
                     window.location.href = data.init_point;
                 }
             } else {
@@ -91,6 +91,7 @@ export default function Checkout() {
 
     const handleMPSubmit = () => {
         sessionStorage.removeItem('vntg_pending_order');
+        clearCart();
         navigate(`/pedido/${orderId}`);
     };
 
