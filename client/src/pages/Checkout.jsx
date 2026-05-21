@@ -42,6 +42,13 @@ export default function Checkout() {
         if (cart.length === 0) navigate('/');
     }, [cart.length, navigate]);
 
+    useEffect(() => {
+        const pendingOrder = sessionStorage.getItem('vntg_pending_order');
+        if (pendingOrder && !orderId) {
+            navigate(`/pedido/${pendingOrder}`);
+        }
+    }, []);
+
     const handleCheckout = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -64,6 +71,7 @@ export default function Checkout() {
 
             if (res.ok && data.init_point) {
                 setOrderId(data.orderId);
+                sessionStorage.setItem('vntg_pending_order', data.orderId);
                 clearCart();
                 if (MP_PUBLIC_KEY && data.preferenceId) {
                     setPreferenceId(data.preferenceId);
@@ -81,6 +89,7 @@ export default function Checkout() {
     };
 
     const handleMPSubmit = () => {
+        sessionStorage.removeItem('vntg_pending_order');
         navigate(`/pedido/${orderId}`);
     };
 
