@@ -594,15 +594,17 @@ app.post("/api/checkout", async (req, res) => {
                           ]
                         : []),
                 ],
+                auto_return: "approved",
                 back_urls: {
-                    success: "https://vntg-hub.vercel.app",
-                    failure: "https://vntg-hub.vercel.app",
+                    success: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                    failure: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                    pending: `https://vntg-hub.vercel.app/pedido/${orderId}`,
                 },
                 external_reference: orderId,
                 binary_mode: true,
             },
         });
-        res.json({ init_point: response.init_point });
+        res.json({ init_point: response.init_point, preferenceId: response.id, orderId });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
