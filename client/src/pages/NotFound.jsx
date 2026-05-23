@@ -1,7 +1,21 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Home } from 'lucide-react';
 
+const TEXT = 'ERROR 404';
+const WINDOW = 3;
+const STEPS = TEXT.length - WINDOW + 1;
+
 export default function NotFound() {
+    const [pos, setPos] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setPos(p => (p + 1) % STEPS);
+        }, 350);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans transition-colors duration-300">
             <div className="absolute inset-0 w-full h-full">
@@ -18,7 +32,18 @@ export default function NotFound() {
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-50/80 dark:from-brand-dark/80 via-transparent to-transparent"></div>
             <div className="relative z-10 text-center px-4">
                 <h1 className="text-6xl max-[400px]:text-4xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white border-b-[6px] border-brand-orange mb-6 inline-block glitch-404">
-                    ERROR 404
+                    {TEXT.split('').map((char, i) => (
+                        <span
+                            key={i}
+                            className={
+                                i >= pos && i < pos + WINDOW
+                                    ? 'text-brand-orange transition-colors duration-150'
+                                    : 'transition-colors duration-150'
+                            }
+                        >
+                            {char}
+                        </span>
+                    ))}
                 </h1>
                 <h2 className="text-lg max-[400px]:text-base md:text-2xl font-black italic uppercase mb-8 text-zinc-800 dark:text-zinc-200 flicker-sub">
                     Página no encontrada.
