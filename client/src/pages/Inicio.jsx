@@ -151,7 +151,7 @@ export default function Inicio() {
                     />
                 </div>
 
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-50/80 dark:from-brand-dark/80 via-transparent to-transparent backdrop-blur-[2px]"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-50/80 dark:from-brand-dark/80 via-transparent to-transparent"></div>
 
                 <div className="relative z-10 text-center px-4">
                     <Reveal variant="fade-down" delay={0}>
@@ -227,7 +227,7 @@ export default function Inicio() {
                 >
 
                     {/* BANNER DE CATEGORÍA */}
-                    <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-y border-zinc-200 dark:border-white/5">
+                    <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-y border-zinc-200 dark:border-zinc-600">
                         <img
                             src={seccion.banner}
                             onError={(e) => {
@@ -237,7 +237,7 @@ export default function Inicio() {
                             className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]"
                             alt={seccion.nombre}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/40 dark:from-brand-dark/40 via-transparent to-transparent backdrop-blur-sm"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/40 dark:from-brand-dark/40 via-transparent to-transparent"></div>
 
                         <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
                             <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">
@@ -257,8 +257,8 @@ export default function Inicio() {
                     <div className="max-w-[1700px] mx-auto px-4 mt-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {seccion.items.map((item) => (
-                                <div key={item.id} className={`group bg-white/20 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-xl rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
-                                    <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-white/5">
+                                <div key={item.id} className={`group bg-zinc-50 dark:bg-brand-card  transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
+                                    <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-zinc-600">
                                         <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                             <CardImage item={item} />
                                         </Link>
@@ -274,7 +274,7 @@ export default function Inicio() {
                                             </h3>
                                         </Link>
 
-                                        <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-6">
+                                        <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
                                             <p className="text-3xl font-black text-zinc-900 dark:text-white italic">
                                                 ${Number(item.price).toLocaleString('es-AR')}
                                             </p>

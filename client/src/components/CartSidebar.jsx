@@ -22,14 +22,14 @@ export default function CartSidebar() {
         >
             {/* BARRA DE PROGRESO */}
             {cart.length > 0 && (
-                <div className="mb-6 p-4 bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-lg">
+                <div className="mb-6 p-4 bg-zinc-50 dark:bg-zinc-800/50  rounded-2xl shadow-sm">
                     <div className="flex justify-between items-center mb-2">
                         <span className={`text-[9px] font-black uppercase italic tracking-widest ${tieneEnvioGratis ? 'text-emerald-500' : 'text-zinc-500'}`}>
                             {tieneEnvioGratis ? '¡Envío Gratis Desbloqueado!' : `Faltan $${faltante.toLocaleString('es-AR')} para envío gratis`}
                         </span>
                         <Truck size={14} className={tieneEnvioGratis ? 'text-emerald-500' : 'text-zinc-500'} />
                     </div>
-                    <div className="h-1.5 w-full bg-zinc-200/50 dark:bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-zinc-200/50 dark:bg-zinc-700 rounded-full overflow-hidden">
                         <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
                     </div>
                 </div>
@@ -37,13 +37,13 @@ export default function CartSidebar() {
 
             <div className="space-y-4">
                 {cart.length > 0 ? cart.map((item) => (
-                    <div key={item.id} className="bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/5 p-4 flex gap-4 rounded-2xl shadow-md group">
-                        <img src={item.images} className="w-20 h-20 object-cover border border-white/10 rounded-xl shadow-sm" alt="" />
+                    <div key={item.id} className="bg-zinc-50 dark:bg-zinc-800/50  p-4 flex gap-4 rounded-2xl shadow-sm group">
+                        <img src={item.images} className="w-20 h-20 object-cover  rounded-xl shadow-sm" alt="" />
                         <div className="flex-grow">
                             <h3 className="text-xs font-black uppercase italic line-clamp-1">{item.title}</h3>
                             <p className="text-brand-orange font-black italic text-sm mb-3">${item.price.toLocaleString('es-AR')}</p>
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 bg-white/60 dark:bg-black/40 backdrop-blur-sm border border-white/20 dark:border-white/10 px-2 py-1 rounded-xl">
+                                <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800  px-2 py-1 rounded-xl">
                                     <button onClick={() => updateQuantity(item.id, -1)} className="hover:text-brand-orange transition-colors"><Minus size={14} /></button>
                                     <span className="text-xs font-black">{item.cantidad}</span>
                                     <button onClick={() => updateQuantity(item.id, 1)} className="hover:text-brand-orange transition-colors"><Plus size={14} /></button>
@@ -81,7 +81,7 @@ export default function CartSidebar() {
                         </div>
                     </div>
 
-                    <div className="flex justify-between items-end border-t border-zinc-200 dark:border-white/5 pt-6">
+                    <div className="flex justify-between items-end border-t border-zinc-100 dark:border-zinc-800 pt-6">
                         <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Total Final</span>
                         <span className="text-3xl font-black italic text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
                     </div>

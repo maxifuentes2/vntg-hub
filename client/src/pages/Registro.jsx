@@ -45,7 +45,7 @@ export default function Registro() {
 
     return (
         <div className="bg-transparent min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors relative overflow-hidden">
-            <div className="max-w-md w-full bg-white/20 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/5 p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
+            <div className="max-w-md w-full bg-white dark:bg-brand-card  p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
                 <div className="absolute top-0 left-0 w-24 h-24 bg-brand-blue transform -rotate-45 -translate-x-12 -translate-y-12"></div>
                 
                 <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Registro</h1>
@@ -63,7 +63,7 @@ export default function Registro() {
                         placeholder="NOMBRE COMPLETO" 
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
                         required 
                     />
                     <input 
@@ -71,7 +71,7 @@ export default function Registro() {
                         placeholder="CORREO ELECTRÓNICO" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
                         required 
                     />
                     
@@ -83,7 +83,7 @@ export default function Registro() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyUp={checkCapsLock}
-                                className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
+                                className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
                                 required 
                             />
                             <button 

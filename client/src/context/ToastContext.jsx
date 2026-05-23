@@ -25,8 +25,8 @@ export const ToastProvider = ({ children }) => {
             {/* Renderizado de los Toasts (Copiado de tu CartContext original) */}
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 items-end pointer-events-none">
                 {toasts.map((toast) => (
-                    <div key={toast.id} className={`pointer-events-auto liquid-glass rounded-2xl overflow-hidden flex items-center w-[90vw] sm:w-[340px] h-[85px] transition-all duration-500 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
-                        <div className="w-[85px] h-[85px] shrink-0 bg-white/5 border-r border-white/10 flex items-center justify-center">
+                    <div key={toast.id} className={`pointer-events-auto bg-zinc-900 rounded-2xl overflow-hidden flex items-center w-[90vw] sm:w-[340px] h-[85px] transition-all duration-500 shadow-2xl border border-zinc-800 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
+                        <div className="w-[85px] h-[85px] shrink-0 bg-zinc-800 border-r border-zinc-700 flex items-center justify-center">
                             {toast.product?.images ? (
                                 <img src={toast.product.images} className="w-full h-full object-cover opacity-90" alt="" />
                             ) : toast.type === 'error' ? (
@@ -49,7 +49,7 @@ export const ToastProvider = ({ children }) => {
                         </div>
                         <button 
                             onClick={() => removeToast(toast.id)} 
-                            className="h-full px-5 text-white/20 hover:text-white transition-colors border-l border-white/10 group"
+                            className="h-full px-5 text-white/20 hover:text-white transition-colors border-l border-zinc-700 group"
                         >
                             <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                         </button>

@@ -76,7 +76,7 @@ export default function RestablecerPassword() {
                                     onChange={(e) => setNewPassword(e.target.value)} 
                                     onKeyUp={checkCapsLock}
                                     required minLength={6}
-                                    className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
+                                    className="w-full bg-white dark:bg-brand-card text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
                                 />
                                 <button 
                                     type="button"
@@ -97,7 +97,7 @@ export default function RestablecerPassword() {
                                     onChange={(e) => setConfirmPassword(e.target.value)} 
                                     onKeyUp={checkCapsLock}
                                     required minLength={6}
-                                    className="w-full bg-white dark:bg-[#1a1a1a] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
+                                    className="w-full bg-white dark:bg-brand-card text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none" 
                                 />
                                 <button 
                                     type="button"

@@ -130,7 +130,7 @@ const verifyToken = (req, res, next) => {
 
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
-    const { categoryId, q, minPrice, maxPrice } = req.query;
+    const { categoryId, q, minPrice, maxPrice, franchise } = req.query;
     let sql = "SELECT p.* FROM products p LEFT JOIN categories c ON p.categoryId = c.id WHERE 1=1";
     const params = [];
     if (categoryId && categoryId !== "all") {
@@ -145,6 +145,16 @@ app.get("/api/products", async (req, res) => {
         sql += " AND p.price <= ?";
         params.push(Number(maxPrice));
     }
+    if (franchise) {
+        const franchises = franchise.split(',').map(f => f.trim()).filter(f => f);
+        if (franchises.length === 1) {
+            sql += " AND p.franchise = ?";
+            params.push(franchises[0]);
+        } else if (franchises.length > 1) {
+            sql += ` AND p.franchise IN (${franchises.map(() => '?').join(',')})`;
+            params.push(...franchises);
+        }
+    }
     if (q) {
         // Normalizar: quitar acentos y pasar a minúsculas
         const normalizedQ = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -155,10 +165,8 @@ app.get("/api/products", async (req, res) => {
             "pelicula": ["cine", "movie", "film", "hollywood", "estreno", "pantalla"],
             "autos": ["coche", "vehiculo", "car", "escala", "motor", "ruedas"],
             "auto": ["coche", "vehiculo", "car", "escala", "motor", "ruedas"],
-            "figuras": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys"],
-            "figura": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys"],
-            "ropa": ["vintage", "urbana", "streetwear", "t-shirt", "prenda", "outfit"],
-            "remeras": ["t-shirt", "remera", "prenda", "vintage", "top"],
+            "figuras": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys", "funko"],
+            "figura": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys", "funko"],
             "comics": ["historieta", "dc", "marvel", "manga", "lectura"],
             "anime": ["manga", "japon", "otaku", "animacion"]
         };
@@ -1160,7 +1168,7 @@ app.post("/api/chat", async (req, res) => {
             }
         }
 
-        const systemPrompt = `Eres el agente de soporte oficial de VNTG HUB, una tienda de ropa urbana, vintage y coleccionismo. Tu tono es amable, profesional y resolutivo. Respuestas cortas y directas. Siempre respondes en español.
+        const systemPrompt = `Eres el agente de soporte oficial de VNTG HUB, una tienda de coleccionables y artículos de colección. Tu tono es amable, profesional y resolutivo. Respuestas cortas y directas. Siempre respondes en español.
 
             === INFORMACIÓN DE ENVÍOS ===
             - Envío normal: $9,426.05 ARS

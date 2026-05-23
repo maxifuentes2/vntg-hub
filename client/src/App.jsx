@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'; 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot'; 
@@ -32,7 +33,7 @@ import CategorySidebar from './components/CategorySidebar';
 import { CartProvider } from './context/CartContext';
 import { WishListProvider } from './context/WishListContext';
 import { ToastProvider } from './context/ToastContext'; 
-import { SidebarProvider, useSidebar } from './context/SidebarContext'; 
+import { SidebarProvider } from './context/SidebarContext'; 
 
 // IMPORTACIONES DE AUTENTICACIÓN Y CHECKOUT
 import Checkout from './pages/Checkout';
@@ -41,9 +42,21 @@ import RestablecerPassword from './pages/RestablecerPassword';
 import MiCuenta from './pages/MiCuenta'; 
 
 function ChatbotWrapper() {
-  const { isCartOpen, isWishListOpen, isCategoryOpen } = useSidebar();
-  const isAnySidebarOpen = isCartOpen || isWishListOpen || isCategoryOpen;
-  return <Chatbot isSidebarOpen={isAnySidebarOpen} />;
+  return <Chatbot />;
+}
+
+function FloatingHomeButton() {
+  const location = useLocation();
+  if (location.pathname === '/' || location.pathname === '/admin' || location.pathname === '/soporte') return null;
+  return (
+    <Link
+      to="/"
+      className="fixed top-24 left-4 z-50 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-4 py-2 rounded-2xl flex items-center gap-2 transition-all duration-500 hover:scale-105 active:scale-95 group shadow-lg"
+    >
+      <ArrowLeft size={16} className="text-zinc-500 group-hover:text-brand-orange transition-colors" />
+      <span className="text-[10px] font-black uppercase italic tracking-[0.2em] text-zinc-500 group-hover:text-white transition-colors">Volver</span>
+    </Link>
+  );
 }
 
 function App() {
@@ -69,18 +82,14 @@ function App() {
               <ScrollToTopOnNavigation />
               <RouteTitleManager />
 
-              <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300 relative">
-                {/* Background Liquid Elements */}
-                <div className="liquid-bg">
-                  <div className="blob blob-orange"></div>
-                  <div className="blob blob-blue"></div>
-                  <div className="blob blob-center"></div>
-                </div>
+              <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
 
                 <Navbar /> 
                 <CartSidebar />
                 <WishListSidebar />
                 <CategorySidebar categories={categories} />
+
+                <FloatingHomeButton />
 
                 <main className="flex-grow">
                   <Routes>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { slugify } from '../utils/slugify';
 import { 
     Menu, 
     ShoppingCart, 
@@ -111,8 +112,7 @@ export default function Navbar() {
     };
 
     const handleSelectResult = (product) => {
-        const slug = product.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-        navigate(`/producto/${slug}`);
+        navigate(`/producto/${slugify(product.title)}`);
         setSearchTerm('');
         setSearchResults([]);
     };
@@ -128,11 +128,11 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="sticky top-0 z-[100] bg-white/40 dark:bg-brand-dark/40 backdrop-blur-2xl border-b border-white/20 dark:border-white/5 transition-all duration-500">
+        <nav className="sticky top-0 z-[100] bg-white dark:bg-brand-dark border-b border-zinc-100 dark:border-zinc-800 shadow-sm transition-all duration-500">
             <div className="max-w-[1700px] mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-1 sm:gap-4">
                 <div className="flex items-center gap-2 sm:gap-6">
                     {/* Botón de categorías conectado al contexto */}
-                    <button onClick={openCategory} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                    <button onClick={openCategory} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                         <Menu size={24} className="group-hover:text-brand-orange transition-colors" />
                     </button>
                     <Link 
@@ -145,7 +145,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="hidden md:flex flex-1 max-w-xl relative" ref={searchRef}>
-                    <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
+                    <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
                         <input 
                             type="text" 
                             value={searchTerm}
@@ -160,7 +160,7 @@ export default function Navbar() {
 
                     {/* Resultados Predictivos Desktop */}
                     {searchTerm.trim().length >= 2 && (
-                        <div className="absolute top-full left-0 w-full mt-2 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden py-2 animate-reveal">
+                        <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-brand-card  shadow-xl rounded-2xl shadow-2xl overflow-hidden py-2 animate-reveal">
                             {searchResults.length > 0 ? (
                                 <>
                                     {searchResults.map(p => (
@@ -181,7 +181,7 @@ export default function Navbar() {
                                     ))}
                                     <button 
                                         onMouseDown={handleSearch}
-                                        className="w-full flex items-center justify-between px-5 py-4 border-t border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                        className="w-full flex items-center justify-between px-5 py-4 border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-left group"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-brand-orange/10 rounded-lg group-hover:bg-brand-orange transition-colors">
@@ -194,9 +194,9 @@ export default function Navbar() {
                             ) : (
                                 <button 
                                     onMouseDown={handleSearch}
-                                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-left group"
                                 >
-                                    <div className="p-2 bg-zinc-100 dark:bg-white/5 rounded-lg group-hover:bg-brand-orange transition-colors">
+                                    <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg group-hover:bg-brand-orange transition-colors">
                                         <Search size={14} className="text-zinc-400 group-hover:text-white" />
                                     </div>
                                     <p className="text-[10px] font-black uppercase italic text-zinc-600 dark:text-white/60 group-hover:text-brand-orange transition-colors">No hay coincidencias directas. Buscar <span className="text-zinc-900 dark:text-white">"{searchTerm}"</span> en toda la tienda</p>
@@ -207,7 +207,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2">
-                    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                         {theme === 'dark' ? (
                             <Sun size={22} className="group-hover:text-brand-orange transition-colors" />
                         ) : (
@@ -216,18 +216,18 @@ export default function Navbar() {
                     </button>
 
                     <div className="relative" ref={userMenuRef}>
-                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                             <User size={22} className="group-hover:text-brand-orange transition-colors" />
                         </button>
-                        <div className={`absolute right-0 mt-3 w-64 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] py-3 z-50 rounded-[2rem] overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
+                        <div className={`absolute right-0 mt-3 w-64 bg-white dark:bg-brand-card  shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
                             {user ? (
                                 <>
-                                    <div className="px-6 py-4 border-b border-zinc-200 dark:border-white/5 mb-2 bg-zinc-50/50 dark:bg-white/5">
-                                        <p className="text-[9px] font-black uppercase italic tracking-[0.2em] text-brand-orange mb-1">Piloto Identificado</p>
+                                    <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 mb-2 bg-zinc-50/50 dark:bg-zinc-800">
+                                        <p className="text-[9px] font-black uppercase italic tracking-[0.2em] text-brand-orange mb-1">Usuario Identificado</p>
                                         <p className="text-sm font-black italic uppercase truncate text-zinc-900 dark:text-white">{user.name}</p>
                                         <p className="text-[10px] font-bold text-zinc-500 truncate">{user.email}</p>
                                     </div>
-                                    <div className="px-2 space-y-1">
+                                    <div className="px-2 space-y-1 pb-2">
                                         {user.role === 'admin' && (
                                             <Link to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-brand-orange hover:bg-brand-orange hover:text-white rounded-xl transition-all">
                                                 <Shield size={16} /> Panel Admin
@@ -241,7 +241,7 @@ export default function Navbar() {
                                         <Link to="/mi-cuenta" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white rounded-xl transition-all">
                                             <Settings size={16} /> Mi Cuenta
                                         </Link>
-                                        <button onClick={handleLogout} className="w-full flex items-center gap-3 text-left px-4 py-3 text-[11px] font-black uppercase italic text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border-t border-zinc-200 dark:border-white/5 mt-2">
+                                        <button onClick={handleLogout} className="w-full flex items-center gap-3 text-left px-4 py-3 text-[11px] font-black uppercase italic text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border-t border-zinc-100 dark:border-zinc-800 mt-2">
                                             <LogOut size={16} /> Cerrar Sesión
                                         </button>
                                     </div>
@@ -255,7 +255,7 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    <button onClick={openWishList} className="relative p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors dark:text-white group">
+                    <button onClick={openWishList} className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                         <Heart size={22} className="group-hover:text-brand-orange transition-colors" />
                         {wishListCount > 0 && (
                             <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-brand-dark">{wishListCount}</span>
@@ -273,7 +273,7 @@ export default function Navbar() {
 
             {/* Buscador Móvil */}
             <div className="md:hidden px-4 pb-4 relative" ref={searchRef}>
-                <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
+                <form onSubmit={handleSearch} className="relative w-full flex bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-transparent hover:border-brand-orange focus-within:border-brand-orange transition-all">
                     <input 
                         type="text" 
                         value={searchTerm}
@@ -288,7 +288,7 @@ export default function Navbar() {
 
                 {/* Resultados Predictivos Móvil */}
                 {searchTerm.trim().length >= 2 && (
-                    <div className="absolute top-full left-4 right-4 mt-2 bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-reveal">
+                    <div className="absolute top-full left-4 right-4 mt-2 bg-white dark:bg-brand-card  shadow-xl rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-reveal">
                         {searchResults.length > 0 ? (
                             <>
                                 {searchResults.map(p => (
@@ -309,7 +309,7 @@ export default function Navbar() {
                                 ))}
                                 <button 
                                     onMouseDown={handleSearch}
-                                    className="w-full flex items-center justify-between px-5 py-4 border-t border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                    className="w-full flex items-center justify-between px-5 py-4 border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-left group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-brand-orange/10 rounded-lg group-hover:bg-brand-orange transition-colors">
@@ -322,9 +322,9 @@ export default function Navbar() {
                         ) : (
                             <button 
                                 onMouseDown={handleSearch}
-                                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all text-left group"
+                                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-left group"
                             >
-                                <div className="p-2 bg-zinc-100 dark:bg-white/5 rounded-lg group-hover:bg-brand-orange transition-colors">
+                                <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg group-hover:bg-brand-orange transition-colors">
                                     <Search size={14} className="text-zinc-400 group-hover:text-white" />
                                 </div>
                                 <p className="text-[10px] font-black uppercase italic text-zinc-600 dark:text-white/60 group-hover:text-brand-orange transition-colors">No hay coincidencias directas. Buscar <span className="text-zinc-900 dark:text-white">"{searchTerm}"</span> en toda la tienda</p>

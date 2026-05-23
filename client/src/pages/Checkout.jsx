@@ -99,17 +99,17 @@ export default function Checkout() {
                             value={shipping.nombre}
                             onChange={e => setShipping({ ...shipping, nombre: e.target.value })}
                             required
-                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold italic focus:border-brand-orange outline-none capitalize rounded-xl shadow-inner"
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic focus:border-brand-orange outline-none capitalize rounded-xl shadow-inner"
                         />
                         {!esRetiro && (
                             <div className="space-y-4">
                                 <div className="flex gap-4">
-                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                                 </div>
                                 <div className="flex gap-4">
-                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                                 </div>
                             </div>
                         )}
@@ -119,7 +119,7 @@ export default function Checkout() {
                             value={shipping.telefono}
                             onChange={e => setShipping({ ...shipping, telefono: e.target.value })}
                             required
-                            className="w-full bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
                         />
                         <button
                             type="submit"
@@ -133,13 +133,13 @@ export default function Checkout() {
                     {error && <p className="mt-4 text-red-500 font-bold italic uppercase text-xs">{error}</p>}
                 </div>
 
-                <div className="bg-white/40 dark:bg-white/5 backdrop-blur-2xl p-4 sm:p-10 border border-white/20 dark:border-white/5 h-fit sticky top-32 rounded-3xl shadow-2xl">
+                <div className="bg-zinc-50 dark:bg-brand-card p-4 sm:p-10  h-fit sticky top-32 rounded-3xl shadow-lg">
                     <h2 className="text-xl font-black italic uppercase tracking-tight mb-8 flex items-center gap-3">
                         <MapPin size={20} className="text-brand-orange" /> Resumen
                     </h2>
                     <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
                         {cart.map(item => (
-                            <div key={item.id} className="flex justify-between text-sm font-bold italic border-b border-zinc-200 dark:border-white/5 pb-2">
+                            <div key={item.id} className="flex justify-between text-sm font-bold italic border-b border-zinc-100 dark:border-zinc-800 pb-2">
                                 <span>{item.cantidad}x {item.title}</span>
                                 <span>${(item.price * item.cantidad).toLocaleString('es-AR')}</span>
                             </div>
@@ -151,7 +151,7 @@ export default function Checkout() {
                             </span>
                         </div>
                     </div>
-                    <div className="border-t border-zinc-200 dark:border-white/5 pt-6 flex justify-between text-2xl font-black italic">
+                    <div className="border-t border-zinc-100 dark:border-zinc-800 pt-6 flex justify-between text-2xl font-black italic">
                         <span>Total</span>
                         <span className="text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
                     </div>

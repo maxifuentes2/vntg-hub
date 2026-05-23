@@ -30,15 +30,10 @@
 
 @layer base {
   :root {
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-blur: 16px;
     --scrollbar-track: #f8fafc;
   }
 
   .dark {
-    --glass-bg: rgba(0, 0, 0, 0.2);
-    --glass-border: rgba(255, 255, 255, 0.05);
     --scrollbar-track: #09090b;
   }
 
@@ -47,85 +42,12 @@
   }
 }
 
-@layer components {
-  .liquid-glass {
-    @apply bg-white/5 dark:bg-black/20 backdrop-blur-[16px] border border-white/10 dark:border-white/5 shadow-2xl;
-  }
-
-  .liquid-glass-hover {
-    @apply hover:bg-white/10 dark:hover:bg-white/5 hover:border-white/20 dark:hover:border-white/10 transition-all duration-500;
-  }
-}
-
 /* Forzar scroll suave globalmente */
 html {
   scroll-behavior: smooth !important;
 }
 
-/* Liquid Blobs Background */
-.liquid-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  overflow: hidden;
-  background: #f8fafc;
-}
-
-.dark .liquid-bg {
-  background: #09090b;
-}
-
-.blob {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  background: linear-gradient(135deg, rgba(255, 102, 0, 0.15) 0%, rgba(0, 102, 255, 0.15) 100%);
-  filter: blur(100px);
-  border-radius: 50%;
-  z-index: -1;
-  animation: move 25s infinite alternate ease-in-out;
-}
-
-.blob-orange {
-  top: -10%;
-  left: -10%;
-  background: radial-gradient(circle, rgba(255, 102, 0, 0.12) 0%, transparent 70%);
-}
-
-.blob-blue {
-  bottom: -10%;
-  right: -10%;
-  background: radial-gradient(circle, rgba(0, 102, 255, 0.12) 0%, transparent 70%);
-  animation-delay: -5s;
-}
-
-.blob-center {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(255, 102, 0, 0.05) 0%, rgba(0, 102, 255, 0.05) 100%);
-  animation: pulse 15s infinite alternate ease-in-out;
-}
-
-@keyframes move {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(20%, 20%) scale(1.2); }
-}
-
-@keyframes pulse {
-  from { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-  to { transform: translate(-45%, -45%) scale(1.3); opacity: 0.8; }
-}
-
 /* Adaptación para pantallas pequeñas */
-@media (max-width: 360px) {
-  html {
-    font-size: 15px !important;
-  }
-}
 @media (max-width: 360px) {
   html {
     font-size: 15px !important;

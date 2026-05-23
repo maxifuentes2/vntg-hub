@@ -9,9 +9,10 @@ export default {
     extend: {
       colors: {
         brand: {
-          dark: '#171717',   
-          orange: '#ff5a00', 
-          blue: '#0056b3',   
+          dark: '#171717',
+          card: '#1e1e1e',
+          orange: '#ff5a00',
+          blue: '#0056b3',
         }
       },
       fontFamily: {

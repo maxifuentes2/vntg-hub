@@ -73,7 +73,7 @@ export default function MiCuenta() {
     if (!user) return null;
 
     const DataRow = ({ label, field, value, icon: Icon }) => (
-        <div className="flex items-center justify-between p-4 bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-white/5 group">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800/50  group">
             <div className="flex items-center gap-4 flex-1">
                 <div className="w-8 h-8 flex items-center justify-center text-brand-orange/50"><Icon size={18} /></div>
                 <div className="flex-1">
@@ -110,12 +110,12 @@ export default function MiCuenta() {
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-3">
                         <User size={14} className="text-brand-orange" /> Perfil de Usuario
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl overflow-hidden rounded-[2rem]">
-                        <div className="p-4 bg-zinc-100 dark:bg-[#111] border-b border-zinc-200 dark:border-white/5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-50 dark:bg-brand-card  shadow-lg overflow-hidden rounded-[2rem]">
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800">
                             <p className="text-[9px] font-black uppercase text-zinc-500">Nombre</p>
                             <p className="text-sm font-bold italic uppercase">{user.name}</p>
                         </div>
-                        <div className="p-4 bg-zinc-100 dark:bg-[#111] border-b border-zinc-200 dark:border-white/5">
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800">
                             <p className="text-[9px] font-black uppercase text-zinc-500">Email</p>
                             <p className="text-sm font-bold italic">{user.email}</p>
                         </div>
@@ -132,7 +132,7 @@ export default function MiCuenta() {
                     </h2>
                     {loading ? (
                         <div className="animate-pulse space-y-4">
-                            {[1, 2].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-white/5 rounded-xl" />)}
+                            {[1, 2].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />)}
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -140,7 +140,7 @@ export default function MiCuenta() {
                                 <Link 
                                     to={`/pedido/${order.id}`} 
                                     key={order.id} 
-                                    className="bg-white/40 dark:bg-black/20 backdrop-blur-md p-6 border border-white/20 dark:border-white/5 rounded-2xl flex justify-between items-center hover:border-brand-orange/50 transition-all cursor-pointer group shadow-lg"
+                                    className="bg-zinc-50 dark:bg-brand-card p-6  rounded-2xl flex justify-between items-center hover:border-brand-orange/50 transition-all cursor-pointer group shadow-sm"
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">
@@ -166,7 +166,7 @@ export default function MiCuenta() {
                                     </div>
                                 </Link>
                             )) : (
-                                <div className="text-center py-20 border-2 border-dashed border-zinc-200 dark:border-white/5 text-zinc-500 font-bold italic text-sm">
+                                <div className="text-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-600 text-zinc-500 font-bold italic text-sm">
                                     Aún no has realizado ninguna compra con éxito.
                                 </div>
                             )}

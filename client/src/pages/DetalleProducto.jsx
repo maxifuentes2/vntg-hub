@@ -134,7 +134,7 @@ const DetalleProducto = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-32 items-start">
                     <div className="flex flex-col gap-6">
                         <div 
-                            className="relative w-full bg-white/20 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/5 overflow-hidden flex items-center justify-center shadow-2xl cursor-zoom-in group rounded-3xl p-4"
+                            className="relative w-full bg-zinc-50 dark:bg-brand-card  overflow-hidden flex items-center justify-center shadow-2xl cursor-zoom-in group rounded-3xl p-4"
                             onClick={() => { setIsModalOpen(true); setZoomLevel(1); }}
                         >
                             <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain" />
@@ -149,7 +149,7 @@ const DetalleProducto = () => {
                                     <button 
                                         key={idx}
                                         onClick={() => setImgPrincipal(fotoUrl)}
-                                        className={`aspect-square border transition-all duration-300 bg-white/20 dark:bg-white/5 backdrop-blur-lg p-1 rounded-lg ${imgPrincipal === fotoUrl ? 'border-brand-orange' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                                        className={`aspect-square border transition-all duration-300 bg-white dark:bg-zinc-800 p-1 rounded-lg ${imgPrincipal === fotoUrl ? 'border-brand-orange' : 'border-zinc-200 dark:border-zinc-600 opacity-50 hover:opacity-100'}`}
                                     >
                                         <img src={fotoUrl} alt="Thumb" className="w-full h-full object-contain" />
                                     </button>
@@ -214,7 +214,7 @@ const DetalleProducto = () => {
                 </div>
 
                 {relacionados.length > 0 && (
-                    <div className="border-t border-zinc-200 dark:border-white/5 pt-20">
+                    <div className="border-t border-zinc-100 dark:border-zinc-800 pt-20">
                         <div className="flex items-end justify-between mb-12">
                             <div>
                                 <div className="flex items-center gap-2 text-brand-orange mb-2">
@@ -230,8 +230,8 @@ const DetalleProducto = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                             {relacionados.map((item) => (
-                                <div key={item.id} className="group bg-white/20 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-xl rounded-3xl overflow-hidden">
-                                    <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-white/5">
+                                <div key={item.id} className="group bg-zinc-50 dark:bg-brand-card  transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden">
+                                    <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-zinc-600">
                                         <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                             <CardImage item={item} />
                                         </Link>
@@ -243,7 +243,7 @@ const DetalleProducto = () => {
                                         <Link to={`/producto/${slugify(item.title)}`}>
                                             <h3 className="text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-3">{item.title}</h3>
                                         </Link>
-                                        <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-3">
+                                        <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-3">
                                             <p className="text-xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
                                             <button
                                                 onClick={() => addToCart(item)}
@@ -263,7 +263,7 @@ const DetalleProducto = () => {
 
             {isModalOpen && (
                 <div 
-                    className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-md flex flex-col items-center justify-center p-4" 
+                    className="fixed inset-0 z-[9999] bg-black/98 flex flex-col items-center justify-center p-4" 
                     onWheel={handleWheel} 
                     onClick={() => setIsModalOpen(false)}
                 >
@@ -317,7 +317,7 @@ const DetalleProducto = () => {
                     )}
 
                     <div 
-                        className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-white/10 backdrop-blur-xl z-50" 
+                        className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-zinc-700 z-50" 
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button onClick={() => setZoomLevel(Math.max(1, zoomLevel - 0.5))} className="text-white hover:text-brand-orange"><ZoomOut size={24}/></button>

@@ -47,7 +47,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [categoriaInfo, setCategoriaInfo] = useState(null);
-    const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState("");
+    const [franquiciasSeleccionadas, setFranquiciasSeleccionadas] = useState([]);
     const [listaFranquicias, setListaFranquicias] = useState([]);
     const [orden, setOrden] = useState("reciente");
 
@@ -58,6 +58,25 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
 
     const queryParams = new URLSearchParams(location.search);
     const searchQuery = queryParams.get('search') || '';
+    const franquiciaParam = queryParams.get('franquicia') || '';
+
+    useEffect(() => {
+        if (franquiciaParam) {
+            const franquicias = franquiciaParam.split(',').map(f => f.trim()).filter(f => f);
+            setFranquiciasSeleccionadas(franquicias);
+        }
+    }, [franquiciaParam]);
+
+    useEffect(() => {
+        setListaFranquicias([]);
+        setFranquiciasSeleccionadas([]);
+    }, [slug]);
+
+    const toggleFranquicia = (f) => {
+        setFranquiciasSeleccionadas(prev =>
+            prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
+        );
+    };
 
     useEffect(() => {
         const fetchDatos = async () => {
@@ -82,7 +101,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 setCategoryId(resolvedId);
 
                 let url = `${API_URL}/api/products?categoryId=${resolvedId}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
-                if (franquiciaSeleccionada) url += `&franchise=${franquiciaSeleccionada}`;
+                if (franquiciasSeleccionadas.length > 0) url += `&franchise=${franquiciasSeleccionadas.join(',')}`;
                 if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
 
                 const res = await fetch(url);
@@ -96,15 +115,8 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 
                 setProductos(productosOrdenados);
 
-                if (listaFranquicias.length === 0 && productosOrdenados.length > 0) {
-                    const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
-                    setListaFranquicias(unicas);
-                }
-
-                if (listaFranquicias.length === 0 && productosOrdenados.length > 0) {
-                    const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
-                    setListaFranquicias(unicas);
-                }
+                const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
+                setListaFranquicias(unicas);
 
             } catch (error) { 
                 console.error("Error cargando categoría:", error); 
@@ -113,7 +125,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
             }
         };
         fetchDatos();
-    }, [slug, franquiciaSeleccionada, precioMinFinal, precioMaxFinal, orden, searchQuery]);
+    }, [slug, franquiciasSeleccionadas, precioMinFinal, precioMaxFinal, orden, searchQuery]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -154,13 +166,13 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     return (
         <div className="w-full bg-transparent min-h-screen text-zinc-900 dark:text-white transition-colors duration-300 relative">
 
-            <section className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-b border-zinc-200 dark:border-white/5">
+            <section className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-b border-zinc-100 dark:border-zinc-800">
                 <img 
                     src={bannerImg} 
                     className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]" 
                     alt={renderTitulo()}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/60 dark:from-brand-dark/60 via-zinc-50/20 dark:via-brand-dark/20 to-transparent backdrop-blur-sm"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/60 dark:from-brand-dark/60 via-zinc-50/20 dark:via-brand-dark/20 to-transparent"></div>
                 
                 <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
                     <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
@@ -173,13 +185,20 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
             </section>
 
             <main className="max-w-[1800px] mx-auto px-6 py-10">
-                <div className="flex justify-between items-center mb-12 border-b border-zinc-200 dark:border-white/5 pb-6">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-zinc-500">
-                        {productos.length} PRODUCTOS ENCONTRADOS
-                    </span>
+                <div className="flex justify-between items-center mb-12 border-b border-zinc-100 dark:border-zinc-800 pb-6">
+                    <div className="flex items-center gap-4">
+                        {franquiciasSeleccionadas.length > 0 && (
+                            <span className="text-[10px] font-bold italic text-brand-orange">
+                                Mostrando productos de <strong className="not-italic font-black uppercase tracking-wider">{franquiciasSeleccionadas.join(', ')}</strong>
+                            </span>
+                        )}
+                        <span className="text-[11px] font-black uppercase tracking-widest text-zinc-500">
+                            {productos.length} PRODUCTOS ENCONTRADOS
+                        </span>
+                    </div>
                     <button 
                         onClick={() => setIsFilterOpen(true)} 
-                        className="flex items-center gap-3 bg-white/40 dark:bg-white/10 backdrop-blur-md text-zinc-900 dark:text-white px-6 py-3 font-black uppercase italic text-xs hover:bg-brand-orange hover:text-white transition-all border border-white/20 dark:border-white/5 shadow-lg rounded-2xl"
+                        className="flex items-center gap-3 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white px-6 py-3 font-black uppercase italic text-xs hover:bg-brand-orange hover:text-white transition-all  shadow-md rounded-2xl"
                     >
                         <SlidersHorizontal size={16} /> Filtros
                     </button>
@@ -188,8 +207,8 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 {/* GRID DE PRODUCTOS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {productos.map((item) => (
-                        <div key={item.id} className={`group bg-white/20 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-xl rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-70' : ''}`}>
-                            <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-white/5">
+                        <div key={item.id} className={`group bg-zinc-50 dark:bg-brand-card  transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-70' : ''}`}>
+                            <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-zinc-600">
                                 <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
                                     <CardImage item={item} />
                                 </Link>
@@ -201,7 +220,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                 <h3 className="text-xl font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
                                     {item.title}
                                 </h3>
-                                <div className="flex items-center justify-between border-t border-zinc-200 dark:border-white/5 pt-6">
+                                <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
                                     <p className="text-3xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
                                     <div className="flex items-center gap-4">
                                         <button 
@@ -227,10 +246,10 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
 
             {/* SIDEBAR DE FILTROS */}
             <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${isFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
-                <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white/40 dark:bg-black/40 backdrop-blur-3xl border-l border-white/20 dark:border-white/5 shadow-2xl transform transition-transform duration-500 ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className="absolute inset-0 bg-black/60" onClick={() => setIsFilterOpen(false)} />
+                <aside className={`absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-brand-dark border-l border-zinc-100 dark:border-zinc-800 shadow-2xl transform transition-transform duration-500 ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="h-full flex flex-col p-4 sm:p-8">
-                        <div className="flex justify-between items-center border-b border-zinc-200 dark:border-white/5 pb-6 mb-8">
+                        <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-6 mb-8">
                             <h2 className="text-2xl font-black italic uppercase">Filtros</h2>
                             <button onClick={() => setIsFilterOpen(false)}><X size={28} /></button>
                         </div>
@@ -242,7 +261,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                 </h4>
                                 <div className="grid grid-cols-1 gap-2">
                                     {["reciente", "precioAsc", "precioDesc", "alfaAsc", "alfaDesc"].map((k) => (
-                                        <button key={k} onClick={() => setOrden(k)} className={`px-6 py-4 text-left text-xs font-bold uppercase italic border transition-all rounded-xl ${orden === k ? 'border-brand-orange text-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-white/5'}`}>
+                                        <button key={k} onClick={() => setOrden(k)} className={`px-6 py-4 text-left text-xs font-bold uppercase italic border transition-all rounded-xl ${orden === k ? 'border-brand-orange text-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-zinc-600'}`}>
                                             {k === "reciente" ? "Novedades" : k === "precioAsc" ? "Menor Precio" : k === "precioDesc" ? "Mayor Precio" : k === "alfaAsc" ? "A - Z" : "Z - A"}
                                         </button>
                                     ))}
@@ -277,15 +296,35 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     <Box size={14} className="text-brand-orange" /> Franquicia
                                 </h4>
                                 <div className="grid grid-cols-1 gap-2">
-                                    <button onClick={() => setFranquiciaSeleccionada("")} className={`w-full text-left p-4 text-xs font-black italic uppercase border ${franquiciaSeleccionada === "" ? 'border-brand-orange text-brand-orange' : 'border-zinc-200 dark:border-white/5'}`}>Todas</button>
                                     {listaFranquicias.map(f => (
-                                        <button key={f} onClick={() => setFranquiciaSeleccionada(f)} className={`w-full text-left p-4 text-xs font-black italic uppercase border transition-all rounded-xl ${franquiciaSeleccionada === f ? 'border-brand-orange text-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-white/5'}`}>{f}</button>
+                                        <button key={f} onClick={() => toggleFranquicia(f)} className={`w-full text-left p-4 text-xs font-black italic uppercase border transition-all rounded-xl ${franquiciasSeleccionadas.includes(f) ? 'border-brand-orange text-brand-orange bg-brand-orange/5' : 'border-zinc-200 dark:border-zinc-600'}`}>
+                                            <span className="flex items-center gap-3">
+                                                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${franquiciasSeleccionadas.includes(f) ? 'border-brand-orange bg-brand-orange' : 'border-zinc-400'}`}>
+                                                    {franquiciasSeleccionadas.includes(f) && <span className="text-white text-[10px]">✓</span>}
+                                                </span>
+                                                {f}
+                                            </span>
+                                        </button>
                                     ))}
+                                    {listaFranquicias.length === 0 && (
+                                        <p className="text-xs italic text-zinc-400 px-2">No hay franquicias disponibles</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-8">
+                        <div className="pt-4 space-y-3">
+                            <button 
+                                onClick={() => {
+                                    setFranquiciasSeleccionadas([]);
+                                    setPrecioMinLocal(0);
+                                    setPrecioMaxLocal(1000000);
+                                    setOrden('reciente');
+                                }} 
+                                className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 py-4 font-black uppercase italic text-xs tracking-widest hover:bg-brand-orange hover:text-white transition-all rounded-2xl"
+                            >
+                                Limpiar Filtros
+                            </button>
                             <button 
                                 onClick={() => setIsFilterOpen(false)} 
                                 className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest shadow-xl hover:bg-zinc-900 transition-colors rounded-2xl"

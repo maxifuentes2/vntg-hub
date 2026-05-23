@@ -7,7 +7,7 @@ const RouteTitleManager = () => {
     useEffect(() => {
         // Mapeo de rutas estáticas
         const staticTitles = {
-            '/': 'VNTG HUB | Tienda de Moda Vintage & Streetwear',
+            '/': 'VNTG HUB - Tienda de Coleccionables y Figuras de Colección',
             '/checkout': 'VNTG HUB - Finalizar Compra',
             '/mi-cuenta': 'VNTG HUB - Mi Cuenta',
             '/login': 'VNTG HUB - Iniciar Sesión',

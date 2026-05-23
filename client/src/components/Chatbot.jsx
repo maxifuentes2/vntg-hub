@@ -33,7 +33,7 @@ function parseLinks(text) {
 
 const WELCOME_MSG = { text: "Bienvenido al Hub, piloto. ¿Buscás una pieza histórica o asistencia técnica con un envío?", isBot: true };
 
-export default function Chatbot({ isSidebarOpen }) {
+export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([WELCOME_MSG]);
   const [input, setInput] = useState('');
@@ -68,10 +68,17 @@ export default function Chatbot({ isSidebarOpen }) {
         setIsOpen(false);
       }
     }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setIsOpen(false);
+    }
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -254,10 +261,10 @@ export default function Chatbot({ isSidebarOpen }) {
       const segments = parseLinks(msg.text);
       return (
         <div key={index} className="flex gap-3">
-          <div className="w-8 h-8 bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/10 rounded-lg shadow-sm">
+          <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0  rounded-lg shadow-sm">
             <Headset size={14} className="text-brand-orange" />
           </div>
-          <div className="p-4 text-xs font-bold italic leading-relaxed shadow-sm rounded-2xl bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-white border-l-4 border-brand-orange">
+          <div className="p-4 text-xs font-bold italic leading-relaxed shadow-sm rounded-2xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-l-4 border-brand-orange">
             {segments.map((seg, i) => {
               if (seg.type === 'link') {
                 return (
@@ -296,15 +303,15 @@ export default function Chatbot({ isSidebarOpen }) {
   return (
     <div
       ref={chatbotRef}
-      className={`fixed bottom-6 transition-all duration-500 z-[90] ${isSidebarOpen ? 'right-[20px] md:right-[470px]' : 'right-3 sm:right-6'}`}
+      className="fixed bottom-6 right-3 sm:right-6 z-[90]"
     >
       <div
-        className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 max-h-[70vh] sm:max-h-[600px] bg-white/90 dark:bg-brand-dark/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'}`}
+        className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 max-h-[70vh] sm:max-h-[600px] bg-white dark:bg-brand-dark  shadow-2xl transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'}`}
       >
-        <div className="bg-zinc-900/90 pl-6 pr-8 pt-8 pb-6 flex justify-between items-center text-white border-b-2 border-brand-orange/30">
+        <div className="bg-white dark:bg-zinc-900/90 pl-6 pr-8 pt-8 pb-6 flex justify-between items-center text-zinc-900 dark:text-white border-b-2 border-brand-orange/30">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="bg-white/10 backdrop-blur-md p-2 rounded-full border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <div className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full">
                 <Headset size={20} className="text-brand-orange" />
               </div>
               <div className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-green-500 border-2 border-zinc-900 rounded-full"></div>
@@ -314,7 +321,7 @@ export default function Chatbot({ isSidebarOpen }) {
               <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">VNTG Hub</span>
             </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="hover:rotate-90 transition-transform bg-white/10 p-2 rounded-full">
+          <button onClick={() => setIsOpen(false)} className="hover:rotate-90 transition-transform bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full text-zinc-900 dark:text-white">
             <X size={18} />
           </button>
         </div>
@@ -333,7 +340,7 @@ export default function Chatbot({ isSidebarOpen }) {
                     key={i}
                     onClick={() => handleSend(opt.question)}
                     disabled={isLoading || cooldown > 0}
-                    className="px-3 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-white/80 dark:bg-zinc-800/80 border border-brand-orange/30 text-brand-orange rounded-full hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                    className="px-3 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-white dark:bg-zinc-800 border border-brand-orange/30 text-brand-orange rounded-full hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50"
                   >
                     {opt.label}
                   </button>
@@ -346,14 +353,14 @@ export default function Chatbot({ isSidebarOpen }) {
             <div className="flex flex-wrap gap-2 justify-center pt-2">
               <button
                 onClick={() => setShowOrderLookup(true)}
-                className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-white/80 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 rounded-full hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all shadow-sm active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 rounded-full hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all shadow-sm active:scale-95"
               >
                 <Package size={12} />
                 Consultar orden
               </button>
               <button
                 onClick={() => setShowContactForm(true)}
-                className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-white/80 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 rounded-full hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all shadow-sm active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 rounded-full hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all shadow-sm active:scale-95"
               >
                 <MessageSquare size={12} />
                 Hablar con humano
@@ -362,24 +369,24 @@ export default function Chatbot({ isSidebarOpen }) {
           )}
 
           {showContactForm && (
-            <div className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-2xl border border-brand-orange/30 shadow-sm">
+            <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-brand-orange/30 shadow-sm">
               <h4 className="text-xs font-black italic uppercase tracking-tighter mb-3 text-zinc-800 dark:text-white">
                 Contactar a un agente
               </h4>
               <form onSubmit={handleContactSubmit} className="space-y-3">
-                <input type="text" placeholder="Tu nombre" value={contactForm.nombre} onChange={(e) => setContactForm(p => ({ ...p, nombre: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 border-none px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none dark:text-white" />
-                <input type="email" placeholder="Tu email" value={contactForm.email} onChange={(e) => setContactForm(p => ({ ...p, email: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 border-none px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none dark:text-white" />
-                <textarea placeholder="Describí tu consulta..." value={contactForm.mensaje} onChange={(e) => setContactForm(p => ({ ...p, mensaje: e.target.value }))} required rows={3} className="w-full bg-zinc-100 dark:bg-zinc-800 border-none px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none dark:text-white resize-none" />
+                <input type="text" placeholder="Tu nombre" value={contactForm.nombre} onChange={(e) => setContactForm(p => ({ ...p, nombre: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:ring-1 focus:ring-brand-orange" />
+                <input type="email" placeholder="Tu email" value={contactForm.email} onChange={(e) => setContactForm(p => ({ ...p, email: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:ring-1 focus:ring-brand-orange" />
+                <textarea placeholder="Describí tu consulta..." value={contactForm.mensaje} onChange={(e) => setContactForm(p => ({ ...p, mensaje: e.target.value }))} required rows={3} className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 resize-none focus:ring-1 focus:ring-brand-orange" />
                 <div className="flex gap-2">
-                  <button type="submit" disabled={isLoading} className="flex-1 bg-brand-orange text-white px-3 py-2 text-[10px] font-black italic uppercase tracking-tighter rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50">Enviar</button>
-                  <button type="button" onClick={() => setShowContactForm(false)} className="px-3 py-2 text-[10px] font-bold italic text-zinc-500 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">Cancelar</button>
+                  <button type="submit" disabled={isLoading} className="flex-1 bg-brand-orange text-white px-3 py-2 text-[10px] font-black italic uppercase tracking-tighter rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 active:scale-95">Enviar</button>
+                  <button type="button" onClick={() => setShowContactForm(false)} className="px-3 py-2 text-[10px] font-bold italic text-zinc-500 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-95">Cancelar</button>
                 </div>
               </form>
             </div>
           )}
 
           {showOrderLookup && (
-            <div className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-2xl border border-brand-orange/30 shadow-sm">
+            <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-brand-orange/30 shadow-sm">
               <h4 className="text-xs font-black italic uppercase tracking-tighter mb-3 text-zinc-800 dark:text-white">
                 Consultar estado de orden
               </h4>
@@ -390,25 +397,25 @@ export default function Chatbot({ isSidebarOpen }) {
                   onChange={(e) => setOrderLookupInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === 'Enter' && handleOrderLookup()}
                   maxLength={7}
-                  className="flex-1 uppercase bg-zinc-100 dark:bg-zinc-800 border-none px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none dark:text-white"
+                  className="flex-1 uppercase bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:ring-1 focus:ring-brand-orange"
                   autoFocus
                 />
-                <button onClick={handleOrderLookup} disabled={isLoading} className="bg-brand-orange text-white px-3 py-2 rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50">
+                <button onClick={handleOrderLookup} disabled={isLoading} className="bg-brand-orange text-white px-3 py-2 rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 active:scale-95">
                   <Send size={14} />
                 </button>
               </div>
               <div className="mt-2 flex gap-2">
-                <button onClick={handleMyOrders} disabled={isLoading} className="flex-1 px-3 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-zinc-100 dark:bg-zinc-800 border border-brand-orange/30 text-brand-orange rounded-full hover:bg-brand-orange hover:text-white transition-all disabled:opacity-50 text-center">
+                <button onClick={handleMyOrders} disabled={isLoading} className="flex-1 px-3 py-2 text-[10px] font-bold italic uppercase tracking-tighter bg-zinc-100 dark:bg-zinc-800 border border-brand-orange/30 text-brand-orange rounded-full hover:bg-brand-orange hover:text-white transition-all disabled:opacity-50 text-center active:scale-95">
                   No sé mi número de orden
                 </button>
-                <button onClick={() => setShowOrderLookup(false)} className="px-3 py-2 text-[10px] font-bold italic text-zinc-500 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">Cancelar</button>
+                <button onClick={() => setShowOrderLookup(false)} className="px-3 py-2 text-[10px] font-bold italic text-zinc-500 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-95">Cancelar</button>
               </div>
             </div>
           )}
 
           {isLoading && (
             <div className="flex gap-3">
-              <div className="w-8 h-8 bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/10 rounded-lg shadow-sm">
+              <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0  rounded-lg shadow-sm">
                 <Headset size={14} className="text-brand-orange animate-pulse" />
               </div>
               <div className="p-4 text-xs font-bold italic text-zinc-500">
@@ -428,7 +435,7 @@ export default function Chatbot({ isSidebarOpen }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !cooldown && handleSend()}
             disabled={cooldown > 0 || isLoading}
-            className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border-none px-4 py-3 text-base font-bold italic focus:outline-none dark:text-white disabled:opacity-50 rounded-xl"
+            className="flex-1 bg-zinc-100 dark:bg-zinc-800 px-4 py-3 text-base font-bold italic focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-400 disabled:opacity-50 rounded-xl focus:ring-1 focus:ring-brand-orange"
           />
           <button
             onClick={() => handleSend()}
@@ -442,7 +449,7 @@ export default function Chatbot({ isSidebarOpen }) {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`group relative w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl active:scale-90 backdrop-blur-3xl border border-white/20 ${isOpen
+        className={`group relative w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl active:scale-90  ${isOpen
           ? 'bg-zinc-900/90 rotate-180 border-brand-orange/50'
           : 'bg-brand-orange/90 hover:bg-zinc-900 hover:scale-110 shadow-orange-500/20'
           }`}

@@ -139,7 +139,7 @@ export default function Login() {
 
     return (
         <div className="bg-transparent min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors relative overflow-hidden">
-            <div className="max-w-md w-full bg-white/20 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/5 p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
+            <div className="max-w-md w-full bg-white dark:bg-brand-card  p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange transform rotate-45 translate-x-12 -translate-y-12"></div>
 
                 {step === 1 ? (
@@ -167,7 +167,7 @@ export default function Login() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 disabled={isLoading}
-                                className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50 rounded-xl transition-all"
+                                className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50 rounded-xl transition-all"
                             />
                             
                             <div>
@@ -180,7 +180,7 @@ export default function Login() {
                                         onKeyUp={checkCapsLock}
                                         required
                                         disabled={isLoading}
-                                        className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50 rounded-xl transition-all"
+                                        className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 pr-12 font-bold italic placeholder:uppercase focus:border-brand-blue outline-none disabled:opacity-50 rounded-xl transition-all"
                                     />
                                     <button 
                                         type="button"
@@ -223,7 +223,7 @@ export default function Login() {
                         </form>
 
                         <div className="my-8 flex items-center gap-4 text-zinc-300 dark:text-zinc-700 font-black italic text-[10px]">
-                            <div className="h-px flex-grow bg-zinc-200 dark:bg-white/5"></div> O <div className="h-px flex-grow bg-zinc-200 dark:bg-white/5"></div>
+                            <div className="h-px flex-grow bg-zinc-200 dark:bg-zinc-700"></div> O <div className="h-px flex-grow bg-zinc-200 dark:bg-zinc-700"></div>
                         </div>
 
                         <div className="flex justify-center">
@@ -266,7 +266,7 @@ export default function Login() {
                                 maxLength={6}
                                 required
                                 disabled={isLoading}
-                                className="w-full bg-white/40 dark:bg-black/20 text-zinc-900 dark:text-white border border-white/20 dark:border-white/5 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none disabled:opacity-50 rounded-2xl transition-all"
+                                className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 font-black uppercase italic tracking-[0.5em] text-center text-2xl focus:border-brand-orange outline-none disabled:opacity-50 rounded-2xl transition-all"
                             />
                             
                             <button 
