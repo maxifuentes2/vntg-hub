@@ -109,7 +109,7 @@ export default function Contacto() {
                     <button 
                         type="submit" 
                         disabled={estadoEnviando === 'loading'}
-                        className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl shadow-lg shadow-orange-500/20 active:scale-95"
                     >
                         {estadoEnviando === 'loading' ? 'ENVIANDO...' : 
                          estadoEnviando === 'success' ? 'CORREO ENVIADO' : 

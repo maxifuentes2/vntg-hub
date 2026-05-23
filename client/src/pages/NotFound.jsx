@@ -11,7 +11,7 @@ export default function NotFound() {
                 <h2 className="text-xl max-[400px]:text-lg md:text-4xl font-black italic uppercase mb-10 text-zinc-800 dark:text-zinc-200">
                     Página no encontrada.
                 </h2>
-                <Link to="/" className="inline-flex items-center justify-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 xs:px-10 py-3 xs:py-5 font-black uppercase italic hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all shadow-xl">
+                <Link to="/" className="inline-flex items-center justify-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 xs:px-10 py-3 xs:py-5 font-black uppercase italic hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all shadow-xl rounded-2xl active:scale-95">
                     <Home size={20} /> Volver al Inicio
                 </Link>
             </div>
