@@ -174,17 +174,17 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/60 dark:from-brand-dark/60 via-zinc-50/20 dark:via-brand-dark/20 to-transparent"></div>
                 
-                <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
+                <div className="absolute inset-0 flex flex-col justify-center px-4 max-[400px]:px-3 md:px-20">
                     <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
                         {slug === 'all' ? "Tienda Completa" : "Colección Oficial"}
                     </span>
-                    <h1 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
+                    <h1 className="text-3xl max-[400px]:text-2xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
                         {renderTitulo()}
                     </h1>
                 </div>
             </section>
 
-            <main className="max-w-[1800px] mx-auto px-6 py-10">
+            <main className="max-w-[1800px] mx-auto px-3 xs:px-6 py-6 xs:py-10">
                 <div className="flex justify-between items-center mb-12 border-b border-zinc-100 dark:border-zinc-800 pb-6">
                     <div className="flex items-center gap-4">
                         {franquiciasSeleccionadas.length > 0 && (
@@ -205,7 +205,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 </div>
 
                 {/* GRID DE PRODUCTOS */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xs:gap-8">
                     {productos.map((item) => (
                         <div key={item.id} className={`group bg-zinc-50 dark:bg-brand-card  transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-70' : ''}`}>
                             <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-zinc-600">
@@ -216,12 +216,12 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
                                 </div>
                             </div>
-                            <div className="p-4 sm:p-8">
-                                <h3 className="text-xl font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
+                            <div className="p-3 xs:p-4 sm:p-8">
+                                <h3 className="text-base max-[400px]:text-sm font-black uppercase italic truncate mb-4 group-hover:text-brand-orange transition-colors">
                                     {item.title}
                                 </h3>
                                 <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
-                                    <p className="text-3xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
+                                    <p className="text-xl max-[400px]:text-lg font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
                                     <div className="flex items-center gap-4">
                                         <button 
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToWishList(item); }} 

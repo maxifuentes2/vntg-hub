@@ -48,8 +48,14 @@ html {
 }
 
 /* Adaptación para pantallas pequeñas */
-@media (max-width: 360px) {
+@media (max-width: 380px) {
   html {
-    font-size: 15px !important;
+    font-size: 14.5px !important;
+  }
+}
+
+@media (max-width: 340px) {
+  html {
+    font-size: 13.5px !important;
   }
 }

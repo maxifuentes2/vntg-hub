@@ -53,8 +53,8 @@ export default function CartSidebar() {
 
             <div className="space-y-4">
                 {cart.length > 0 ? cart.map((item) => (
-                    <div key={item.id} className="bg-zinc-50 dark:bg-zinc-800/50  p-4 flex gap-4 rounded-2xl shadow-sm group">
-                        <img src={item.images} className="w-20 h-20 object-cover  rounded-xl shadow-sm" alt="" />
+                    <div key={item.id} className="bg-zinc-50 dark:bg-zinc-800/50  p-3 xs:p-4 flex gap-3 xs:gap-4 rounded-2xl shadow-sm group">
+                        <img src={item.images} className="w-16 xs:w-20 h-16 xs:h-20 object-cover  rounded-xl shadow-sm" alt="" />
                         <div className="flex-grow">
                             <h3 className="text-xs font-black uppercase italic line-clamp-1">{item.title}</h3>
                             <p className="text-brand-orange font-black italic text-sm mb-3">${item.price.toLocaleString('es-AR')}</p>
@@ -107,10 +107,10 @@ export default function CartSidebar() {
 
                     <div className="flex justify-between items-end border-t border-zinc-100 dark:border-zinc-800 pt-6">
                         <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Total Final</span>
-                        <span className="text-3xl font-black italic text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
+                        <span className="text-2xl xs:text-3xl font-black italic text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
                     </div>
                     
-                    <Link to="/checkout" onClick={closeAll} className="w-full bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-orange/20 rounded-2xl">
+                    <Link to="/checkout" onClick={closeAll} className="w-full bg-brand-orange text-white py-4 xs:py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-orange/20 rounded-2xl text-[11px] xs:text-sm">
                         Finalizar Pedido <ArrowRight size={20} />
                     </Link>
                 </div>

@@ -219,7 +219,7 @@ export default function Navbar() {
                         <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                             <User size={22} className="group-hover:text-brand-orange transition-colors" />
                         </button>
-                        <div className={`absolute right-0 mt-3 w-64 bg-white dark:bg-brand-card  shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
+                        <div className={`absolute right-0 max-[400px]:fixed max-[400px]:left-2 max-[400px]:right-2 max-[400px]:w-auto mt-3 w-64 bg-white dark:bg-brand-card  shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
                             {user ? (
                                 <>
                                     <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 mb-2 bg-zinc-50/50 dark:bg-zinc-800">

@@ -42,18 +42,18 @@ export default function Contacto() {
     return (
         <div className="bg-transparent min-h-screen text-zinc-900 dark:text-white font-sans transition-colors relative">
             <header className="py-24 bg-white dark:bg-brand-dark border-b border-brand-orange/30 text-center px-4">
-                    <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-4">Contacto</h1>
+                    <h1 className="text-3xl max-[400px]:text-2xl md:text-8xl font-black italic uppercase tracking-tighter mb-4">Contacto</h1>
                     <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs">Soporte directo para coleccionistas</p>
             </header>
-            <div className="max-w-[1400px] mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-20">
+            <div className="max-w-[1400px] mx-auto px-4 xs:px-6 py-12 xs:py-24 grid grid-cols-1 lg:grid-cols-2 gap-8 xs:gap-12 lg:gap-20">
                 <div className="space-y-12 flex flex-col justify-center">
-                    <h2 className="text-5xl font-black italic uppercase tracking-tighter text-zinc-900 dark:text-white">Tienes alguna <span className="text-brand-orange">duda?</span></h2>
+                    <h2 className="text-3xl max-[400px]:text-2xl font-black italic uppercase tracking-tighter text-zinc-900 dark:text-white">Tienes alguna <span className="text-brand-orange">duda?</span></h2>
                     <div className="space-y-8 pt-8 border-t border-zinc-200 dark:border-white/10">
                         <div className="flex items-center gap-6 group">
                             <div className="bg-zinc-100 dark:bg-zinc-800 p-5  group-hover:border-brand-blue transition-colors rounded-xl shadow-sm"><Mail size={28} className="text-brand-blue" /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Email</p>
-                                <p className="text-base sm:text-xl font-black italic uppercase break-all">soportehubvntg@gmail.com</p>
+                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase break-all">soportehubvntg@gmail.com</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
@@ -64,20 +64,20 @@ export default function Contacto() {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">WhatsApp</p>
-                                <p className="text-base sm:text-xl font-black italic uppercase">+54 9 261 123-4567</p>
+                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase">+54 9 261 123-4567</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
                             <div className="bg-zinc-100 dark:bg-zinc-800 p-5  group-hover:border-brand-orange transition-colors rounded-xl shadow-sm"><MapPin size={28} className="text-brand-orange" /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Showroom</p>
-                                <p className="text-base sm:text-xl font-black italic uppercase break-words sm:break-normal">Mendoza, ARG</p>
+                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase break-words sm:break-normal">Mendoza, ARG</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 {/* Formulario conectado con los estados */}
-                <form className="bg-white dark:bg-brand-card p-5 sm:p-10 md:p-16  space-y-6 shadow-lg rounded-3xl" onSubmit={handleSubmit}>
+                <form className="bg-white dark:bg-brand-card p-4 xs:p-5 sm:p-10 md:p-16  space-y-6 shadow-lg rounded-3xl" onSubmit={handleSubmit}>
                     <input 
                         type="text" 
                         name="nombre"

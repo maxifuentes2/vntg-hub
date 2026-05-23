@@ -10,7 +10,7 @@ export default function Footer() {
         <footer className="bg-white dark:bg-brand-dark pt-20 pb-28 border-t border-zinc-100 dark:border-zinc-800 transition-all duration-300 relative overflow-hidden">
             {/* Sutil gradiente superior para separar */}
             <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-orange to-transparent"></div>
-            <div className="max-w-[1700px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div className="max-w-[1700px] mx-auto px-4 xs:px-6 grid grid-cols-1 md:grid-cols-4 gap-8 xs:gap-12">
                 
                 {/* Logo y descripción */}
                 <div className="col-span-1 md:col-span-2">
@@ -105,7 +105,7 @@ export default function Footer() {
             </div>
             
             {/* Copyright y Ubicación */}
-            <div className="max-w-[1700px] mx-auto px-6 mt-20 pt-8 border-t border-zinc-300 dark:border-zinc-600 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="max-w-[1700px] mx-auto px-4 xs:px-6 mt-12 xs:mt-20 pt-8 border-t border-zinc-300 dark:border-zinc-600 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-[10px] font-black uppercase italic text-zinc-400 tracking-widest">
                     VNTG-HUB © 2026 MENDOZA, ARGENTINA
                 </p>

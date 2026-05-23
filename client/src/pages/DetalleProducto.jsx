@@ -123,7 +123,7 @@ const DetalleProducto = () => {
     ])).filter(img => img && typeof img === 'string' && img.trim() !== '');
 
     return (
-        <div className="bg-transparent min-h-screen text-zinc-900 dark:text-white font-sans py-20 px-4 transition-colors relative overflow-hidden">
+        <div className="bg-transparent min-h-screen text-zinc-900 dark:text-white font-sans py-12 px-3 max-[400px]:py-8 transition-colors relative overflow-hidden">
             
             <div className="max-w-[1400px] mx-auto">
                 
@@ -131,7 +131,7 @@ const DetalleProducto = () => {
                     <ChevronLeft size={18} /> Volver al catálogo
                 </button>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-32 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xs:gap-12 lg:gap-20 mb-32 items-start">
                     <div className="flex flex-col gap-6">
                         <div 
                             className="relative w-full bg-zinc-50 dark:bg-brand-card  overflow-hidden flex items-center justify-center shadow-2xl cursor-zoom-in group rounded-3xl p-4"
@@ -162,11 +162,11 @@ const DetalleProducto = () => {
                             <span className="bg-brand-blue/10 text-brand-blue px-3 py-1 text-[9px] font-black uppercase italic tracking-widest border border-brand-blue/30 mb-6 inline-block rounded-full">
                                 {producto.franchise || "SERIE VNTG"}
                             </span>
-                            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 leading-[0.9]">{producto.title}</h1>
+                            <h1 className="text-3xl max-[400px]:text-2xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 leading-[0.9]">{producto.title}</h1>
                             
                             {/* PRECIO Y STOCK */}
                             <div className="flex flex-col mt-4">
-                                <p className="text-4xl font-black italic text-brand-orange">${Number(producto.price).toLocaleString('es-AR')}</p>
+                                <p className="text-2xl max-[400px]:text-xl font-black italic text-brand-orange">${Number(producto.price).toLocaleString('es-AR')}</p>
                                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-2">
                                     Stock Disponible: <span className={producto.stock === 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}>{producto.stock ?? '0'}</span>
                                 </p>
@@ -221,7 +221,7 @@ const DetalleProducto = () => {
                                     <Tag size={14} />
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">Sugerencias VNTG</span>
                                 </div>
-                                <h2 className="text-4xl font-black uppercase italic text-zinc-900 dark:text-white tracking-tighter">También te puede interesar</h2>
+                                <h2 className="text-2xl max-[400px]:text-xl font-black uppercase italic text-zinc-900 dark:text-white tracking-tighter">También te puede interesar</h2>
                             </div>
                             <Link to="/categoria/all" className="group flex items-center gap-3 text-zinc-500 hover:text-brand-orange transition-all font-black uppercase italic text-xs">
                                 Ver catálogo completo <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
@@ -284,7 +284,7 @@ const DetalleProducto = () => {
                                 setImgPrincipal(fotosUnicas[prevIndex]);
                                 setZoomLevel(1); // Resetea el zoom al cambiar de foto
                             }}
-                            className="absolute left-4 md:left-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
+                            className="absolute left-2 xs:left-4 md:left-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
                         >
                             <ChevronLeft size={48} />
                         </button>
@@ -310,7 +310,7 @@ const DetalleProducto = () => {
                                 setImgPrincipal(fotosUnicas[nextIndex]);
                                 setZoomLevel(1); // Resetea el zoom al cambiar de foto
                             }}
-                            className="absolute right-4 md:right-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
+                            className="absolute right-2 xs:right-4 md:right-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
                         >
                             <ChevronRight size={48} />
                         </button>

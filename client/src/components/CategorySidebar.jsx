@@ -105,11 +105,11 @@ export default function CategorySidebar({ categories = [] }) {
                                     >
                                         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl shadow-sm mb-2 overflow-hidden">
                                             <div className="flex items-center">
-                                                <Link
-                                                    to={`/categoria/${cat.slug || slugify(cat.name)}`}
-                                                    onClick={closeAll}
-                                                    className="flex items-center gap-4 flex-1 px-4 py-4 dark:text-white group"
-                                                >
+                                                    <Link
+                                                        to={`/categoria/${cat.slug || slugify(cat.name)}`}
+                                                        onClick={closeAll}
+                                                        className="flex items-center gap-3 xs:gap-4 flex-1 px-3 xs:px-4 py-3 xs:py-4 dark:text-white group"
+                                                    >
                                                     <div className="text-brand-blue group-hover:text-brand-orange transition-colors">
                                                         {getCategoryIcon(cat.name)}
                                                     </div>

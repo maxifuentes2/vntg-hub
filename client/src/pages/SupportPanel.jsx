@@ -151,27 +151,27 @@ export default function SupportPanel() {
     const currentUser = JSON.parse(localStorage.getItem('vntg_user') || 'null');
 
     return (
-        <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 font-sans text-zinc-900 dark:text-white">
+        <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-24 xs:pt-32 pb-12 xs:pb-20 px-4 font-sans text-zinc-900 dark:text-white">
             <div className="max-w-[1400px] mx-auto">
-                <div className="flex gap-8">
+                <div className="flex flex-col lg:flex-row gap-8">
 
                     {/* ─── SIDEBAR IZQUIERDO ─── */}
-                    <aside className="w-56 shrink-0">
-                        <div className="sticky top-28 flex flex-col bg-zinc-50 dark:bg-brand-card rounded-xl p-1 gap-1 shadow-sm">
+                    <aside className="w-56 shrink-0 max-[400px]:w-full max-[400px]:overflow-x-auto">
+                        <div className="sticky top-28 flex flex-col max-[400px]:flex-row bg-zinc-50 dark:bg-brand-card rounded-xl p-1 gap-1 shadow-sm">
                             <Link
                                 to="/"
-                                className="flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                                className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
                             >
-                                <Home size={16} /> Volver a Tienda
+                                <Home size={14} /> Volver
                             </Link>
-                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1">
+                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0">
                                 <button
-                                    className="flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all bg-brand-blue text-white w-full text-left mt-1"
+                                    className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all bg-brand-blue text-white w-full text-left mt-1 max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0"
                                 >
-                                    <MessageSquare size={16} /> Soporte
+                                    <MessageSquare size={14} /> Soporte
                                 </button>
                             </div>
-                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1">
+                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:shrink-0">
                                 <button
                                     onClick={() => {
                                         if (currentUser?.role === 'admin') {
@@ -180,9 +180,9 @@ export default function SupportPanel() {
                                             addToast({}, 'No tienes permisos para acceder al panel de administración', 'error');
                                         }
                                     }}
-                                    className="flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all w-full text-left text-zinc-500 hover:text-zinc-900 dark:hover:text-white mt-1"
+                                    className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all w-full text-left max-[400px]:w-auto text-zinc-500 hover:text-zinc-900 dark:hover:text-white mt-1 max-[400px]:mt-0 max-[400px]:shrink-0"
                                 >
-                                    <Shield size={16} /> Panel Admin
+                                    <Shield size={14} /> Admin
                                 </button>
                             </div>
                         </div>
@@ -192,13 +192,13 @@ export default function SupportPanel() {
                     <main className="flex-1 min-w-0">
 
                         {/* HEADER */}
-                        <div className="flex justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
+                        <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
                             <div>
-                                <h1 className="text-4xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">Panel de Soporte</h1>
+                                <h1 className="text-2xl xs:text-3xl lg:text-4xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">Panel de Soporte</h1>
                                 <p className="text-brand-blue text-[10px] font-bold uppercase tracking-widest mt-1">Atención al Cliente Hub</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 bg-zinc-50 dark:bg-brand-card px-4 py-2 rounded-xl shadow-sm">
+                            <div className="flex items-center gap-2 xs:gap-3">
+                                <div className="hidden xs:flex items-center gap-2 bg-zinc-50 dark:bg-brand-card px-4 py-2 rounded-xl shadow-sm">
                                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                                     <p className="text-[9px] font-black uppercase text-zinc-500">Sistema Operativo</p>
                                 </div>
@@ -223,12 +223,12 @@ export default function SupportPanel() {
                                             className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3 pl-12 font-bold italic text-xs uppercase outline-none focus:border-brand-blue transition-all rounded-xl"
                                         />
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1 xs:gap-2">
                                         {['all', 'pending', 'replied', 'finished'].map(f => (
                                             <button 
                                                 key={f}
                                                 onClick={() => setFilter(f)}
-                                                className={`flex-1 py-2 text-[10px] font-black uppercase italic border transition-all rounded-lg ${filter === f ? 'bg-brand-blue text-white border-brand-blue shadow-md' : 'bg-transparent border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-blue'}`}
+                                                className={`flex-1 py-2 text-[8px] xs:text-[10px] font-black uppercase italic border transition-all rounded-lg ${filter === f ? 'bg-brand-blue text-white border-brand-blue shadow-md' : 'bg-transparent border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-blue'}`}
                                             >
                                                 {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : f === 'replied' ? 'Respondidos' : 'Terminados'}
                                             </button>
@@ -236,7 +236,7 @@ export default function SupportPanel() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-4 max-h-[300px] lg:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                     {loading ? (
                                         [1, 2, 3].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-xl" />)
                                     ) : filteredMessages.length > 0 ? (
@@ -273,7 +273,7 @@ export default function SupportPanel() {
                                 {selectedMsg ? (
                                     <div className="bg-zinc-50 dark:bg-brand-card rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col h-full min-h-[600px]">
                                         {/* Cabecera Detalle */}
-                                        <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+                                        <div className="p-4 xs:p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
                                             <div className="flex justify-between items-start gap-4">
                                                 <div>
                                                     <p className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] mb-1">Consulta #{selectedMsg.id}</p>
@@ -304,7 +304,7 @@ export default function SupportPanel() {
                                         </div>
 
                                         {/* Contenido */}
-                                        <div className="p-8 flex-grow space-y-8 overflow-y-auto">
+                                        <div className="p-4 xs:p-8 flex-grow space-y-8 overflow-y-auto">
                                             <div className="space-y-4">
                                                 <div className="flex items-center gap-3 text-zinc-400">
                                                     <Mail size={16} />
@@ -332,7 +332,7 @@ export default function SupportPanel() {
 
                                         {/* Formulario de Respuesta */}
                                         {selectedMsg.status === 'pending' && (
-                                            <div className="p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+                                            <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
                                                 <form onSubmit={handleSendReply} className="space-y-4">
                                                     <p className="text-[10px] font-black uppercase text-zinc-500 italic">Escribir Respuesta</p>
                                                     <textarea 

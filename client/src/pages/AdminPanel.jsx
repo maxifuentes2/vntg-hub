@@ -308,44 +308,44 @@ export default function AdminPanel() {
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-brand-dark p-4 md:p-8">
-            <div className="max-w-[1700px] mx-auto pt-24 md:pt-28">
-                <div className="flex gap-8">
+            <div className="max-w-[1700px] mx-auto pt-20 xs:pt-24 md:pt-28">
+                <div className="flex flex-col lg:flex-row gap-8">
 
                     {/* ─── SIDEBAR IZQUIERDO ─── */}
-                    <aside className="w-56 shrink-0">
-                        <div className="sticky top-28 flex flex-col bg-zinc-50 dark:bg-brand-card rounded-xl p-1 gap-1 shadow-sm">
+                    <aside className="w-56 shrink-0 max-[400px]:w-full max-[400px]:overflow-x-auto">
+                        <div className="sticky top-28 flex flex-col max-[400px]:flex-row bg-zinc-50 dark:bg-brand-card rounded-xl p-1 gap-1 shadow-sm">
                             <Link
                                 to="/"
-                                className="flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                                className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
                             >
-                                <Home size={16} /> Volver a Tienda
+                                <Home size={16} /> Volver
                             </Link>
-                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1">
+                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:gap-1">
                                 <button
                                     onClick={() => setActiveTab('products')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left ${activeTab === 'products' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                    className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'products' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                 >
-                                    <Package size={16} /> Productos
+                                    <Package size={14} /> Prod.
                                 </button>
                             <button
                                 onClick={() => setActiveTab('categories')}
-                                className={`flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all ${activeTab === 'categories' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all max-[400px]:w-auto max-[400px]:shrink-0 ${activeTab === 'categories' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                             >
-                                <Tag size={16} /> Categorías
+                                <Tag size={14} /> Cats.
                             </button>
                             <button
                                 onClick={() => setActiveTab('orders')}
-                                className={`flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all ${activeTab === 'orders' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all max-[400px]:w-auto max-[400px]:shrink-0 ${activeTab === 'orders' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                             >
-                                <ClipboardList size={16} /> Órdenes
+                                <ClipboardList size={14} /> Ords.
                             </button>
                             </div>
-                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2">
+                            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:shrink-0">
                                 <button
                                     onClick={() => navigate('/soporte')}
-                                    className="flex items-center gap-2 px-4 py-3 text-sm font-black uppercase italic rounded-lg transition-all w-full text-left text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                                    className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all w-full text-left max-[400px]:w-auto text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
                                 >
-                                    <MessageSquare size={16} /> Soporte
+                                    <MessageSquare size={14} /> Sop.
                                 </button>
                             </div>
                         </div>
@@ -355,7 +355,7 @@ export default function AdminPanel() {
                     <main className="flex-1 min-w-0">
 
                         {/* HEADER GLOBAL */}
-                        <div className="flex justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
+                        <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
                             <div>
                                 <h1 className="text-4xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">
                                     {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : 'Órdenes'}
@@ -365,19 +365,19 @@ export default function AdminPanel() {
                                 </p>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 xs:gap-3">
                                 {activeTab === 'products' && (
-                                    <button onClick={() => handleOpenProductModal()} className="flex items-center gap-2 bg-brand-orange text-white px-4 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
-                                        <Plus size={16} /> Agregar Producto
+                                    <button onClick={() => handleOpenProductModal()} className="flex items-center gap-1 xs:gap-2 bg-brand-orange text-white px-2 xs:px-4 py-2 xs:py-3 rounded-xl text-[9px] xs:text-xs font-black uppercase italic hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
+                                        <Plus size={14} /> <span className="max-[400px]:hidden">Agregar</span> Producto
                                     </button>
                                 )}
                                 {activeTab === 'categories' && (
-                                    <button onClick={handleOpenCategoryModal} className="flex items-center gap-2 bg-brand-orange text-white px-4 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
-                                        <Plus size={16} /> Agregar Categoría
+                                    <button onClick={handleOpenCategoryModal} className="flex items-center gap-1 xs:gap-2 bg-brand-orange text-white px-2 xs:px-4 py-2 xs:py-3 rounded-xl text-[9px] xs:text-xs font-black uppercase italic hover:bg-orange-600 transition-colors shadow-lg active:scale-95">
+                                        <Plus size={14} /> <span className="max-[400px]:hidden">Agregar</span> Categoría
                                     </button>
                                 )}
-                                <button onClick={fetchData} className="p-3 bg-zinc-50 dark:bg-brand-card rounded-2xl text-brand-orange hover:rotate-180 transition-all duration-500 shadow-sm">
-                                    <RefreshCw size={24} />
+                                <button onClick={fetchData} className="p-2 xs:p-3 bg-zinc-50 dark:bg-brand-card rounded-2xl text-brand-orange hover:rotate-180 transition-all duration-500 shadow-sm">
+                                    <RefreshCw size={20} />
                                 </button>
                             </div>
                         </div>
@@ -436,12 +436,12 @@ export default function AdminPanel() {
 
                         {/* ─── VISTA ÓRDENES ─── */}
                         {activeTab === 'orders' && (
-                            <div className="grid grid-cols-[1fr_320px] gap-6 items-start">
+                            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
                                 {/* COLUMNA PRINCIPAL */}
                                 <div className="space-y-6">
 
                                     {/* MÉTRICAS */}
-                                    <div className="grid grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-2 xs:grid-cols-4 gap-4">
                                         <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm">
                                             <p className="text-[9px] font-black uppercase text-brand-orange italic tracking-wider mb-1">Procesando</p>
                                             <p className="text-3xl font-black italic text-zinc-900 dark:text-white">{metrics.procesando}</p>
@@ -477,7 +477,7 @@ export default function AdminPanel() {
                                                 <button
                                                     key={f}
                                                     onClick={() => setOrderFilter(f)}
-                                                    className={`px-2.5 py-1.5 text-[9px] font-black uppercase italic rounded-lg border transition-all ${orderFilter === f ? 'bg-brand-orange text-white border-brand-orange shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange'}`}
+                                                    className={`px-1.5 xs:px-2.5 py-1.5 text-[7px] xs:text-[9px] font-black uppercase italic rounded-lg border transition-all ${orderFilter === f ? 'bg-brand-orange text-white border-brand-orange shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange'}`}
                                                 >
                                                     {f === 'all' ? 'Todos' : statusLabels[f]}
                                                 </button>
@@ -523,7 +523,7 @@ export default function AdminPanel() {
                                         {filteredOrders.map(order => {
                                             const statusOptions = getStatusOptions(order);
                                             return (
-                                            <div key={order.id} className="bg-zinc-50 dark:bg-brand-card p-5 flex flex-col md:flex-row justify-between gap-4 md:items-center rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                            <div key={order.id} className="bg-zinc-50 dark:bg-brand-card p-3 xs:p-5 flex flex-col md:flex-row justify-between gap-3 xs:gap-4 md:items-center rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                                                 <div className="flex items-start gap-3 flex-1">
                                                     <input
                                                         type="checkbox"
@@ -559,7 +559,7 @@ export default function AdminPanel() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-6 ml-7 md:ml-0">
+                                                <div className="flex items-center gap-2 xs:gap-6 ml-7 md:ml-0 max-[400px]:flex-wrap max-[400px]:w-full">
                                                     <div className="text-right">
                                                         <p className="text-[10px] font-bold text-zinc-500 uppercase">Total</p>
                                                         <p className="text-brand-orange font-black italic text-lg">${Number(order.total).toLocaleString()}</p>
@@ -571,7 +571,7 @@ export default function AdminPanel() {
                                                             <select
                                                                 value={order.status}
                                                                 onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                                                                className="appearance-none w-36 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg p-2.5 pr-8 text-[11px] font-black uppercase italic text-zinc-900 dark:text-white outline-none focus:border-brand-orange cursor-pointer transition-colors"
+                                                                className="appearance-none w-32 xs:w-36 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg p-2.5 pr-8 text-[11px] font-black uppercase italic text-zinc-900 dark:text-white outline-none focus:border-brand-orange cursor-pointer transition-colors"
                                                             >
                                                                 {statusOptions.map(opt => (
                                                                     <option key={opt.value} value={opt.value} className="bg-zinc-50 dark:bg-brand-card text-zinc-900 dark:text-white font-black italic">{opt.label}</option>
@@ -658,8 +658,8 @@ export default function AdminPanel() {
                 <div className="fixed inset-0 bg-black/60 z-[999] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
                     <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[80vh] shadow-2xl flex flex-col overflow-hidden">
                         {/* Header Estático */}
-                        <div className="flex justify-between items-center p-6 border-b border-zinc-800 bg-zinc-900 z-10">
-                            <h2 className="text-xl font-black italic uppercase text-brand-orange">
+                        <div className="flex justify-between items-center p-4 xs:p-6 border-b border-zinc-800 bg-zinc-900 z-10">
+                            <h2 className="text-base xs:text-xl font-black italic uppercase text-brand-orange">
                                 {editingItem ? 'Editar Producto' : 'Nuevo Producto'}
                             </h2>
                             <button onClick={() => setIsProductModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
@@ -669,7 +669,7 @@ export default function AdminPanel() {
 
                         {/* Área Scrolleable Interna */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                            <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
+                            <form onSubmit={handleSaveProduct} className="p-4 xs:p-6 space-y-4">
 
                                 {/* NUEVO: ID (Solo lectura) y Nombre del Producto (Title) */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

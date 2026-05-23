@@ -45,10 +45,10 @@ export default function Registro() {
 
     return (
         <div className="bg-transparent min-h-screen flex items-center justify-center px-4 font-sans py-20 transition-colors relative overflow-hidden">
-            <div className="max-w-md w-full bg-white dark:bg-brand-card  p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
+            <div className="max-w-md w-full bg-white dark:bg-brand-card  p-4 xs:p-6 sm:p-12 text-center relative shadow-2xl rounded-3xl overflow-hidden">
                 <div className="absolute top-0 left-0 w-24 h-24 bg-brand-blue transform -rotate-45 -translate-x-12 -translate-y-12"></div>
                 
-                <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Registro</h1>
+                <h1 className="text-3xl max-[400px]:text-2xl font-black italic uppercase tracking-tighter mb-2 text-zinc-900 dark:text-white">Registro</h1>
                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mb-10 italic tracking-[0.3em]">Únete al escuadrón</p>
                 
                 {error && (

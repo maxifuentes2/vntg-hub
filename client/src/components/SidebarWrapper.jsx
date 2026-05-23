@@ -34,10 +34,10 @@ export default function SidebarWrapper({ isOpen, onClose, title, icon: Icon, chi
             {/* Backdrop con tu blur y opacidad */}
             <div className="absolute inset-0 bg-black/60" onClick={onClose} />
             
-            <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[350px] sm:max-w-md bg-white dark:bg-brand-dark shadow-2xl transform-gpu transition-all duration-500 ease-out border-l border-zinc-100 dark:border-zinc-800 ${translateClass} ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+            <aside className={`absolute top-0 ${sideClass} h-full w-full max-w-[320px] xs:max-w-[350px] sm:max-w-md bg-white dark:bg-brand-dark shadow-2xl transform-gpu transition-all duration-500 ease-out border-l border-zinc-100 dark:border-zinc-800 ${translateClass} ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="h-full flex flex-col">
                     {/* Cabecera Unificada */}
-                    <div className="p-4 sm:p-8 flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800">
+                    <div className="p-3 xs:p-4 sm:p-8 flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800">
                         <div className="flex flex-col">
                             {side === 'left' && <span className="text-brand-orange font-black uppercase tracking-[0.3em] text-[10px] italic mb-1">Menu Principal</span>}
                             <h2 className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3 text-zinc-900 dark:text-white">
@@ -51,7 +51,7 @@ export default function SidebarWrapper({ isOpen, onClose, title, icon: Icon, chi
                     </div>
 
                     {/* Contenido con scroll */}
-                    <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 xs:p-6 custom-scrollbar">
                         {children}
                     </div>
                 </div>

@@ -155,7 +155,7 @@ export default function Inicio() {
 
                 <div className="relative z-10 text-center px-4">
                     <Reveal variant="fade-down" delay={0}>
-                        <h1 className="text-7xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white flex items-center justify-center gap-4 subtle-glitch">
+                        <h1 className="text-4xl max-[400px]:text-3xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white flex items-center justify-center gap-4 subtle-glitch">
                             <span className="hover:animate-pulse transition-all">
                                 <ScrambleText key={`vntg-${triggerKey}`} text="VNTG" delay={200} />
                             </span>
@@ -165,7 +165,7 @@ export default function Inicio() {
                         </h1>
                     </Reveal>
                     <Reveal variant="fade-up" delay={150}>
-                        <p className="text-lg md:text-xl font-bold italic liquid-text uppercase tracking-[0.4em] subtle-glitch">
+                        <p className="text-sm max-[400px]:text-xs md:text-xl font-bold italic liquid-text uppercase tracking-[0.4em] subtle-glitch">
                             <ScrambleText key={`sub-${triggerKey}`} text="Coleccionismo de Alto Nivel" delay={1000} duration={1200} />
                         </p>
                     </Reveal>
@@ -239,11 +239,11 @@ export default function Inicio() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-zinc-50/40 dark:from-brand-dark/40 via-transparent to-transparent"></div>
 
-                        <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-20">
+                        <div className="absolute inset-0 flex flex-col justify-center px-4 max-[400px]:px-3 md:px-20">
                             <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">
                                 Colección Oficial
                             </span>
-                            <h2 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
+                            <h2 className="text-3xl max-[400px]:text-2xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-10 text-zinc-900 dark:text-white">{seccion.nombre}</h2>
                             <Link
                                 to={`/categoria/${seccion.slug || slugify(seccion.nombre)}`}
                                 className="w-fit bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-6 sm:px-10 py-4 font-black uppercase italic text-sm hover:bg-brand-orange dark:hover:bg-brand-orange hover:text-white transition-all duration-300 flex items-center gap-3 group/btn shadow-xl rounded-2xl"
@@ -267,15 +267,15 @@ export default function Inicio() {
                                         </div>
                                     </div>
 
-                                    <div className="p-4 sm:p-8">
+                                    <div className="p-3 xs:p-4 sm:p-8">
                                         <Link to={`/producto/${slugify(item.title)}`}>
-                                            <h3 className="text-xl font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
+                                            <h3 className="text-base max-[400px]:text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
                                                 {item.title}
                                             </h3>
                                         </Link>
 
                                         <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
-                                            <p className="text-3xl font-black text-zinc-900 dark:text-white italic">
+                                            <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">
                                                 ${Number(item.price).toLocaleString('es-AR')}
                                             </p>
                                             <div className="flex items-center gap-4">

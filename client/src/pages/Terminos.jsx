@@ -6,7 +6,7 @@ export default function Terminos() {
             {/* HERO HEADER */}
             <header className="py-24 bg-white dark:bg-brand-dark border-b border-brand-orange/30 text-center px-4">
                     <FileText className="text-brand-blue mx-auto mb-6" size={60} />
-                    <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Términos</h1>
+                    <h1 className="text-3xl max-[400px]:text-2xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Términos</h1>
                     <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Condiciones de Servicio</p>
             </header>
 
@@ -19,7 +19,7 @@ export default function Terminos() {
                         <div>
                             <div className="flex items-center gap-4 mb-6">
                                 <span className="text-3xl font-black text-brand-orange italic">01</span>
-                                <h2 className="text-2xl md:text-3xl font-black italic uppercase text-zinc-900 dark:text-white">Aceptación de los Términos</h2>
+                                <h2 className="text-xl max-[400px]:text-lg md:text-3xl font-black italic uppercase text-zinc-900 dark:text-white">Aceptación de los Términos</h2>
                             </div>
                             <p className="text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed bg-zinc-50 dark:bg-zinc-800/50 p-6  rounded-2xl">
                                 Al acceder y utilizar <span className="font-black italic text-zinc-900 dark:text-white">VNTG HUB</span>, aceptas estar sujeto a estos términos y condiciones. Si no estás de acuerdo con alguna parte, te pedimos que no utilices nuestros servicios.
@@ -28,7 +28,7 @@ export default function Terminos() {
                         <div>
                             <div className="flex items-center gap-4 mb-6">
                                 <span className="text-3xl font-black text-brand-blue italic">02</span>
-                                <h2 className="text-2xl md:text-3xl font-black italic uppercase text-zinc-900 dark:text-white">Uso del Sitio</h2>
+                                <h2 className="text-xl max-[400px]:text-lg md:text-3xl font-black italic uppercase text-zinc-900 dark:text-white">Uso del Sitio</h2>
                             </div>
                             <p className="text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed bg-zinc-50 dark:bg-zinc-800/50 p-6  rounded-2xl">
                                 El contenido de estas páginas es para tu información y uso general. Está sujeto a cambios sin previo aviso. Ni nosotros ni terceros ofrecemos ninguna garantía en cuanto a la exactitud o idoneidad de la información encontrada en este sitio para un propósito particular.

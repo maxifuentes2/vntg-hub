@@ -6,7 +6,7 @@ export default function EnviosSeguros() {
             {/* HERO HEADER */}
             <header className="py-24 bg-white dark:bg-brand-dark border-b border-brand-orange/30 text-center px-4">
                     <Package className="text-brand-blue mx-auto mb-6" size={60} />
-                    <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Envíos Seguros</h1>
+                    <h1 className="text-3xl max-[400px]:text-2xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Envíos Seguros</h1>
                     <p className="text-brand-orange font-black uppercase tracking-[0.5em] text-xs md:text-sm">Logística de Élite</p>
             </header>
 
@@ -42,7 +42,7 @@ export default function EnviosSeguros() {
                         </div>
                     </div>
                     <div className="bg-zinc-900 dark:bg-white text-white dark:text-brand-dark p-5 sm:p-8 border-l-[8px] border-brand-blue flex flex-col justify-center items-center text-center rounded-2xl">
-                        <p className="text-2xl md:text-3xl font-black italic uppercase mb-2">100% Asegurados</p>
+                        <p className="text-xl max-[400px]:text-lg md:text-3xl font-black italic uppercase mb-2">100% Asegurados</p>
                         <p className="font-bold tracking-widest text-xs md:text-sm uppercase text-zinc-400 dark:text-zinc-600">Si el paquete se pierde o llega dañado, nosotros nos hacemos cargo.</p>
                     </div>
                 </div>

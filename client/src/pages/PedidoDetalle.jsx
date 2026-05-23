@@ -74,7 +74,7 @@ export default function PedidoDetalle() {
                     <ChevronLeft size={18} /> Volver a mi cuenta
                 </button>
                 <div className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter mb-2">Orden #{pedido.id.slice(0,8)}</h1>
+                    <h1 className="text-2xl max-[400px]:text-xl md:text-5xl font-black italic uppercase tracking-tighter mb-2">Orden #{pedido.id.slice(0,8)}</h1>
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {new Date(pedido.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)</p>
                 </div>
 
@@ -109,10 +109,10 @@ export default function PedidoDetalle() {
 
                                     return (
                                         <div key={estado.key} className="relative z-10 flex flex-col items-center gap-3">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${isCompleted ? `${estado.bg} border-white dark:border-brand-dark text-white shadow-lg scale-110` : 'bg-zinc-200 dark:bg-brand-card border-zinc-50 dark:border-brand-dark text-zinc-400'}`}>
+                                            <div className={`w-8 xs:w-12 h-8 xs:h-12 rounded-full flex items-center justify-center border-2 xs:border-4 transition-all duration-500 ${isCompleted ? `${estado.bg} border-white dark:border-brand-dark text-white shadow-lg scale-110` : 'bg-zinc-200 dark:bg-brand-card border-zinc-50 dark:border-brand-dark text-zinc-400'}`}>
                                                 <Icon size={20} />
                                             </div>
-                                            <span className={`text-[10px] font-black uppercase italic tracking-wider absolute -bottom-8 whitespace-nowrap ${isCurrent ? 'text-brand-orange' : (isCompleted ? 'text-zinc-900 dark:text-white' : 'text-zinc-400')}`}>
+                                            <span className={`text-[10px] font-black uppercase italic tracking-wider absolute -bottom-6 xs:-bottom-8 whitespace-nowrap ${isCurrent ? 'text-brand-orange' : (isCompleted ? 'text-zinc-900 dark:text-white' : 'text-zinc-400')}`}>
                                                 {estado.label}
                                             </span>
                                         </div>

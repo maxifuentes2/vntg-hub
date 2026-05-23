@@ -6,7 +6,7 @@ export default function GuiaAutenticidad() {
             {/* HERO HEADER */}
             <header className="py-24 bg-white dark:bg-brand-dark border-b border-brand-orange/30 text-center px-4">
                     <ShieldCheck className="text-brand-orange mx-auto mb-6" size={60} />
-                    <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Autenticidad</h1>
+                    <h1 className="text-3xl max-[400px]:text-2xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Autenticidad</h1>
                     <p className="text-brand-blue font-black uppercase tracking-[0.5em] text-xs md:text-sm">Coleccionismo Verificado</p>
             </header>
 

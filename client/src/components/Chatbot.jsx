@@ -306,7 +306,7 @@ export default function Chatbot() {
       className="fixed bottom-6 right-3 sm:right-6 z-[90]"
     >
       <div
-        className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 max-h-[70vh] sm:max-h-[600px] bg-white dark:bg-brand-dark  shadow-2xl transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'}`}
+        className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] xs:w-80 md:w-96 max-h-[70vh] xs:max-h-[600px] bg-white dark:bg-brand-dark  shadow-2xl transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'}`}
       >
         <div className="bg-white dark:bg-zinc-900/90 pl-6 pr-8 pt-8 pb-6 flex justify-between items-center text-zinc-900 dark:text-white border-b-2 border-brand-orange/30">
           <div className="flex items-center gap-4">
