@@ -3,7 +3,7 @@ import { Home } from 'lucide-react';
 
 export default function NotFound() {
     return (
-        <div className="relative min-h-[70vh] flex items-center justify-center overflow-hidden font-sans transition-colors duration-300">
+        <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans transition-colors duration-300">
             <div className="absolute inset-0 w-full h-full">
                 <img
                     src="/wallpaper.webp"
