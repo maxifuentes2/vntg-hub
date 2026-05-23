@@ -227,7 +227,7 @@ export default function Inicio() {
                 >
 
                     {/* BANNER DE CATEGORÍA */}
-                    <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-y border-zinc-200 dark:border-zinc-600">
+                    <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden">
                         <img
                             src={seccion.banner}
                             onError={(e) => {
