@@ -325,19 +325,19 @@ export default function AdminPanel() {
                                     onClick={() => setActiveTab('products')}
                                     className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'products' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                 >
-                                    <Package size={14} /> Prod.
+                                    <Package size={14} /> <span className="max-[400px]:hidden">Productos</span><span className="hidden max-[400px]:inline">Prod.</span>
                                 </button>
                             <button
                                 onClick={() => setActiveTab('categories')}
                                 className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all max-[400px]:w-auto max-[400px]:shrink-0 ${activeTab === 'categories' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                             >
-                                <Tag size={14} /> Cats.
+                                <Tag size={14} /> <span className="max-[400px]:hidden">Categorías</span><span className="hidden max-[400px]:inline">Cats.</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('orders')}
                                 className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all max-[400px]:w-auto max-[400px]:shrink-0 ${activeTab === 'orders' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                             >
-                                <ClipboardList size={14} /> Ords.
+                                <ClipboardList size={14} /> <span className="max-[400px]:hidden">Órdenes</span><span className="hidden max-[400px]:inline">Ords.</span>
                             </button>
                             </div>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:shrink-0">
@@ -345,7 +345,7 @@ export default function AdminPanel() {
                                     onClick={() => navigate('/soporte')}
                                     className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all w-full text-left max-[400px]:w-auto text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
                                 >
-                                    <MessageSquare size={14} /> Sop.
+                                    <MessageSquare size={14} /> <span className="max-[400px]:hidden">Soporte</span><span className="hidden max-[400px]:inline">Sop.</span>
                                 </button>
                             </div>
                         </div>
