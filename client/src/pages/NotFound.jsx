@@ -12,9 +12,11 @@ export default function NotFound() {
     const [pos, setPos] = useState(0);
 
     useEffect(() => {
+        const pickRandom = () => Math.floor(Math.random() * STEPS);
+        setPos(pickRandom());
         const interval = setInterval(() => {
-            setPos(p => (p + 1) % STEPS);
-        }, 350);
+            setPos(pickRandom());
+        }, 300);
         return () => clearInterval(interval);
     }, []);
 
