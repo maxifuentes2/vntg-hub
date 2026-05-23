@@ -5,18 +5,23 @@ import { Home } from 'lucide-react';
 const TEXT = 'ERROR 404';
 const CHARS = [...TEXT];
 const VISIBLE_INDICES = CHARS.reduce((acc, c, i) => (c !== ' ' ? [...acc, i] : acc), []);
-const WINDOW = 3;
-const STEPS = VISIBLE_INDICES.length - WINDOW + 1;
+const NUM_ORANGE = 3;
 
 export default function NotFound() {
-    const [pos, setPos] = useState(0);
+    const [orangeSet, setOrangeSet] = useState(new Set());
 
     useEffect(() => {
-        const pickRandom = () => Math.floor(Math.random() * STEPS);
-        setPos(pickRandom());
-        const interval = setInterval(() => {
-            setPos(pickRandom());
-        }, 300);
+        const pick = () => {
+            const pool = [...VISIBLE_INDICES.keys()];
+            const chosen = new Set();
+            while (chosen.size < NUM_ORANGE) {
+                const idx = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+                chosen.add(idx);
+            }
+            setOrangeSet(chosen);
+        };
+        pick();
+        const interval = setInterval(pick, 300);
         return () => clearInterval(interval);
     }, []);
 
@@ -38,7 +43,7 @@ export default function NotFound() {
                 <h1 className="text-6xl max-[400px]:text-4xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white border-b-[6px] border-brand-orange mb-6 inline-block glitch-404">
                     {CHARS.map((char, i) => {
                         const vIdx = VISIBLE_INDICES.indexOf(i);
-                        const highlighted = vIdx !== -1 && vIdx >= pos && vIdx < pos + WINDOW;
+                        const highlighted = vIdx !== -1 && orangeSet.has(vIdx);
                         return (
                             <span
                                 key={i}
