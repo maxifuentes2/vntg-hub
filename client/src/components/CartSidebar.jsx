@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -7,7 +7,23 @@ import SidebarWrapper from './SidebarWrapper';
 
 export default function CartSidebar() {
     const { isCartOpen, closeAll } = useSidebar();
-    const { cart, removeFromCart, updateQuantity, shippingType, setShippingType, finalTotal, cartTotal, FREE_SHIPPING_THRESHOLD } = useCart();
+    const { cart, removeFromCart, updateQuantity, shippingType, setShippingType, finalTotal, cartTotal, FREE_SHIPPING_THRESHOLD, clearCart } = useCart();
+    const [confirmClear, setConfirmClear] = useState(false);
+
+    useEffect(() => {
+        if (!confirmClear) return;
+        const timer = setTimeout(() => setConfirmClear(false), 3000);
+        return () => clearTimeout(timer);
+    }, [confirmClear]);
+
+    const handleClearCart = () => {
+        if (confirmClear) {
+            clearCart();
+            setConfirmClear(false);
+        } else {
+            setConfirmClear(true);
+        }
+    };
 
     const progress = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
     const faltante = FREE_SHIPPING_THRESHOLD - cartTotal;
@@ -56,6 +72,14 @@ export default function CartSidebar() {
                     <div className="text-center py-20 text-zinc-400 font-bold uppercase italic text-xs tracking-widest">El carrito está vacío</div>
                 )}
             </div>
+
+            {cart.length > 0 && (
+                <div className="mt-4">
+                    <button onClick={handleClearCart} className={`text-[10px] font-black uppercase italic tracking-widest transition-colors flex items-center gap-1.5 ${confirmClear ? 'text-red-600' : 'text-red-400 hover:text-red-500'}`}>
+                        <Trash2 size={12} /> {confirmClear ? 'Vuelve a presionar para vaciar el carrito' : 'Vaciar carrito'}
+                    </button>
+                </div>
+            )}
 
             {cart.length > 0 && (
                 <div className="mt-8 space-y-6">

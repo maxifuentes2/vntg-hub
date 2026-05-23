@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Heart, HeartCrack, Trash2, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useWishList } from '../context/WishListContext'; 
@@ -8,8 +9,24 @@ import SidebarWrapper from './SidebarWrapper';
 
 export default function WishListSidebar() { // <-- Sin props
     const { isWishListOpen, closeAll } = useSidebar(); // <-- Obtenemos el estado global
-    const { wishListItems, removeFromWishList } = useWishList();
+    const { wishListItems, removeFromWishList, clearWishList } = useWishList();
     const { addToCart } = useCart();
+    const [confirmClear, setConfirmClear] = useState(false);
+
+    useEffect(() => {
+        if (!confirmClear) return;
+        const timer = setTimeout(() => setConfirmClear(false), 3000);
+        return () => clearTimeout(timer);
+    }, [confirmClear]);
+
+    const handleClearWishList = () => {
+        if (confirmClear) {
+            clearWishList();
+            setConfirmClear(false);
+        } else {
+            setConfirmClear(true);
+        }
+    };
 
     const handleMoveToCart = (e, item) => {
         e.preventDefault();
@@ -34,31 +51,38 @@ export default function WishListSidebar() { // <-- Sin props
                     <button onClick={closeAll} className="bg-brand-orange text-white px-6 py-2 rounded-xl font-bold uppercase italic hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20">Seguir Explorando</button>
                 </div>
             ) : (
-                <div className="flex flex-col gap-4">
-                    {wishListItems.map((item) => (
-                        <div key={item.id} className="flex gap-4 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-2xl  relative shadow-sm group">
-                            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0 relative shadow-sm">
-                                <img src={item.images || item.image} alt={item.title} className="w-full h-full object-cover" />
-                                {item.stock === 0 && (
-                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                        <span className="text-[9px] font-black text-white uppercase tracking-wider transform -rotate-12">Agotado</span>
+                <>
+                    <div className="flex justify-end mb-2">
+                        <button onClick={handleClearWishList} className={`text-[10px] font-black uppercase italic tracking-widest transition-colors flex items-center gap-1.5 ${confirmClear ? 'text-red-600' : 'text-red-400 hover:text-red-500'}`}>
+                            <Trash2 size={12} /> {confirmClear ? 'Vuelve a presionar para vaciar la lista' : 'Vaciar lista'}
+                        </button>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        {wishListItems.map((item) => (
+                            <div key={item.id} className="flex gap-4 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-2xl  relative shadow-sm group">
+                                <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0 relative shadow-sm">
+                                    <img src={item.images || item.image} alt={item.title} className="w-full h-full object-cover" />
+                                    {item.stock === 0 && (
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                            <span className="text-[9px] font-black text-white uppercase tracking-wider transform -rotate-12">Agotado</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-col flex-1 py-1">
+                                    <p className="text-[10px] font-black uppercase italic text-brand-orange mb-1">{item.franchise || item.brand || 'VNTG'}</p>
+                                    <Link to={`/producto/${slugify(item.title)}`} onClick={closeAll} className="text-sm font-bold leading-tight mb-auto hover:text-brand-orange line-clamp-2">{item.title}</Link>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="font-black">${Number(item.price).toLocaleString('es-AR')}</p>
                                     </div>
-                                )}
-                            </div>
-                            <div className="flex flex-col flex-1 py-1">
-                                <p className="text-[10px] font-black uppercase italic text-brand-orange mb-1">{item.franchise || item.brand || 'VNTG'}</p>
-                                <Link to={`/producto/${slugify(item.title)}`} onClick={closeAll} className="text-sm font-bold leading-tight mb-auto hover:text-brand-orange line-clamp-2">{item.title}</Link>
-                                <div className="flex items-center justify-between mt-2">
-                                    <p className="font-black">${Number(item.price).toLocaleString('es-AR')}</p>
+                                </div>
+                                <div className="flex flex-col items-end justify-between ml-2">
+                                    <button onClick={() => removeFromWishList(item.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16} /></button>
+                                    <button onClick={(e) => handleMoveToCart(e, item)} disabled={item.stock === 0} className={`p-2 rounded-lg transition-all ${item.stock === 0 ? 'bg-zinc-200/50 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed' : 'bg-brand-blue text-white hover:bg-brand-orange shadow-lg active:scale-95'}`}><ShoppingCart size={16} /></button>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end justify-between ml-2">
-                                <button onClick={() => removeFromWishList(item.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16} /></button>
-                                <button onClick={(e) => handleMoveToCart(e, item)} disabled={item.stock === 0} className={`p-2 rounded-lg transition-all ${item.stock === 0 ? 'bg-zinc-200/50 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed' : 'bg-brand-blue text-white hover:bg-brand-orange shadow-lg active:scale-95'}`}><ShoppingCart size={16} /></button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                </>
             )}
         </SidebarWrapper>
     );

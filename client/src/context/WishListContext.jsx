@@ -68,10 +68,21 @@ export function WishListProvider({ children }) {
         setWishListItems((prevItems) => prevItems.filter(item => String(item.id) !== String(id)));
     };
 
+    const clearWishList = async () => {
+        const user = getActiveUser();
+        const token = getToken();
+        if (user && token) {
+            try {
+                await fetch(`${API_URL}/api/wishlist/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            } catch (e) { console.error(e); }
+        }
+        setWishListItems([]);
+    };
+
     const wishListCount = wishListItems.length;
 
     return (
-        <WishListContext.Provider value={{ wishListItems, addToWishList, removeFromWishList, wishListCount }}>
+        <WishListContext.Provider value={{ wishListItems, addToWishList, removeFromWishList, clearWishList, wishListCount }}>
             {children}
         </WishListContext.Provider>
     );

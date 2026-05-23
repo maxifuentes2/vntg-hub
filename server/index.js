@@ -326,6 +326,15 @@ app.delete("/api/wishlist/:userId/:productId", verifyToken, async (req, res) => 
     }
 });
 
+app.delete("/api/wishlist/:userId", verifyToken, async (req, res) => {
+    try {
+        await db.query("DELETE FROM wishlist WHERE user_id = ?", [req.user.id]);
+        res.json({ message: "Wishlist cleared" });
+    } catch (e) {
+        res.status(500).json({ error: "Error al limpiar wishlist" });
+    }
+});
+
 // --- PERFIL DE USUARIO (protegido con JWT) ---
 app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
     const { field, value } = req.body;
