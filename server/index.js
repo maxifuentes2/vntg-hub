@@ -101,7 +101,7 @@ const triggerN8nEmail = async (type, to, data) => {
 
 app.use(
     cors({
-        origin: ["http://localhost:5173", "https://vntg-hub.vercel.app"],
+        origin: ["http://localhost:5173", "https://vntg-hub.vercel.app", /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/],
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
