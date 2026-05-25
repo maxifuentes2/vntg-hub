@@ -53,6 +53,24 @@ const initDB = async () => {
             )
         `);
         console.log("✅ Tabla cart_items lista");
+
+        // Tabla de direcciones múltiples por usuario
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS addresses (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                tag VARCHAR(255) DEFAULT '',
+                address VARCHAR(255) NOT NULL,
+                city VARCHAR(255) NOT NULL,
+                province VARCHAR(255) NOT NULL,
+                zip_code VARCHAR(255) NOT NULL,
+                phone VARCHAR(255) NOT NULL,
+                is_default BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        console.log("✅ Tabla addresses lista");
     } catch (err) {
         console.error("❌ Error al inicializar tablas:", err);
     }
@@ -369,6 +387,107 @@ app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Error al actualizar perfil:", error);
         res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+// --- DIRECCIONES MÚLTIPLES (protegido con JWT) ---
+
+app.get("/api/addresses", verifyToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC",
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Error al obtener direcciones:", error);
+        res.status(500).json({ error: "Error al obtener direcciones" });
+    }
+});
+
+app.post("/api/addresses", verifyToken, async (req, res) => {
+    const { tag, address, city, province, zip_code, phone } = req.body;
+    if (!address || !city || !province || !zip_code) {
+        return res.status(400).json({ error: "Campos obligatorios: address, city, province, zip_code" });
+    }
+    try {
+        // Verificar si es la primera dirección → default automático
+        const [existing] = await db.query("SELECT COUNT(*) AS count FROM addresses WHERE user_id = ?", [req.user.id]);
+        const isDefault = existing[0].count === 0;
+
+        const [result] = await db.query(
+            "INSERT INTO addresses (user_id, tag, address, city, province, zip_code, phone, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [req.user.id, tag || "", address, city, province, zip_code, phone || "", isDefault]
+        );
+
+        const [created] = await db.query("SELECT * FROM addresses WHERE id = ?", [result.insertId]);
+        res.status(201).json(created[0]);
+    } catch (error) {
+        console.error("Error al crear dirección:", error);
+        res.status(500).json({ error: "Error al crear dirección" });
+    }
+});
+
+app.put("/api/addresses/:id", verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { tag, address, city, province, zip_code, phone } = req.body;
+    try {
+        const [existing] = await db.query("SELECT * FROM addresses WHERE id = ? AND user_id = ?", [id, req.user.id]);
+        if (existing.length === 0) return res.status(404).json({ error: "Dirección no encontrada" });
+
+        await db.query(
+            "UPDATE addresses SET tag=?, address=?, city=?, province=?, zip_code=?, phone=? WHERE id=? AND user_id=?",
+            [tag ?? existing[0].tag, address ?? existing[0].address, city ?? existing[0].city, province ?? existing[0].province, zip_code ?? existing[0].zip_code, phone ?? existing[0].phone, id, req.user.id]
+        );
+
+        const [updated] = await db.query("SELECT * FROM addresses WHERE id = ?", [id]);
+        res.json(updated[0]);
+    } catch (error) {
+        console.error("Error al actualizar dirección:", error);
+        res.status(500).json({ error: "Error al actualizar dirección" });
+    }
+});
+
+app.put("/api/addresses/:id/default", verifyToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [existing] = await db.query("SELECT * FROM addresses WHERE id = ? AND user_id = ?", [id, req.user.id]);
+        if (existing.length === 0) return res.status(404).json({ error: "Dirección no encontrada" });
+
+        // Quitar default de todas las direcciones del usuario
+        await db.query("UPDATE addresses SET is_default = FALSE WHERE user_id = ?", [req.user.id]);
+        // Poner default en la seleccionada
+        await db.query("UPDATE addresses SET is_default = TRUE WHERE id = ?", [id]);
+
+        const [updated] = await db.query("SELECT * FROM addresses WHERE id = ?", [id]);
+        res.json(updated[0]);
+    } catch (error) {
+        console.error("Error al establecer dirección default:", error);
+        res.status(500).json({ error: "Error al establecer dirección predeterminada" });
+    }
+});
+
+app.delete("/api/addresses/:id", verifyToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [existing] = await db.query("SELECT * FROM addresses WHERE id = ? AND user_id = ?", [id, req.user.id]);
+        if (existing.length === 0) return res.status(404).json({ error: "Dirección no encontrada" });
+
+        const wasDefault = existing[0].is_default;
+        await db.query("DELETE FROM addresses WHERE id = ? AND user_id = ?", [id, req.user.id]);
+
+        // Si borramos la default, asignar default a la más reciente si existe
+        if (wasDefault) {
+            const [remaining] = await db.query("SELECT * FROM addresses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", [req.user.id]);
+            if (remaining.length > 0) {
+                await db.query("UPDATE addresses SET is_default = TRUE WHERE id = ?", [remaining[0].id]);
+            }
+        }
+
+        res.json({ message: "Dirección eliminada" });
+    } catch (error) {
+        console.error("Error al eliminar dirección:", error);
+        res.status(500).json({ error: "Error al eliminar dirección" });
     }
 });
 

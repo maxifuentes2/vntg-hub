@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -17,6 +18,21 @@ export default function MiCuenta() {
     // --- ESTADOS PARA GESTIÓN DE DIRECCIONES ---
     const [isEditingAddress, setIsEditingAddress] = useState(false);
     const [currentAddress, setCurrentAddress] = useState(null);
+    const { addToast } = useToast();
+
+    const fetchAddresses = async (token) => {
+        try {
+            const res = await fetch(`${API_URL}/api/addresses`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setAddresses(Array.isArray(data) ? data : []);
+            }
+        } catch (err) {
+            console.error("Error al cargar direcciones:", err);
+        }
+    };
 
     useEffect(() => {
         const stored = localStorage.getItem('vntg_user');
@@ -26,23 +42,7 @@ export default function MiCuenta() {
         const token = localStorage.getItem('vntg_token');
         setUser(parsed);
 
-        // --- SIMULACIÓN DE DATOS (MOCK) PARA EL FRONT-END ---
-        // Hasta que el backend se actualice, simulamos que el usuario tiene direcciones
-        // usando los datos antiguos, o creando un array de prueba.
-        const mockAddresses = [
-             {
-                 id: '1',
-                 tag: 'Mi Casa',
-                 isDefault: true,
-                 address: parsed.address || 'Calle Falsa 123',
-                 city: parsed.city || 'Springfield',
-                 province: parsed.province || 'Mendoza',
-                 zip_code: parsed.zip_code || '5500',
-                 phone: parsed.phone || '2615555555'
-             }
-         ];
-        setAddresses(mockAddresses);
-        // ----------------------------------------------------
+        fetchAddresses(token);
 
         fetch(`${API_URL}/api/orders/${parsed.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -96,9 +96,12 @@ export default function MiCuenta() {
     };
 
 
-    // --- NUEVAS FUNCIONES PARA DIRECCIONES (SIMULADAS EN FRONT-END POR AHORA) ---
+    // --- FUNCIONES PARA DIRECCIONES (CONECTADAS AL BACK-END) ---
+
+    const token = localStorage.getItem('vntg_token');
+
     const handleAddAddress = () => {
-        setCurrentAddress({ id: Date.now().toString(), tag: '', address: '', city: '', province: '', zip_code: '', phone: '', isDefault: addresses.length === 0 });
+        setCurrentAddress({ id: 'new', tag: '', address: '', city: '', province: '', zip_code: '', phone: '' });
         setIsEditingAddress(true);
     };
 
@@ -107,28 +110,78 @@ export default function MiCuenta() {
         setIsEditingAddress(true);
     };
 
-    const handleSaveAddress = () => {
-        if (addresses.some(a => a.id === currentAddress.id)) {
-            // Actualizar existente
-            setAddresses(addresses.map(a => a.id === currentAddress.id ? currentAddress : a));
-        } else {
-            // Agregar nueva
-            setAddresses([...addresses, currentAddress]);
+    const handleSaveAddress = async () => {
+        const body = {
+            tag: currentAddress.tag,
+            address: currentAddress.address,
+            city: currentAddress.city,
+            province: currentAddress.province,
+            zip_code: currentAddress.zip_code,
+            phone: currentAddress.phone
+        };
+
+        try {
+            if (currentAddress.id && currentAddress.id !== 'new') {
+                const res = await fetch(`${API_URL}/api/addresses/${currentAddress.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('Error al actualizar');
+                addToast(null, 'Dirección editada correctamente');
+            } else {
+                const res = await fetch(`${API_URL}/api/addresses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('Error al crear');
+                addToast(null, 'Dirección agregada correctamente');
+            }
+            await fetchAddresses(token);
+            setIsEditingAddress(false);
+            setCurrentAddress(null);
+        } catch (err) {
+            console.error("Error al guardar dirección:", err);
+            addToast(null, 'Error al guardar la dirección', 'error');
         }
-        setIsEditingAddress(false);
-        setCurrentAddress(null);
-        // TODO: Aquí enviarías la nueva lista de direcciones al Back-end
     };
 
-    const handleSetDefaultAddress = (id) => {
-        setAddresses(addresses.map(a => ({ ...a, isDefault: a.id === id })));
-        // TODO: Notificar al Back-end del cambio de default
+    const handleSetDefaultAddress = async (id) => {
+        try {
+            const res = await fetch(`${API_URL}/api/addresses/${id}/default`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                await fetchAddresses(token);
+                addToast(null, 'Dirección predeterminada actualizada');
+            } else {
+                addToast(null, data.error || 'Error al establecer como predeterminada', 'error');
+            }
+        } catch (err) {
+            console.error("Error al establecer default:", err);
+            addToast(null, 'Error de conexión al establecer predeterminada', 'error');
+        }
     };
 
-    const handleDeleteAddress = (id) => {
-        if(window.confirm('¿Seguro que quieres eliminar esta dirección?')){
-             setAddresses(addresses.filter(a => a.id !== id));
-             // TODO: Notificar al Back-end
+    const handleDeleteAddress = async (id) => {
+        if (!window.confirm('¿Seguro que quieres eliminar esta dirección?')) return;
+        try {
+            const res = await fetch(`${API_URL}/api/addresses/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                await fetchAddresses(token);
+                addToast(null, 'Dirección eliminada');
+            } else {
+                addToast(null, 'Error al eliminar la dirección', 'error');
+            }
+        } catch (err) {
+            console.error("Error al eliminar dirección:", err);
+            addToast(null, 'Error de conexión al eliminar', 'error');
         }
     };
     // -----------------------------------------------------------------------------
@@ -187,7 +240,7 @@ export default function MiCuenta() {
 
                     {isEditingAddress ? (
                         <div className="bg-white dark:bg-brand-card p-6 rounded-2xl border border-brand-orange shadow-lg">
-                            <h3 className="text-sm font-black italic uppercase mb-4">{currentAddress.id.length > 5 ? 'Nueva Dirección' : 'Editar Dirección'}</h3>
+                            <h3 className="text-sm font-black italic uppercase mb-4">{currentAddress.id === 'new' ? 'Nueva Dirección' : 'Editar Dirección'}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Etiqueta (Ej. Casa, Trabajo)</label>
@@ -207,11 +260,11 @@ export default function MiCuenta() {
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Código Postal</label>
-                                    <input value={currentAddress.zip_code} onChange={e => setCurrentAddress({...currentAddress, zip_code: e.target.value})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input value={currentAddress.zip_code} onChange={e => setCurrentAddress({...currentAddress, zip_code: e.target.value.replace(/\D/g, '')})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Teléfono</label>
-                                    <input value={currentAddress.phone} onChange={e => setCurrentAddress({...currentAddress, phone: e.target.value})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input value={currentAddress.phone} onChange={e => setCurrentAddress({...currentAddress, phone: e.target.value.replace(/\D/g, '')})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
                                 </div>
                             </div>
                             <div className="flex gap-4 mt-6">
@@ -222,11 +275,11 @@ export default function MiCuenta() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {addresses.length > 0 ? addresses.map((addr) => (
-                                <div key={addr.id} className={`p-6 rounded-2xl border transition-all ${addr.isDefault ? 'bg-brand-orange/5 border-brand-orange' : 'bg-white dark:bg-brand-card border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600'}`}>
+                                <div key={addr.id} className={`p-6 rounded-2xl border transition-all ${addr.is_default ? 'bg-brand-orange/5 border-brand-orange' : 'bg-white dark:bg-brand-card border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600'}`}>
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-2">
                                             <h3 className="text-sm font-black italic uppercase">{addr.tag || 'Dirección'}</h3>
-                                            {addr.isDefault && <span className="bg-brand-orange text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Default</span>}
+                                            {addr.is_default ? <span className="bg-brand-orange text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Default</span> : null}
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleEditAddress(addr)} className="text-zinc-400 hover:text-brand-orange"><Pencil size={14}/></button>
@@ -238,7 +291,7 @@ export default function MiCuenta() {
                                         <p>{addr.city}, {addr.province} - {addr.zip_code}</p>
                                         <p className="flex items-center gap-1 mt-2"><Smartphone size={12}/> {addr.phone}</p>
                                     </div>
-                                    {!addr.isDefault && (
+                                    {!addr.is_default && (
                                         <button onClick={() => handleSetDefaultAddress(addr.id)} className="text-[10px] font-black uppercase italic text-zinc-500 hover:text-brand-orange flex items-center gap-1 transition-colors">
                                             <Star size={12}/> Establecer como predeterminada
                                         </button>
