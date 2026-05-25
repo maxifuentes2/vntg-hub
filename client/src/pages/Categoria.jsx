@@ -87,7 +87,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 const cats = await resCats.json();
                 
                 let resolvedId = slug;
-                if (slug !== 'all') {
+                if (slug !== 'all' && slug !== 'recomendados') {
                     const catActual = cats.find(c => c.slug === slug || slugify(c.name) === slug);
                     if (catActual) {
                         resolvedId = catActual.id;
@@ -100,7 +100,10 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 }
                 setCategoryId(resolvedId);
 
-                let url = `${API_URL}/api/products?categoryId=${resolvedId}&minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                let url = `${API_URL}/api/products?minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                if (slug !== 'all' && slug !== 'recomendados') {
+                    url += `&categoryId=${resolvedId}`;
+                }
                 if (franquiciasSeleccionadas.length > 0) url += `&franchise=${franquiciasSeleccionadas.join(',')}`;
                 if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
 
@@ -108,6 +111,23 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 const data = await res.json();
                 
                 let productosOrdenados = Array.isArray(data) ? [...data] : [];
+
+                if (slug === 'recomendados') {
+                    const storedInterests = localStorage.getItem('vntg_interests');
+                    if (storedInterests) {
+                        try {
+                            const interestsArray = JSON.parse(storedInterests);
+                            if (Array.isArray(interestsArray)) {
+                                productosOrdenados = productosOrdenados.filter(p => 
+                                    interestsArray.includes(String(p.categoryId || p.category_id))
+                                );
+                            }
+                        } catch(e) {}
+                    } else {
+                        productosOrdenados = [];
+                    }
+                }
+
                 if (orden === "precioAsc") productosOrdenados.sort((a, b) => a.price - b.price);
                 else if (orden === "precioDesc") productosOrdenados.sort((a, b) => b.price - a.price);
                 else if (orden === "alfaAsc") productosOrdenados.sort((a, b) => a.title.localeCompare(b.title));
@@ -138,6 +158,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const renderTitulo = () => {
         if (searchQuery) return `"${searchQuery}"`;
         if (slug === 'all') return "TODO EL CATALOGO";
+        if (slug === 'recomendados') return "RECOMENDADOS PARA TI";
         if (categoriaInfo?.name || categoriaInfo?.nombre) return categoriaInfo.name || categoriaInfo.nombre;
         if (isNaN(slug)) return slug.replace(/-/g, ' ');
         return "COLECCIÓN"; 
@@ -176,7 +197,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                 
                 <div className="absolute inset-0 flex flex-col justify-center px-4 max-[400px]:px-3 md:px-20">
                     <span className="text-brand-orange font-black uppercase tracking-[0.5em] text-[10px] mb-4">
-                        {slug === 'all' ? "Tienda Completa" : "Colección Oficial"}
+                        {slug === 'all' ? "Tienda Completa" : (slug === 'recomendados' ? "Basado en tus intereses" : "Colección Oficial")}
                     </span>
                     <h1 className="text-3xl max-[400px]:text-2xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
                         {renderTitulo()}
