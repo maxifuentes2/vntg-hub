@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2 } from 'lucide-react';
+import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2, Heart, ChevronDown } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -10,6 +10,10 @@ export default function MiCuenta() {
     const [orders, setOrders] = useState([]);
     // --- NUEVO ESTADO PARA DIRECCIONES ---
     const [addresses, setAddresses] = useState([]); 
+    // --- ESTADOS PARA INTERESES ---
+    const [categories, setCategories] = useState([]);
+    const [interests, setInterests] = useState([]);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -53,10 +57,24 @@ export default function MiCuenta() {
                 setLoading(false);
             })
             .catch(() => setLoading(false));
+
+        fetch(`${API_URL}/api/categories`)
+            .then(res => res.json())
+            .then(data => setCategories(Array.isArray(data) ? data : []))
+            .catch(console.error);
+
+        const storedInterests = localStorage.getItem('vntg_interests');
+        if (storedInterests) {
+            try {
+                setInterests(JSON.parse(storedInterests));
+            } catch (e) {
+                console.error("Error parsing interests");
+            }
+        }
     }, [navigate]);
 
     // ... (Mantén las funciones startEdit, cancelEdit y saveEdit para Nombre y Email) ...
-     const startEdit = (field, value) => {
+    const startEdit = (field, value) => {
         setEditField(field);
         setTempValue(value || '');
     };
@@ -93,6 +111,17 @@ export default function MiCuenta() {
         } catch (err) {
             console.error("Error:", err);
         }
+    };
+
+    const toggleInterest = (catId) => {
+        setInterests(prev => {
+            const strId = String(catId);
+            const newInterests = prev.includes(strId) 
+                ? prev.filter(id => id !== strId)
+                : [...prev, strId];
+            localStorage.setItem('vntg_interests', JSON.stringify(newInterests));
+            return newInterests;
+        });
     };
 
 
@@ -304,6 +333,78 @@ export default function MiCuenta() {
                             )}
                         </div>
                     )}
+                </section>
+
+                {/* SECCIÓN INTERESES */}
+                <section>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 flex items-center gap-3">
+                            <Heart size={14} className="text-brand-orange" /> Mis Intereses
+                        </h2>
+                    </div>
+                    <div className="bg-zinc-50 dark:bg-brand-card p-8 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-xl relative">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange via-orange-400 to-brand-orange rounded-t-3xl"></div>
+                        <div className="mb-8">
+                            <h3 className="text-lg font-black italic uppercase text-zinc-900 dark:text-white mb-2">Personaliza tu Experiencia</h3>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400">Selecciona las franquicias y categorías que más te apasionan. Usaremos esta información para curar una selección de piezas exclusivas para ti.</p>
+                        </div>
+                        
+                        <div className="mb-6 relative max-w-sm">
+                            <span className="text-[10px] font-black uppercase text-zinc-500 mb-2 block">CATEGORÍA</span>
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                    className="w-full flex items-center justify-between bg-[#111] border border-brand-orange rounded-xl px-4 py-3 text-white font-black italic uppercase text-sm"
+                                >
+                                    CATEGORÍAS
+                                    <ChevronDown size={18} className={`text-brand-orange transition-transform duration-300 ${isCategoryOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isCategoryOpen && (
+                                    <>
+                                        <style>{`
+                                            .custom-scroll::-webkit-scrollbar { width: 6px; }
+                                            .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+                                            .custom-scroll::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+                                            .custom-scroll::-webkit-scrollbar-thumb:hover { background: #52525b; }
+                                        `}</style>
+                                        <div className="absolute z-50 top-full left-0 mt-1 w-full bg-[#111] border border-zinc-800 rounded-b-xl shadow-2xl max-h-[132px] overflow-y-auto custom-scroll flex flex-col">
+                                            {categories.length > 0 ? categories.map(cat => {
+                                                const isSelected = interests.includes(String(cat.id));
+                                                return (
+                                                    <button
+                                                        key={cat.id}
+                                                        className="w-full text-left px-4 py-3 text-white font-black italic uppercase text-sm hover:bg-blue-600 hover:text-white transition-colors flex justify-between items-center shrink-0"
+                                                        onClick={() => toggleInterest(cat.id)}
+                                                    >
+                                                        {cat.name}
+                                                        {isSelected && <Check size={16} />}
+                                                    </button>
+                                                )
+                                            }) : (
+                                                <div className="px-4 py-3 text-white/50 text-xs italic font-bold shrink-0">Cargando...</div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {interests.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                                {interests.map(id => {
+                                    const cat = categories.find(c => String(c.id) === id);
+                                    if (!cat) return null;
+                                    return (
+                                        <div key={id} className="bg-zinc-900 dark:bg-white text-white dark:text-brand-dark px-4 py-2 rounded-full text-[10px] font-black uppercase italic flex items-center gap-2 shadow-lg">
+                                            {cat.name}
+                                            <button onClick={() => toggleInterest(id)} className="text-zinc-400 hover:text-red-500 transition-colors"><X size={12} /></button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </section>
 
                 {/* SECCIÓN MIS COMPRAS (Mantenida igual) */}
