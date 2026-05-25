@@ -9,9 +9,8 @@ export function WishListProvider({ children }) {
     
     const [wishListItems, setWishListItems] = useState([]);
 
-    // Obtener usuario activo
+    // Obtener usuario activo y token
     const getActiveUser = () => JSON.parse(localStorage.getItem('vntg_user'));
-
     const getToken = () => localStorage.getItem('vntg_token');
 
     useEffect(() => {
@@ -29,7 +28,10 @@ export function WishListProvider({ children }) {
 
     const addToWishList = async (product) => {
         const user = getActiveUser();
-        if (!user) {
+        const token = getToken();
+
+        // VALIDACIÓN MEJORADA: Chequeamos que exista usuario Y token
+        if (!user || !token) {
             addToast(null, 'Debes iniciar sesión para guardar favoritos', 'error');
             return;
         }
@@ -44,16 +46,26 @@ export function WishListProvider({ children }) {
         try {
             const response = await fetch(`${API_URL}/api/wishlist`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ userId: user.id, productId: product.id })
             });
 
             if (response.ok) {
                 setWishListItems((prevItems) => [...prevItems, product]);
                 addToast(product, product.stock === 0 ? 'Te avisaremos al reponer stock' : '¡Añadido a favoritos!', 'success');
+            } else if (response.status === 401) {
+                // MANEJO DEL ERROR 401: Le avisamos al usuario en vez de fallar en silencio
+                addToast(null, 'Tu sesión expiró. Por favor, vuelve a iniciar sesión.', 'error');
+                
+                // Opcional: Podrías limpiar el localStorage acá si querés forzar el deslogueo
+                // localStorage.removeItem('vntg_user');
+                // localStorage.removeItem('vntg_token');
+            } else {
+                addToast(null, 'Hubo un error al guardar el producto', 'error');
             }
         } catch (error) {
             console.error("Error al guardar en wishlist:", error);
+            addToast(null, 'Error de conexión con el servidor', 'error');
         }
     };
 
