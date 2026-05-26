@@ -72,12 +72,22 @@ export function WishListProvider({ children }) {
     const removeFromWishList = async (id) => {
         const user = getActiveUser();
         const token = getToken();
+        
+        // Buscamos el producto antes de borrarlo para la notificación
+        const productoEliminado = wishListItems.find(item => String(item.id) === String(id));
+
         if (user && token) {
             try {
                 await fetch(`${API_URL}/api/wishlist/${user.id}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             } catch (e) { console.error(e); }
         }
+        
         setWishListItems((prevItems) => prevItems.filter(item => String(item.id) !== String(id)));
+        
+        // Disparamos la notificación de tipo 'info' (naranja)
+        if (productoEliminado) {
+            addToast(productoEliminado, 'Eliminado de favoritos', 'info');
+        }
     };
 
     const clearWishList = async () => {

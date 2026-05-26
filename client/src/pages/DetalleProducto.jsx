@@ -50,7 +50,7 @@ const DetalleProducto = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { addToWishList } = useWishList(); 
+    const { addToWishList, removeFromWishList, wishListItems } = useWishList(); 
     
     const [producto, setProducto] = useState(null);
     const [relacionados, setRelacionados] = useState([]);
@@ -122,6 +122,8 @@ const DetalleProducto = () => {
         ...(Array.isArray(producto.gallery) ? producto.gallery : [])
     ])).filter(img => img && typeof img === 'string' && img.trim() !== '');
 
+    const isInWishlist = wishListItems.some(item => String(item.id) === String(producto.id));
+
     return (
         <div className="bg-transparent min-h-screen text-zinc-900 dark:text-white font-sans py-12 px-3 max-[400px]:py-8 transition-colors relative overflow-hidden">
             
@@ -134,13 +136,40 @@ const DetalleProducto = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xs:gap-12 lg:gap-20 mb-32 items-start">
                     <div className="flex flex-col gap-6">
                         <div 
-                            className="relative w-full bg-zinc-50 dark:bg-brand-card  overflow-hidden flex items-center justify-center shadow-2xl cursor-zoom-in group rounded-3xl p-4"
+                            className="relative w-full aspect-square md:aspect-[4/3] bg-transparent overflow-hidden flex items-center justify-center cursor-zoom-in group rounded-3xl"
                             onClick={() => { setIsModalOpen(true); setZoomLevel(1); }}
                         >
-                            <img src={imgPrincipal} alt={producto.title} className="w-full h-auto max-h-[80vh] object-contain" />
-                            <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl rounded-full">
+                            <img src={imgPrincipal} alt={producto.title} className="w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105" />
+                            
+                            <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl rounded-full z-30">
                                 {producto.stock === 0 ? 'SIN STOCK' : (producto.estado || 'STOCK EXCLUSIVO')}
                             </div>
+
+                            {fotosUnicas.length > 1 && fotosUnicas.indexOf(imgPrincipal) > 0 && (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentIndex = fotosUnicas.indexOf(imgPrincipal);
+                                        setImgPrincipal(fotosUnicas[currentIndex - 1]);
+                                    }}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 backdrop-blur-sm"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                            )}
+
+                            {fotosUnicas.length > 1 && fotosUnicas.indexOf(imgPrincipal) < fotosUnicas.length - 1 && (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentIndex = fotosUnicas.indexOf(imgPrincipal);
+                                        setImgPrincipal(fotosUnicas[currentIndex + 1]);
+                                    }}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 backdrop-blur-sm"
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
+                            )}
                         </div>
 
                         {fotosUnicas.length > 1 && (
@@ -149,9 +178,11 @@ const DetalleProducto = () => {
                                     <button 
                                         key={idx}
                                         onClick={() => setImgPrincipal(fotoUrl)}
-                                        className={`aspect-square border transition-all duration-300 bg-white dark:bg-zinc-800 p-1 rounded-lg ${imgPrincipal === fotoUrl ? 'border-brand-orange' : 'border-zinc-200 dark:border-zinc-600 opacity-50 hover:opacity-100'}`}
+                                        className={`aspect-square transition-all duration-300 rounded-2xl overflow-hidden ${imgPrincipal === fotoUrl ? 'ring-2 ring-brand-orange ring-offset-4 ring-offset-zinc-50 dark:ring-offset-[#111] scale-95' : 'opacity-40 hover:opacity-100 hover:scale-95'}`}
                                     >
-                                        <img src={fotoUrl} alt="Thumb" className="w-full h-full object-contain" />
+                                        <div className="w-full h-full bg-transparent flex items-center justify-center">
+                                            <img src={fotoUrl} alt="Thumb" className="w-full h-full object-contain drop-shadow-md" />
+                                        </div>
                                     </button>
                                 ))}
                             </div>
@@ -182,10 +213,18 @@ const DetalleProducto = () => {
                         </button>
 
                         <button 
-                            onClick={() => addToWishList(producto)} 
-                            className="w-full bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-[0.2em] hover:border-brand-orange hover:text-brand-orange transition-all flex items-center justify-center gap-3 mb-10 rounded-xl"
+                            onClick={() => isInWishlist ? removeFromWishList(producto.id) : addToWishList(producto)} 
+                            className={`w-full border py-4 font-black uppercase italic text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 mb-10 rounded-xl ${
+                                isInWishlist 
+                                ? 'bg-green-500/10 border-green-500 text-green-600 dark:text-green-500 hover:bg-green-500/20' 
+                                : 'bg-transparent border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:border-brand-orange hover:text-brand-orange'
+                            }`}
                         >
-                            <Heart size={18} /> {producto.stock === 0 ? 'Avísame cuando haya stock' : 'Agregar a la lista de deseos'}
+                            <Heart size={18} className={isInWishlist ? "fill-current" : ""} /> 
+                            {isInWishlist 
+                                ? 'Añadido a la lista de deseos' 
+                                : (producto.stock === 0 ? 'Avísame cuando haya stock' : 'Agregar a la lista de deseos')
+                            }
                         </button>
 
                         <div className="border-t border-white/10">

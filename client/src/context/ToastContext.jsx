@@ -1,5 +1,5 @@
 import { createContext, useState, useContext } from 'react';
-import { CheckCircle, X, AlertCircle } from 'lucide-react';
+import { CheckCircle, X, AlertCircle, Info } from 'lucide-react'; // Agregamos Info
 
 const ToastContext = createContext();
 
@@ -22,7 +22,7 @@ export const ToastProvider = ({ children }) => {
         <ToastContext.Provider value={{ addToast }}>
             {children}
             
-            {/* Renderizado de los Toasts (Copiado de tu CartContext original) */}
+            {/* Renderizado de los Toasts */}
             <div className="fixed top-24 right-6 z-[9999] flex flex-col gap-4 items-end pointer-events-none">
                 {toasts.map((toast) => (
                     <div key={toast.id} className={`pointer-events-auto bg-zinc-900 rounded-2xl overflow-hidden flex items-center w-[90vw] sm:w-[340px] h-[85px] transition-all duration-500 shadow-2xl border border-zinc-800 ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`}>
@@ -31,6 +31,8 @@ export const ToastProvider = ({ children }) => {
                                 <img src={toast.product.images} className="w-full h-full object-cover opacity-90" alt="" />
                             ) : toast.type === 'error' ? (
                                 <AlertCircle size={32} className="text-red-500" />
+                            ) : toast.type === 'info' ? (
+                                <Info size={32} className="text-brand-orange" />
                             ) : (
                                 <CheckCircle size={32} className="text-emerald-500" />
                             )}
@@ -39,10 +41,14 @@ export const ToastProvider = ({ children }) => {
                             <div className="flex items-center gap-2 mb-1">
                                 {toast.type === 'error' ? (
                                     <AlertCircle size={14} className="text-red-500" />
+                                ) : toast.type === 'info' ? (
+                                    <Info size={14} className="text-brand-orange" />
                                 ) : (
                                     <CheckCircle size={14} className="text-emerald-500" />
                                 )}
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">{toast.type === 'error' ? 'Error' : 'Éxito'}</span>
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">
+                                    {toast.type === 'error' ? 'Error' : toast.type === 'info' ? 'Aviso' : 'Éxito'}
+                                </span>
                             </div>
                             <p className="text-[12px] font-black uppercase italic truncate text-white leading-none mb-0.5">{toast.product?.title || 'Notificación'}</p>
                             <p className="text-[10px] font-bold text-white/50 uppercase tracking-tight">{toast.message}</p>
@@ -53,7 +59,11 @@ export const ToastProvider = ({ children }) => {
                         >
                             <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                         </button>
-                        <div className={`absolute bottom-0 left-0 h-[3px] animate-progress ${toast.type === 'error' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`} />
+                        <div className={`absolute bottom-0 left-0 h-[3px] animate-progress 
+                            ${toast.type === 'error' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
+                              toast.type === 'info' ? 'bg-brand-orange shadow-[0_0_10px_rgba(255,90,0,0.5)]' : 
+                              'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`} 
+                        />
                     </div>
                 ))}
             </div>
