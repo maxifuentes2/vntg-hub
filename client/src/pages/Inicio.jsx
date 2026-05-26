@@ -39,7 +39,7 @@ const CardImage = ({ item }) => {
     );
 };
 
-const ProductCarousel = ({ items, addToCart, addToWishList }) => {
+const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], removeFromWishList }) => {
     const scrollContainerRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
@@ -94,50 +94,65 @@ const ProductCarousel = ({ items, addToCart, addToWishList }) => {
                 className="flex overflow-x-auto gap-4 sm:gap-6 pb-2 snap-x snap-mandatory hide-scrollbar"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {items.map(item => (
-                    <div key={item.id} className="w-[85vw] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] snap-start shrink-0">
-                        <div className={`group h-full flex flex-col bg-zinc-50 dark:bg-brand-card transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
-                            <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-zinc-600 shrink-0">
-                                <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
-                                    <CardImage item={item} />
-                                </Link>
-                                <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
-                                    {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
+                {items.map(item => {
+                    // VERIFICAMOS SI EL ITEM ACTUAL ESTÁ EN LA WISHLIST
+                    const isWished = wishListItems.some(wItem => String(wItem.id) === String(item.id));
+                    
+                    return (
+                        <div key={item.id} className="w-[85vw] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] snap-start shrink-0">
+                            {/* --- LÍNEA CORREGIDA PARA BORDES NÍTIDOS --- */}
+                            <div className={`group h-full flex flex-col bg-zinc-50 dark:bg-brand-card transition-all duration-500 border-2 border-transparent hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
+                                <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-zinc-600 shrink-0">
+                                    <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
+                                        <CardImage item={item} />
+                                    </Link>
+                                    <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
+                                        {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="p-3 xs:p-4 sm:p-8 flex flex-col grow justify-between">
-                                <Link to={`/producto/${slugify(item.title)}`}>
-                                    <h3 className="text-base max-[400px]:text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
-                                        {item.title}
-                                    </h3>
-                                </Link>
+                                <div className="p-3 xs:p-4 sm:p-8 flex flex-col grow justify-between">
+                                    <Link to={`/producto/${slugify(item.title)}`}>
+                                        <h3 className="text-base max-[400px]:text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">
+                                            {item.title}
+                                        </h3>
+                                    </Link>
 
-                                <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 mt-auto">
-                                    <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">
-                                        ${Number(item.price).toLocaleString('es-AR')}
-                                    </p>
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToWishList(item); }}
-                                            className="text-zinc-400 hover:text-brand-orange transition-colors duration-300 p-2"
-                                            title="Añadir a deseados"
-                                        >
-                                            <Heart size={24} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }}
-                                            disabled={item.stock === 0}
-                                            className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 rounded-2xl ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
-                                        >
-                                            <ShoppingCart size={24} />
-                                        </button>
+                                    <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 mt-auto">
+                                        <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">
+                                            ${Number(item.price).toLocaleString('es-AR')}
+                                        </p>
+                                        <div className="flex items-center gap-4">
+                                            <button
+                                                onClick={(e) => { 
+                                                    e.preventDefault(); 
+                                                    e.stopPropagation(); 
+                                                    if (isWished) {
+                                                        removeFromWishList(item.id);
+                                                    } else {
+                                                        addToWishList(item);
+                                                    }
+                                                }}
+                                                className={`${isWished ? 'text-brand-orange' : 'text-zinc-400 hover:text-brand-orange'} transition-colors duration-300 p-2`}
+                                                title={isWished ? "Quitar de deseados" : "Añadir a deseados"}
+                                            >
+                                                <Heart size={24} fill={isWished ? "currentColor" : "none"} />
+                                            </button>
+                                            
+                                            <button
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }}
+                                                disabled={item.stock === 0}
+                                                className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 rounded-2xl ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
+                                            >
+                                                <ShoppingCart size={24} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
@@ -178,7 +193,9 @@ export default function Inicio() {
     const [loading, setLoading] = useState(true);
     const [triggerKey, setTriggerKey] = useState(0);
     const { addToCart } = useCart();
-    const { addToWishList } = useWishList();
+    
+    // ACA TRAEMOS LOS ITEMS Y LA FUNCIÓN DE REMOVER DEL CONTEXTO
+    const { addToWishList, wishListItems, removeFromWishList } = useWishList();
 
     const firstCategoryRef = useRef(null);
 
@@ -425,7 +442,8 @@ export default function Inicio() {
 
                     {/* GRID DE PRODUCTOS */}
                     <div className={`max-w-[1700px] mx-auto px-4 ${seccion.isRecomendados ? 'mt-4' : 'mt-12'}`}>
-                        <ProductCarousel items={seccion.items} addToCart={addToCart} addToWishList={addToWishList} />
+                        {/* ACÁ LE PASAMOS LOS ITEMS Y LA FUNCIÓN DE REMOVER A CAROUSEL */}
+                        <ProductCarousel items={seccion.items} addToCart={addToCart} addToWishList={addToWishList} wishListItems={wishListItems} removeFromWishList={removeFromWishList} />
                     </div>
                 </section>
             ))}
