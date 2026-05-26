@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
     ShoppingCart, ChevronLeft, ChevronRight, Maximize2, ZoomIn, ZoomOut, X, 
@@ -59,6 +59,30 @@ const DetalleProducto = () => {
     const [openSection, setOpenSection] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDraggingCursor, setIsDraggingCursor] = useState(false);
+    const isDraggingRef = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+    const handleMouseDown = (e) => {
+        if (zoomLevel <= 1) return;
+        e.stopPropagation();
+        isDraggingRef.current = true;
+        setIsDraggingCursor(true);
+        dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDraggingRef.current) return;
+        const dx = e.clientX - dragStart.current.x;
+        const dy = e.clientY - dragStart.current.y;
+        setPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy });
+    };
+
+    const handleMouseUp = () => {
+        isDraggingRef.current = false;
+        setIsDraggingCursor(false);
+    };
 
     // NUEVO: Escuchar la tecla ESC para cerrar el modal
     useEffect(() => {
@@ -112,7 +136,11 @@ const DetalleProducto = () => {
     const handleWheel = (e) => {
         if (!isModalOpen) return;
         const delta = e.deltaY * -0.001;
-        setZoomLevel(prev => Math.min(Math.max(1, prev + delta), 4));
+        setZoomLevel(prev => {
+            const next = Math.min(Math.max(1, prev + delta), 4);
+            if (next <= 1) setPan({ x: 0, y: 0 });
+            return next;
+        });
     };
 
     if (loading || !producto) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark font-black italic uppercase tracking-widest text-zinc-400">Catalogando Pieza...</div>;
@@ -302,18 +330,20 @@ const DetalleProducto = () => {
 
             {isModalOpen && (
                 <div 
-                    className="fixed inset-0 z-[9999] bg-black/98 flex flex-col items-center justify-center p-4" 
+                    className="fixed inset-0 z-[9999] bg-black/85 flex flex-col p-4" 
                     onWheel={handleWheel} 
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => { if (!isDraggingRef.current) setIsModalOpen(false); }}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
                 >
                     <button 
                         onClick={() => setIsModalOpen(false)}
-                        className="absolute top-8 right-8 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer"
+                        className="absolute top-4 md:top-8 right-4 md:right-8 z-50 text-white/60 hover:text-white transition-all cursor-pointer"
                     >
-                        <X size={40} />
+                        <X size={36} />
                     </button>
 
-                    {/* Botón Anterior (Solo se muestra si hay más de 1 foto) */}
+                    {/* Botón Anterior */}
                     {fotosUnicas.length > 1 && (
                         <button 
                             onClick={(e) => {
@@ -321,25 +351,33 @@ const DetalleProducto = () => {
                                 const currentIndex = fotosUnicas.indexOf(imgPrincipal);
                                 const prevIndex = (currentIndex - 1 + fotosUnicas.length) % fotosUnicas.length;
                                 setImgPrincipal(fotosUnicas[prevIndex]);
-                                setZoomLevel(1); // Resetea el zoom al cambiar de foto
+                                setZoomLevel(1);
+                                setPan({ x: 0, y: 0 });
                             }}
-                            className="absolute left-2 xs:left-4 md:left-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
+                            className="absolute left-2 xs:left-4 md:left-12 z-50 text-white/40 hover:text-white transition-all cursor-pointer p-2 top-1/2 -translate-y-1/2"
                         >
-                            <ChevronLeft size={48} />
+                            <ChevronLeft size={44} />
                         </button>
                     )}
 
-                    <div className="relative w-full h-full flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
                         <img 
                             src={imgPrincipal} 
-                            style={{ transform: `scale(${zoomLevel})` }} 
-                            className="max-w-full max-h-full object-contain transition-transform shadow-2xl" 
+                            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})` }} 
+                            className={`max-w-full max-h-full object-contain drop-shadow-2xl ${zoomLevel > 1 ? (isDraggingCursor ? 'cursor-grabbing' : 'cursor-grab') : ''} ${zoomLevel > 1 ? 'transition-none' : 'transition-transform duration-300'}`}
                             alt="Zoom" 
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
                             onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => { if (zoomLevel > 1) { e.stopPropagation(); const t = e.touches[0]; isDraggingRef.current = true; setIsDraggingCursor(true); dragStart.current = { x: t.clientX, y: t.clientY, panX: pan.x, panY: pan.y }; } }}
+                            onTouchMove={(e) => { if (!isDraggingRef.current) return; const t = e.touches[0]; setPan({ x: dragStart.current.panX + (t.clientX - dragStart.current.x), y: dragStart.current.panY + (t.clientY - dragStart.current.y) }); }}
+                            onTouchEnd={() => { isDraggingRef.current = false; setIsDraggingCursor(false); }}
                         />
                     </div>
                     
-                    {/* Botón Siguiente (Solo se muestra si hay más de 1 foto) */}
+                    {/* Botón Siguiente */}
                     {fotosUnicas.length > 1 && (
                         <button 
                             onClick={(e) => {
@@ -347,21 +385,21 @@ const DetalleProducto = () => {
                                 const currentIndex = fotosUnicas.indexOf(imgPrincipal);
                                 const nextIndex = (currentIndex + 1) % fotosUnicas.length;
                                 setImgPrincipal(fotosUnicas[nextIndex]);
-                                setZoomLevel(1); // Resetea el zoom al cambiar de foto
+                                setZoomLevel(1);
+                                setPan({ x: 0, y: 0 });
                             }}
-                            className="absolute right-2 xs:right-4 md:right-12 z-50 text-white/50 hover:text-brand-orange transition-all cursor-pointer p-2"
+                            className="absolute right-2 xs:right-4 md:right-12 z-50 text-white/40 hover:text-white transition-all cursor-pointer p-2 top-1/2 -translate-y-1/2"
                         >
-                            <ChevronRight size={48} />
+                            <ChevronRight size={44} />
                         </button>
                     )}
 
-                    <div 
-                        className="absolute bottom-10 flex items-center gap-6 bg-zinc-900/80 px-6 py-3 rounded-full border border-zinc-700 z-50" 
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button onClick={() => setZoomLevel(Math.max(1, zoomLevel - 0.5))} className="text-white hover:text-brand-orange"><ZoomOut size={24}/></button>
-                        <span className="text-white font-black italic text-sm w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                        <button onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.5))} className="text-white hover:text-brand-orange"><ZoomIn size={24}/></button>
+                    <div className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-[100]" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-6 bg-zinc-900/80 px-5 md:px-6 py-2.5 md:py-3 rounded-xl shadow-xl">
+                            <button onClick={() => { setZoomLevel(prev => { const next = Math.max(1, prev - 0.5); if (next <= 1) setPan({ x: 0, y: 0 }); return next; }); }} className="text-white/50 hover:text-white transition-all"><ZoomOut size={22}/></button>
+                            <span className="text-white/80 font-black italic text-sm w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                            <button onClick={() => setZoomLevel(prev => Math.min(4, prev + 0.5))} className="text-white/50 hover:text-white transition-all"><ZoomIn size={22}/></button>
+                        </div>
                     </div>
                 </div>
             )}
