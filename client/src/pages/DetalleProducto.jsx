@@ -157,7 +157,7 @@ const DetalleProducto = () => {
             
             <div className="max-w-[1400px] mx-auto">
                 
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-400 hover:text-brand-orange mb-8 font-black text-[10px] uppercase tracking-[0.3em] transition-colors">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-400 hover:text-brand-orange mb-8 font-black text-[10px] uppercase tracking-[0.3em] transition-colors mt-10">
                     <ChevronLeft size={18} /> Volver al catálogo
                 </button>
 

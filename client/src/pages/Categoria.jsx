@@ -204,8 +204,8 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
             </section>
 
             <main className="max-w-[1800px] mx-auto px-3 xs:px-6 py-6 xs:py-10">
-                <div className="flex justify-between items-center mb-12 border-b border-zinc-100 dark:border-zinc-800 pb-6">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-12 border-b border-zinc-100 dark:border-zinc-800 pb-6">
+                    <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-4">
                         {franquiciasSeleccionadas.length > 0 && (
                             <span className="text-[10px] font-bold italic text-brand-orange">
                                 Mostrando productos de <strong className="not-italic font-black uppercase tracking-wider">{franquiciasSeleccionadas.join(', ')}</strong>
