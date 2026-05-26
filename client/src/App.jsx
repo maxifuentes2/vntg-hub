@@ -51,7 +51,7 @@ function FloatingHomeButton() {
   return (
     <Link
       to="/"
-      className="fixed top-24 left-4 z-50 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-4 py-2 rounded-2xl flex items-center gap-2 transition-all duration-500 hover:scale-105 active:scale-95 group shadow-lg"
+      className="fixed top-[125px] md:top-24 left-4 z-[60] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-4 py-2 rounded-2xl flex items-center gap-2 transition-all duration-500 hover:scale-105 active:scale-95 group shadow-lg"
     >
       <ArrowLeft size={16} className="text-zinc-500 group-hover:text-brand-orange transition-colors" />
       <span className="text-[10px] font-black uppercase italic tracking-[0.2em] text-zinc-500 group-hover:text-white transition-colors">Volver</span>

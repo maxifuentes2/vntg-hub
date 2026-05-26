@@ -61,16 +61,14 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const franquiciaParam = queryParams.get('franquicia') || '';
 
     useEffect(() => {
+        setListaFranquicias([]);
         if (franquiciaParam) {
             const franquicias = franquiciaParam.split(',').map(f => f.trim()).filter(f => f);
             setFranquiciasSeleccionadas(franquicias);
+        } else {
+            setFranquiciasSeleccionadas([]);
         }
-    }, [franquiciaParam]);
-
-    useEffect(() => {
-        setListaFranquicias([]);
-        setFranquiciasSeleccionadas([]);
-    }, [slug]);
+    }, [slug, franquiciaParam]);
 
     const toggleFranquicia = (f) => {
         setFranquiciasSeleccionadas(prev =>
