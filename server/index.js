@@ -9,81 +9,7 @@ const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 
-// --- INICIALIZACIÓN DE TABLAS ---
-const initDB = async () => {
-    try {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS support_messages (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                nombre VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                mensaje TEXT NOT NULL,
-                status ENUM('pending', 'replied') DEFAULT 'pending',
-                respuesta TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        console.log("✅ Tabla support_messages lista");
-
-        // Agregar columna role a users si no existe
-        await db.query(`
-            ALTER TABLE users ADD COLUMN IF NOT EXISTS role ENUM('user', 'admin', 'support') DEFAULT 'user'
-        `);
-        console.log("✅ Columna role en users verificada");
-
-        // Agregar columna points a users si no existe (Frenado por try/catch por seguridad)
-        try {
-            await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS points INT DEFAULT 0");
-            console.log("✅ Columna points en users verificada");
-        } catch (e) {
-            console.log("ℹ️ Columna points ya verificada previamente");
-        }
-
-        // Agregar 'finished' al ENUM de support_messages si no existe
-        try {
-            await db.query("ALTER TABLE support_messages MODIFY COLUMN status ENUM('pending', 'replied', 'finished') DEFAULT 'pending'");
-            console.log("✅ Columna status en support_messages actualizada");
-        } catch (e) {
-            // Puede fallar si el ENUM ya incluye 'finished'
-            console.log("ℹ️ Columna status ya actualizada previamente");
-        }
-
-        // Tabla de carritos persistidos por usuario
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS cart_items (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                product_id INT NOT NULL,
-                quantity INT NOT NULL DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_user_product (user_id, product_id)
-            )
-        `);
-        console.log("✅ Tabla cart_items lista");
-
-        // Tabla de direcciones múltiples por usuario
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS addresses (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                tag VARCHAR(255) DEFAULT '',
-                address VARCHAR(255) NOT NULL,
-                city VARCHAR(255) NOT NULL,
-                province VARCHAR(255) NOT NULL,
-                zip_code VARCHAR(255) NOT NULL,
-                phone VARCHAR(255) NOT NULL,
-                is_default BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        console.log("✅ Tabla addresses lista");
-    } catch (err) {
-        console.error("❌ Error al inicializar tablas:", err);
-    }
-};
-initDB();
+// Tablas creadas manualmente en TiDB Cloud
 
 const app = express();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -395,6 +321,42 @@ app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Error al actualizar perfil:", error);
         res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+// --- INTERESES DE USUARIO (protegido con JWT) ---
+
+app.get("/api/auth/interests", verifyToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT category_id FROM user_interests WHERE user_id = ?",
+            [req.user.id]
+        );
+        res.json(rows.map(r => String(r.category_id)));
+    } catch (error) {
+        console.error("Error al obtener intereses:", error);
+        res.status(500).json({ error: "Error al obtener intereses" });
+    }
+});
+
+app.put("/api/auth/interests", verifyToken, async (req, res) => {
+    const { categoryIds } = req.body;
+    if (!Array.isArray(categoryIds)) {
+        return res.status(400).json({ error: "categoryIds debe ser un array" });
+    }
+    try {
+        await db.query("DELETE FROM user_interests WHERE user_id = ?", [req.user.id]);
+        if (categoryIds.length > 0) {
+            const values = categoryIds.map(catId => [req.user.id, catId]);
+            await db.query(
+                "INSERT INTO user_interests (user_id, category_id) VALUES ?",
+                [values]
+            );
+        }
+        res.json({ message: "Intereses actualizados correctamente", categoryIds: categoryIds.map(String) });
+    } catch (error) {
+        console.error("Error al guardar intereses:", error);
+        res.status(500).json({ error: "Error al guardar intereses" });
     }
 });
 

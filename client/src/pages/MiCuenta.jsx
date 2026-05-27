@@ -60,14 +60,36 @@ export default function MiCuenta() {
             .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(console.error);
 
-        const storedInterests = localStorage.getItem('vntg_interests');
-        if (storedInterests) {
-            try {
-                setInterests(JSON.parse(storedInterests));
-            } catch (e) {
-                console.error("Error parsing interests");
-            }
-        }
+        // Cargar intereses desde la DB (con fallback a localStorage)
+        fetch(`${API_URL}/api/auth/interests`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && Array.isArray(data)) {
+                    setInterests(data);
+                    localStorage.setItem('vntg_interests', JSON.stringify(data));
+                } else {
+                    const storedInterests = localStorage.getItem('vntg_interests');
+                    if (storedInterests) {
+                        try {
+                            setInterests(JSON.parse(storedInterests));
+                        } catch (e) {
+                            console.error("Error parsing interests");
+                        }
+                    }
+                }
+            })
+            .catch(() => {
+                const storedInterests = localStorage.getItem('vntg_interests');
+                if (storedInterests) {
+                    try {
+                        setInterests(JSON.parse(storedInterests));
+                    } catch (e) {
+                        console.error("Error parsing interests");
+                    }
+                }
+            });
     }, [navigate]);
 
     const startEdit = (field, value) => {
@@ -109,45 +131,21 @@ export default function MiCuenta() {
         }
     };
 
-    const toggleInterest = async (catId) => {
+    const toggleInterest = (catId) => {
         const strId = String(catId);
-        let newInterests;
-        
-        if (interests.includes(strId)) {
-            newInterests = interests.filter(id => id !== strId);
-        } else {
-            newInterests = [...interests, strId];
-        }
+        const newInterests = interests.includes(strId)
+            ? interests.filter(id => id !== strId)
+            : [...interests, strId];
 
-        // 1. Actualizamos rápido visualmente
         setInterests(newInterests);
         localStorage.setItem('vntg_interests', JSON.stringify(newInterests));
 
-        // 2. Lo guardamos de verdad en tu base de datos
-        try {
-            const token = localStorage.getItem('vntg_token');
-            const res = await fetch(`${API_URL}/api/auth/update-interests`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ 
-                    userId: user.id, 
-                    interests: newInterests 
-                })
-            });
-
-            if (res.ok) {
-                // Sincronizamos el usuario
-                const updatedUser = { ...user, interests: newInterests };
-                localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
-                setUser(updatedUser);
-            }
-        } catch (error) {
-            console.error("Error al guardar intereses en la BD:", error);
-            addToast(null, 'Error al guardar tus intereses', 'error');
-        }
+        const token = localStorage.getItem('vntg_token');
+        fetch(`${API_URL}/api/auth/interests`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ categoryIds: newInterests })
+        }).catch(err => console.error("Error al guardar intereses en DB:", err));
     };
 
     const token = localStorage.getItem('vntg_token');

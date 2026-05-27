@@ -225,6 +225,23 @@ export default function Inicio() {
 
                 setProductos(Array.isArray(prods) ? prods : []);
                 setDbCategories(Array.isArray(cats) ? cats : []);
+
+                const token = localStorage.getItem('vntg_token');
+                if (token) {
+                    try {
+                        const intRes = await fetch(`${API_URL}/api/auth/interests`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (intRes.ok) {
+                            const intData = await intRes.json();
+                            if (Array.isArray(intData) && intData.length > 0) {
+                                localStorage.setItem('vntg_interests', JSON.stringify(intData));
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error al cargar intereses de la DB:", e);
+                    }
+                }
             } catch (err) {
                 console.error("Error al sincronizar con la DB:", err);
             } finally {
