@@ -121,6 +121,7 @@ export default function Navbar() {
         await syncCartToServer(cart);
         localStorage.removeItem('vntg_user');
         localStorage.removeItem('vntg_token');
+        localStorage.removeItem('vntg_interests');
         setUser(null);
         setIsUserMenuOpen(false);
         navigate('/');
