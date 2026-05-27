@@ -8,9 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function MiCuenta() {
     const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
-    // --- NUEVO ESTADO PARA DIRECCIONES ---
     const [addresses, setAddresses] = useState([]); 
-    // --- ESTADOS PARA INTERESES ---
     const [categories, setCategories] = useState([]);
     const [interests, setInterests] = useState([]);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -19,7 +17,6 @@ export default function MiCuenta() {
 
     const [editField, setEditField] = useState(null); 
     const [tempValue, setTempValue] = useState('');
-    // --- ESTADOS PARA GESTIÓN DE DIRECCIONES ---
     const [isEditingAddress, setIsEditingAddress] = useState(false);
     const [currentAddress, setCurrentAddress] = useState(null);
     const { addToast } = useToast();
@@ -73,7 +70,6 @@ export default function MiCuenta() {
         }
     }, [navigate]);
 
-    // ... (Mantén las funciones startEdit, cancelEdit y saveEdit para Nombre y Email) ...
     const startEdit = (field, value) => {
         setEditField(field);
         setTempValue(value || '');
@@ -85,7 +81,6 @@ export default function MiCuenta() {
     };
 
     const saveEdit = async (field) => {
-        // ... (Tu lógica original para guardar cambios en el usuario) ...
         try {
             const updatedUser = { ...user, [field]: tempValue };
             
@@ -101,31 +96,59 @@ export default function MiCuenta() {
             });
             
             if (res.ok) {
-                //const data = await res.json();
                 localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
                 setUser(updatedUser);
                 setEditField(null);
+                addToast(null, 'Perfil actualizado correctamente');
             } else {
-                alert("Error al actualizar los datos");
+                addToast(null, "Error al actualizar los datos", "error");
             }
         } catch (err) {
             console.error("Error:", err);
+            addToast(null, "Error de red al actualizar", "error");
         }
     };
 
-    const toggleInterest = (catId) => {
-        setInterests(prev => {
-            const strId = String(catId);
-            const newInterests = prev.includes(strId) 
-                ? prev.filter(id => id !== strId)
-                : [...prev, strId];
-            localStorage.setItem('vntg_interests', JSON.stringify(newInterests));
-            return newInterests;
-        });
+    const toggleInterest = async (catId) => {
+        const strId = String(catId);
+        let newInterests;
+        
+        if (interests.includes(strId)) {
+            newInterests = interests.filter(id => id !== strId);
+        } else {
+            newInterests = [...interests, strId];
+        }
+
+        // 1. Actualizamos rápido visualmente
+        setInterests(newInterests);
+        localStorage.setItem('vntg_interests', JSON.stringify(newInterests));
+
+        // 2. Lo guardamos de verdad en tu base de datos
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const res = await fetch(`${API_URL}/api/auth/update-interests`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    userId: user.id, 
+                    interests: newInterests 
+                })
+            });
+
+            if (res.ok) {
+                // Sincronizamos el usuario
+                const updatedUser = { ...user, interests: newInterests };
+                localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
+                setUser(updatedUser);
+            }
+        } catch (error) {
+            console.error("Error al guardar intereses en la BD:", error);
+            addToast(null, 'Error al guardar tus intereses', 'error');
+        }
     };
-
-
-    // --- FUNCIONES PARA DIRECCIONES (CONECTADAS AL BACK-END) ---
 
     const token = localStorage.getItem('vntg_token');
 
@@ -213,11 +236,9 @@ export default function MiCuenta() {
             addToast(null, 'Error de conexión al eliminar', 'error');
         }
     };
-    // -----------------------------------------------------------------------------
 
     if (!user) return null;
 
-    // Componente interno simplificado para no repetir código
     const UserDataField = ({ label, field, value }) => (
          <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center group">
             <div>
@@ -253,6 +274,22 @@ export default function MiCuenta() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-50 dark:bg-brand-card shadow-lg overflow-hidden rounded-2xl">
                         <UserDataField label="Nombre" field="name" value={user.name} />
                         <UserDataField label="Email" field="email" value={user.email} />
+                        
+                        {/* TARJETA VISIBLE DE PUNTOS ACUMULADOS */}
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center md:col-span-2">
+                            <div>
+                                <p className="text-[9px] font-black uppercase text-brand-orange tracking-wider">Mis Puntos VNTG</p>
+                                <p className="text-2xl font-black italic text-zinc-900 dark:text-white mt-1">
+                                    {(user.points || 0).toLocaleString('es-AR')} <span className="text-sm text-zinc-500">PTS</span>
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <span className="bg-brand-orange/10 text-brand-orange text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-brand-orange/20">
+                                    Beneficio Activo
+                                </span>
+                                <p className="text-[9px] text-zinc-400 mt-1.5 italic font-medium">1 PTS = $10 de descuento</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -374,7 +411,7 @@ export default function MiCuenta() {
                                                 return (
                                                     <button
                                                         key={cat.id}
-                                                        className="w-full text-left px-4 py-3 text-white font-black italic uppercase text-sm hover:bg-blue-600 hover:text-white transition-colors flex justify-between items-center shrink-0"
+                                                        className="w-full text-left px-4 py-3 text-white font-black italic uppercase text-sm hover:bg-brand-orange hover:text-white transition-colors flex justify-between items-center shrink-0"
                                                         onClick={() => toggleInterest(cat.id)}
                                                     >
                                                         {cat.name}
@@ -407,7 +444,7 @@ export default function MiCuenta() {
                     </div>
                 </section>
 
-                {/* SECCIÓN MIS COMPRAS (Mantenida igual) */}
+                {/* SECCIÓN MIS COMPRAS */}
                 <section>
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-3">
                         <Package size={14} className="text-brand-orange" /> Mis Compras

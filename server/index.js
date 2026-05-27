@@ -31,6 +31,14 @@ const initDB = async () => {
         `);
         console.log("✅ Columna role en users verificada");
 
+        // Agregar columna points a users si no existe (Frenado por try/catch por seguridad)
+        try {
+            await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS points INT DEFAULT 0");
+            console.log("✅ Columna points en users verificada");
+        } catch (e) {
+            console.log("ℹ️ Columna points ya verificada previamente");
+        }
+
         // Agregar 'finished' al ENUM de support_messages si no existe
         try {
             await db.query("ALTER TABLE support_messages MODIFY COLUMN status ENUM('pending', 'replied', 'finished') DEFAULT 'pending'");
@@ -208,7 +216,7 @@ app.get("/api/products", async (req, res) => {
         if (normalizedQ.length > 3) {
             try {
                 const semanticModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                const prompt = `Actúa como un experto en coleccionismo. El usuario busca "${normalizedQ}". 
+                const prompt = `Actúa como un expert en coleccionismo. El usuario busca "${normalizedQ}". 
                 Devuelve una lista de 5 palabras clave relacionadas (sinónimos, franquicias o temas). 
                 Solo palabras separadas por comas.`;
                 const result = await semanticModel.generateContent(prompt);
@@ -721,7 +729,8 @@ const generatePatenteId = () => {
 
 // --- CHECKOUT (protegido con JWT) ---
 app.post("/api/checkout", verifyToken, async (req, res) => {
-    const { cart, shipping, shippingType } = req.body;
+    // 1. Añadimos usePoints destructurado de la petición
+    const { cart, shipping, shippingType, usePoints } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
@@ -753,7 +762,37 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
             if (shippingType === "normal") shippingCost = 9426.05;
             else if (shippingType === "prioritario") shippingCost = 17276.99;
         }
-        const totalFinal = subtotal + shippingCost;
+        
+        const totalPrevio = subtotal + shippingCost;
+
+        // --- LÓGICA DE CANJE DE PUNTOS ---
+        let descuento = 0;
+        let puntosARestar = 0;
+
+        const [userRes] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
+        const puntosDisponibles = userRes[0]?.points || 0;
+
+        if (usePoints && puntosDisponibles > 0) {
+            const valorPorPunto = 10; // 1 punto equivale a $10 ARS
+            const descuentoMaximo = puntosDisponibles * valorPorPunto;
+
+            if (descuentoMaximo >= totalPrevio) {
+                descuento = totalPrevio;
+                puntosARestar = Math.ceil(totalPrevio / valorPorPunto);
+            } else {
+                descuento = descuentoMaximo;
+                puntosARestar = puntosDisponibles;
+            }
+        }
+
+        const totalFinal = totalPrevio - descuento;
+
+        // Restamos inmediatamente para evitar ataques de doble consumo
+        if (puntosARestar > 0) {
+            await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
+        }
+        // ---------------------------------
+
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
             [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
@@ -768,6 +807,16 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
                 [item.cantidad, item.id],
             );
         }
+
+        // Si el descuento por puntos cubre el 100% de la orden, saltamos Mercado Pago
+        if (totalFinal <= 0) {
+            await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
+            return res.json({ init_point: `https://vntg-hub.vercel.app/pedido/${orderId}`, orderId, totalCero: true });
+        }
+
+        // Para Mercado Pago prorrateamos los precios con el descuento aplicado
+        const ratio = totalFinal / totalPrevio;
+
         const preference = new Preference(mpClient);
         const response = await preference.create({
             body: {
@@ -775,7 +824,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
                     ...cart.map((i) => ({
                         title: i.title,
                         quantity: Number(i.cantidad),
-                        unit_price: Number(i.price),
+                        unit_price: Number((i.price * ratio).toFixed(2)),
                         currency_id: "ARS",
                     })),
                     ...(shippingCost > 0
@@ -783,7 +832,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
                               {
                                   title: `Envío (${shippingType})`,
                                   quantity: 1,
-                                  unit_price: Number(shippingCost.toFixed(2)),
+                                  unit_price: Number((shippingCost * ratio).toFixed(2)),
                                   currency_id: "ARS",
                               },
                           ]
@@ -857,6 +906,10 @@ app.post("/api/cart/sync", verifyToken, async (req, res) => {
 // --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
 // ==========================================
 
+// ==========================================
+// --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
+// ==========================================
+
 app.post("/api/webhooks/mercadopago", async (req, res) => {
     try {
         const { type, data } = req.body;
@@ -873,14 +926,29 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
         if (status === "approved") dbStatus = "approved";
         else if (status === "rejected" || status === "cancelled" || status === "refunded") dbStatus = "cancelled";
         else dbStatus = "pending";
+        
+        // --- LÓGICA DE PUNTOS VÍA WEBHOOK ---
+        // Obtenemos información previa del estado para saber si ya se le dieron puntos
+        const [orderCheck] = await db.query("SELECT status, total, user_id FROM orders WHERE id = ?", [orderId]);
+        
+        // Actualizamos el estado de la orden
         await db.query("UPDATE orders SET status = ?, payment_id = ? WHERE id = ?", [dbStatus, data.id, orderId]);
+        
+        // Si la orden pasó de pendiente a aprobada, le sumamos los puntos (DIVIDIDO 1 PARA PRUEBAS)
+        if (orderCheck.length > 0 && orderCheck[0].status !== "approved" && dbStatus === "approved") {
+            const puntosACalcular = Math.floor(parseFloat(orderCheck[0].total) / 1); 
+            if (puntosACalcular > 0) {
+                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntosACalcular, orderCheck[0].user_id]);
+            }
+        }
+        // ------------------------------------
+
         res.status(200).send("OK");
     } catch (error) {
         console.error("Error en webhook MP:", error.message);
         res.status(200).send("OK");
     }
 });
-
 // ==========================================
 // --- RUTAS DE ADMINISTRACIÓN (CRUD y Órdenes) ---
 // ==========================================
@@ -913,7 +981,6 @@ const verifySupport = (req, res, next) => {
             token,
             process.env.JWT_SECRET || "vntg_secret_key",
         );
-        // Soporte puede ser Admin O Soporte específico
         const isSupport = decoded.role === 'support';
         const isAdmin = decoded.role === 'admin';
         
@@ -941,7 +1008,6 @@ app.get("/api/admin/products", verifyAdmin, async (req, res) => {
 
 app.post("/api/admin/products", verifyAdmin, async (req, res) => {
     const {
-        id,
         title,
         description,
         franchise,
@@ -1071,7 +1137,6 @@ app.get("/api/admin/categories", verifyAdmin, async (req, res) => {
 app.post("/api/admin/categories", verifyAdmin, async (req, res) => {
     const { name } = req.body;
     try {
-        // Ya no enviamos el ID, MySQL lo pone automáticamente
         await db.query("INSERT INTO categories (name) VALUES (?)", [name]);
         res.json({ message: "Categoría creada" });
     } catch (error) {
@@ -1142,6 +1207,21 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
             status,
             id,
         ]);
+
+        // --- LÓGICA DE ASIGNACIÓN DE PUNTOS ACUMULADOS ---
+        const yaTeniaPuntos = ["approved", "delivered"].includes(order.status);
+        const calificaParaPuntos = ["approved", "delivered"].includes(status);
+
+        if (!yaTeniaPuntos && calificaParaPuntos) {
+            const puntosACalcular = Math.floor(parseFloat(order.total) / 1);
+            if (puntosACalcular > 0) {
+                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [
+                    puntosACalcular,
+                    order.user_id
+                ]);
+            }
+        }
+        // ------------------------------------------------
 
         let subject = "",
             title = "",
@@ -1254,26 +1334,23 @@ app.post("/api/orders/lookup", async (req, res) => {
 
 // --- CHATBOT IA (GROQ - LLAMA 3) ---
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = "llama-3.3-70b-versatile"; // modelo gratuito con alta cuota (30 RPM)
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 app.post("/api/chat", async (req, res) => {
     const { message, history, userId, userEmail } = req.body;
     if (!message) return res.status(400).json({ error: "Mensaje vacío" });
 
     try {
-        // 1. Extraemos el catálogo de la Base de Datos (solo los que tienen stock)
         const [productos] = await db.query(
             "SELECT title, franchise, price, stock FROM products WHERE stock > 0",
         );
 
-        // 2. Armamos una lista de texto legible para la IA (con slugs para enlaces directos)
         const catalogo = productos
             .map(
                 (p) => `- ${p.title} (Franquicia: ${p.franchise}): $${p.price} - URL: /producto/${slugify(p.title)}`,
             )
             .join("\n");
 
-        // 3. Obtenemos el historial de órdenes si hay un usuario logueado
         let orderContext =
             "El usuario actual no ha iniciado sesión o es un invitado. No tienes acceso a su historial de compras.";
         if (userId) {
@@ -1332,7 +1409,6 @@ app.post("/api/chat", async (req, res) => {
 
             DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`;
 
-        // 5. Convertir el historial de formato Gemini a formato OpenAI/Groq
         const groqMessages = [
             { role: "system", content: systemPrompt },
         ];
@@ -1348,7 +1424,6 @@ app.post("/api/chat", async (req, res) => {
 
         groqMessages.push({ role: "user", content: message });
 
-        // 6. Llamar a Groq API
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -1378,12 +1453,6 @@ app.post("/api/chat", async (req, res) => {
                 });
             }
 
-            if (groqRes.status === 401) {
-                return res.status(500).json({
-                    reply: "Error de autenticación con el motor de IA. Verificá la API key.",
-                });
-            }
-
             return res.status(500).json({
                 reply: "Error interno del sistema. Intenta de nuevo más tarde.",
             });
@@ -1392,7 +1461,6 @@ app.post("/api/chat", async (req, res) => {
         const groqData = await groqRes.json();
         let response = groqData.choices?.[0]?.message?.content || "";
 
-        // 7. Procesamos el marcador LOOKUP_ORDER:NUMERO si está presente
         const lookupMatch = response.match(/\[LOOKUP_ORDER:(\w+)\]/);
         let orderData = null;
         if (lookupMatch) {
@@ -1414,13 +1482,11 @@ app.post("/api/chat", async (req, res) => {
             }
         }
 
-        // 8. Verificamos si el bot decidió terminar la charla
         let finished = false;
         if (response.includes("[CHAT_FINISHED]")) {
             finished = true;
             response = response.replace("[CHAT_FINISHED]", "").trim();
 
-            // Si tenemos el email del usuario, generamos y enviamos un resumen
             if (userEmail) {
                 try {
                     const summaryRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -1473,13 +1539,11 @@ app.post("/api/contact", async (req, res) => {
     }
 
     try {
-        // 1. Guardar en la base de datos para el panel de soporte
         await db.query(
             "INSERT INTO support_messages (nombre, email, mensaje) VALUES (?, ?, ?)",
             [nombre, email, mensaje]
         );
 
-        // 2. Notificar por n8n (opcional, ya que ahora se ve en el panel)
         await triggerN8nEmail("contact", "hubvntg@gmail.com", {
             nombre,
             email,
@@ -1488,7 +1552,7 @@ app.post("/api/contact", async (req, res) => {
 
         res.json({ message: "Mensaje recibido con éxito. Nos contactaremos pronto." });
     } catch (error) {
-        console.error("Error al procesar contacto:", error);
+        console.error("Error al enviar mensaje de contacto:", error);
         res.status(500).json({ error: "Error al enviar el mensaje" });
     }
 });
@@ -1515,10 +1579,8 @@ app.post("/api/support/reply/:id", verifySupport, async (req, res) => {
 
         const message = msgData[0];
 
-        // 1. Actualizar DB
         await db.query("UPDATE support_messages SET respuesta = ?, status = 'replied' WHERE id = ?", [respuesta, id]);
 
-        // 2. Enviar correo via n8n
         await triggerN8nEmail("support_reply", message.email, {
             nombre: message.nombre,
             mensajeOriginal: message.mensaje,
@@ -1583,7 +1645,6 @@ setInterval(async () => {
     }
 }, 60000);
 
-// Usamos process.env.PORT para que Render le asigne el puerto correctamente
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { ShieldCheck, MapPin, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, MapPin, ArrowLeft, Star } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -15,6 +15,9 @@ export default function Checkout() {
     const [shipping, setShipping] = useState({
         nombre: '', direccion: '', ciudad: '', provincia: '', codigoPostal: '', telefono: ''
     });
+
+    // --- ESTADO PARA PUNTOS ---
+    const [usePoints, setUsePoints] = useState(false);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('vntg_user');
@@ -40,6 +43,15 @@ export default function Checkout() {
         refreshCartPrices(API_URL);
     }, [cart.length, navigate]);
 
+    // --- CÁLCULOS VISUALES PARA LOS PUNTOS ---
+    const puntosDisponibles = user?.points || 0;
+    const valorPorPunto = 10; // Sincronizado con el backend (1 punto = $10)
+    const descuentoMaximo = puntosDisponibles * valorPorPunto;
+    
+    // El descuento no puede ser mayor al total final
+    const descuentoAplicado = usePoints ? Math.min(descuentoMaximo, finalTotal) : 0;
+    const totalAbonar = finalTotal - descuentoAplicado;
+
     const handleCheckout = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -55,7 +67,8 @@ export default function Checkout() {
                     cart,
                     shipping,
                     shippingType,
-                    total: finalTotal
+                    total: finalTotal,
+                    usePoints // <-- Enviamos la decisión del usuario al backend
                 })
             });
 
@@ -63,7 +76,20 @@ export default function Checkout() {
 
             if (res.ok && data.init_point) {
                 clearCart();
-                window.location.href = data.init_point;
+                
+                // Actualizamos los puntos en localStorage para que la vista Mi Cuenta esté sincronizada
+                if (usePoints && puntosDisponibles > 0) {
+                    const puntosGastados = Math.ceil(descuentoAplicado / valorPorPunto);
+                    const updatedUser = { ...user, points: puntosDisponibles - puntosGastados };
+                    localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
+                }
+
+                // Si el total fue $0, el backend devuelve data.totalCero = true y nos manda a /pedido/:id
+                if (data.totalCero) {
+                    navigate(data.init_point.replace('https://vntg-hub.vercel.app', ''));
+                } else {
+                    window.location.href = data.init_point;
+                }
             } else {
                 setError(data.error || "Error al procesar el pago");
                 setLoading(false);
@@ -121,19 +147,46 @@ export default function Checkout() {
                             required
                             className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
                         />
+                        
+                        {/* --- SECCIÓN DE PUNTOS EN EL FORMULARIO --- */}
+                        {puntosDisponibles > 0 && (
+                            <div className="mt-6 p-5 bg-brand-orange/10 border border-brand-orange/30 rounded-xl flex items-center justify-between shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-brand-orange text-white p-2 rounded-full">
+                                        <Star size={20} className="fill-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black italic uppercase text-sm">Aplicar Puntos VNTG</h3>
+                                        <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium mt-0.5">
+                                            Tienes {puntosDisponibles} pts equivalentes a <span className="font-bold text-brand-orange">${descuentoMaximo.toLocaleString('es-AR')}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer" 
+                                        checked={usePoints}
+                                        onChange={(e) => setUsePoints(e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-orange"></div>
+                                </label>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
                             disabled={loading}
                             className="w-full mt-8 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 rounded-2xl shadow-xl shadow-brand-orange/20 active:scale-95"
                         >
-                            {loading ? 'Procesando...' : 'Pagar con Mercado Pago'} <ShieldCheck size={20} />
+                            {loading ? 'Procesando...' : (totalAbonar <= 0 ? 'Confirmar Pedido Gratis' : 'Pagar con Mercado Pago')} <ShieldCheck size={20} />
                         </button>
                     </form>
 
-                    {error && <p className="mt-4 text-red-500 font-bold italic uppercase text-xs">{error}</p>}
+                    {error && <p className="mt-4 text-red-500 font-bold italic uppercase text-xs text-center">{error}</p>}
                 </div>
 
-                <div className="bg-zinc-50 dark:bg-brand-card p-4 sm:p-10  h-fit sticky top-32 rounded-3xl shadow-lg">
+                <div className="bg-zinc-50 dark:bg-brand-card p-4 sm:p-10 h-fit sticky top-32 rounded-3xl shadow-lg border border-transparent dark:border-zinc-800">
                     <h2 className="text-xl font-black italic uppercase tracking-tight mb-8 flex items-center gap-3">
                         <MapPin size={20} className="text-brand-orange" /> Resumen
                     </h2>
@@ -150,10 +203,19 @@ export default function Checkout() {
                                 {costoEnvio === 0 ? "¡GRATIS!" : `+$${costoEnvio.toLocaleString('es-AR')}`}
                             </span>
                         </div>
+
+                        {/* --- DESCUENTO EN EL RESUMEN VISUAL --- */}
+                        {usePoints && descuentoAplicado > 0 && (
+                            <div className="flex justify-between text-xs font-black uppercase text-green-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                <span>Puntos VNTG aplicados</span>
+                                <span>-${descuentoAplicado.toLocaleString('es-AR')}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="border-t border-zinc-100 dark:border-zinc-800 pt-6 flex justify-between text-2xl font-black italic">
+
+                    <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6 flex justify-between items-center text-2xl font-black italic">
                         <span>Total</span>
-                        <span className="text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
+                        <span className="text-brand-orange">${totalAbonar.toLocaleString('es-AR')}</span>
                     </div>
                 </div>
             </div>
