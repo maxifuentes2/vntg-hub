@@ -21,16 +21,45 @@ const mpClient = new MercadoPagoConfig({
 const triggerN8nEmail = async (type, to, data) => {
     const webhookUrl = process.env.N8N_WEBHOOK_URL;
     if (!webhookUrl) {
-        console.warn("⚠️  N8N_WEBHOOK_URL no configurada. Correo no enviado.");
-        return;
+        console.warn("⚠️ N8N_WEBHOOK_URL no configurada. Correo no enviado.");
+        return { skipped: true, reason: "N8N_WEBHOOK_URL not set" };
     }
-    const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, to, data }),
-    });
-    if (!res.ok) throw new Error(`n8n webhook error: ${res.status}`);
-    return res.json();
+
+    const payload = { type, to, data };
+    console.log(`[n8n] Enviando email type="${type}" to="${to}"...`);
+
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
+        const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        const body = await res.text();
+        if (!res.ok) {
+            console.error(`[n8n] Error HTTP ${res.status} para type="${type}": ${body}`);
+            return { error: true, status: res.status, body };
+        }
+
+        console.log(`[n8n] OK type="${type}" to="${to}" — ${res.status}`);
+        try {
+            return JSON.parse(body);
+        } catch {
+            return { raw: body };
+        }
+    } catch (err) {
+        if (err.name === "AbortError") {
+            console.error(`[n8n] Timeout (15s) para type="${type}" to="${to}"`);
+            return { error: true, reason: "timeout" };
+        }
+        console.error(`[n8n] Error en type="${type}" to="${to}":`, err.message);
+        return { error: true, reason: err.message };
+    }
 };
 
 app.use(
