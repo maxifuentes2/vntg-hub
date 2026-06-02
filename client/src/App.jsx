@@ -17,6 +17,7 @@ import Contacto from './pages/Contacto';
 import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import NotFound from './pages/NotFound'; 
+import Tutoriales from './pages/Tutoriales';
 import AdminPanel from './pages/AdminPanel';
 import SupportPanel from './pages/SupportPanel';
 
@@ -116,6 +117,7 @@ function App() {
                     <Route path="/guia-autenticidad" element={<GuiaAutenticidad />} />
                     <Route path="/envios" element={<EnviosSeguros />} />
                     <Route path="/contacto" element={<Contacto />} />
+                    <Route path="/tutoriales" element={<Tutoriales />} />
                     <Route path="/terminos" element={<Terminos />} />
                     <Route path="/privacidad" element={<Privacidad />} />
                     <Route path="*" element={<NotFound />} />
