@@ -122,7 +122,7 @@ export default function PedidoDetalle() {
                             {esRetiro ? 'Estado del Retiro' : 'Estado del Envío'}
                         </h2>
 
-                        {currentIndex < 0 ? (
+                        {pedido.status === 'pending' && !pedido.payment_id ? (
                             <div>
                                 <div className="flex items-center gap-4 p-6 bg-brand-orange/5 border border-brand-orange/20 rounded-2xl">
                                     <Clock size={24} className="text-brand-orange shrink-0 animate-pulse" />
@@ -139,6 +139,10 @@ export default function PedidoDetalle() {
                                     {retrying ? <Loader className="animate-spin" size={20} /> : <CreditCard size={20} />}
                                     {retrying ? "Generando link..." : "Reintentar Pago"}
                                 </button>
+                            </div>
+                        ) : currentIndex < 0 ? (
+                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl">
+                                <p className="text-sm font-black italic uppercase text-red-500">Estado desconocido: {pedido.status}</p>
                             </div>
                         ) : (
                             <div className="relative flex justify-between items-center">
