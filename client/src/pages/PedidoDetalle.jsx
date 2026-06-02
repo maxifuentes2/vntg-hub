@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Package, Truck, CheckCircle2, Home, MapPin, Loader2, ExternalLink, Clock, Store } from 'lucide-react';
+import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const estadosEnvio = [
     { key: 'pending', label: 'Pendiente', icon: Clock, bg: 'bg-yellow-500' },
-    { key: 'approved', label: 'Aprobado', icon: CheckCircle2, bg: 'bg-green-500' },
+    { key: 'approved', label: 'Aprobado', icon: CircleCheck, bg: 'bg-green-500' },
     { key: 'preparing', label: 'En Preparación', icon: Package, bg: 'bg-brand-orange' },
     { key: 'shipped', label: 'Enviado', icon: Truck, bg: 'bg-blue-500' },
-    { key: 'delivered', label: 'Entregado', icon: Home, bg: 'bg-purple-500' },
+    { key: 'delivered', label: 'Entregado', icon: House, bg: 'bg-purple-500' },
 ];
 
 const estadosRetiro = [
     { key: 'pending', label: 'Pendiente', icon: Clock, bg: 'bg-yellow-500' },
-    { key: 'approved', label: 'Aprobado', icon: CheckCircle2, bg: 'bg-green-500' },
+    { key: 'approved', label: 'Aprobado', icon: CircleCheck, bg: 'bg-green-500' },
     { key: 'preparing', label: 'En Preparación', icon: Package, bg: 'bg-brand-orange' },
     { key: 'ready', label: 'Listo para Retirar', icon: Store, bg: 'bg-teal-500' },
 ];
@@ -25,6 +25,7 @@ export default function PedidoDetalle() {
     const navigate = useNavigate();
     const [pedido, setPedido] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [retrying, setRetrying] = useState(false);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -58,7 +59,21 @@ export default function PedidoDetalle() {
         }
     }, [pedido]);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
+    useEffect(() => {
+        if (!pedido || pedido.status !== 'pending') return;
+        const token = localStorage.getItem('vntg_token');
+        const interval = setInterval(() => {
+            fetch(`${API_URL}/api/orders/detail/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => res.ok ? res.json() : null)
+                .then(data => { if (data && data.status !== 'pending') setPedido(data); })
+                .catch(() => {});
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [pedido, id]);
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark"><Loader className="animate-spin text-brand-orange" size={40} /></div>;
     if (!pedido) return <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark font-black italic uppercase tracking-widest text-zinc-500">Orden no encontrada</div>;
 
     const infoEnvio = pedido.shipping_info ? JSON.parse(pedido.shipping_info) : {};
@@ -66,6 +81,27 @@ export default function PedidoDetalle() {
     const estados = esRetiro ? estadosRetiro : estadosEnvio;
     const currentIndex = estados.findIndex(e => e.key === pedido.status);
     const progressWidth = currentIndex < 0 ? 0 : (currentIndex / (estados.length - 1)) * 100;
+
+    const handleRetryPayment = async () => {
+        setRetrying(true);
+        const token = localStorage.getItem('vntg_token');
+        try {
+            const res = await fetch(`${API_URL}/api/orders/${pedido.id}/retry-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok && data.init_point) {
+                window.location.href = data.init_point;
+            } else {
+                alert(data.error || "Error al generar el pago");
+                setRetrying(false);
+            }
+        } catch {
+            alert("Error de conexión");
+            setRetrying(false);
+        }
+    };
 
     return (
         <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 font-sans text-zinc-900 dark:text-white">
@@ -87,12 +123,22 @@ export default function PedidoDetalle() {
                         </h2>
 
                         {currentIndex < 0 ? (
-                            <div className="flex items-center gap-4 p-6 bg-brand-orange/5 border border-brand-orange/20 rounded-2xl">
-                                <Clock size={24} className="text-brand-orange shrink-0 animate-pulse" />
-                                <div>
-                                    <p className="text-sm font-black italic uppercase text-brand-orange">Esperando confirmación de pago</p>
-                                    <p className="text-xs text-zinc-500 mt-1">El estado se actualizará automáticamente cuando MercadoPago confirme la transacción.</p>
+                            <div>
+                                <div className="flex items-center gap-4 p-6 bg-brand-orange/5 border border-brand-orange/20 rounded-2xl">
+                                    <Clock size={24} className="text-brand-orange shrink-0 animate-pulse" />
+                                    <div>
+                                        <p className="text-sm font-black italic uppercase text-brand-orange">Esperando confirmación de pago</p>
+                                        <p className="text-xs text-zinc-500 mt-1">El estado se actualizará automáticamente cuando MercadoPago confirme la transacción.</p>
+                                    </div>
                                 </div>
+                                <button
+                                    onClick={handleRetryPayment}
+                                    disabled={retrying}
+                                    className="mt-4 w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95 disabled:opacity-60"
+                                >
+                                    {retrying ? <Loader className="animate-spin" size={20} /> : <CreditCard size={20} />}
+                                    {retrying ? "Generando link..." : "Reintentar Pago"}
+                                </button>
                             </div>
                         ) : (
                             <div className="relative flex justify-between items-center">

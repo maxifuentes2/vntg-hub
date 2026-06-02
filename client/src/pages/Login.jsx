@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -214,7 +214,7 @@ export default function Login() {
                                 disabled={isLoading}
                                 className={`w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest transition-all mt-2 flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 rounded-2xl ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-brand-orange'}`}
                             >
-                                {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar'}
+                                {isLoading ? <Loader className="animate-spin" size={20} /> : 'Entrar'}
                             </button>
                             
                             <Link to="/recuperar-password" className="block mt-4 text-right text-[10px] font-bold uppercase italic text-zinc-500 hover:text-brand-orange transition-colors">
@@ -274,7 +274,7 @@ export default function Login() {
                                 disabled={isLoading}
                                 className={`w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest transition-all mt-4 flex justify-center items-center gap-2 rounded-2xl ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark'}`}
                             >
-                                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <>Confirmar <ShieldCheck size={18} /></>}
+                                {isLoading ? <Loader className="animate-spin" size={20} /> : <>Confirmar <ShieldCheck size={18} /></>}
                             </button>
                         </form>
                     </>

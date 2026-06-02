@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, Home, Briefcase } from 'lucide-react';
+import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -138,7 +138,7 @@ export default function Checkout() {
                 }
 
                 if (data.totalCero) {
-                    navigate(data.init_point.replace('https://vntg-hub.vercel.app', ''));
+                    navigate(`/pedido/${data.orderId}`);
                 } else {
                     window.location.href = data.init_point;
                 }
@@ -165,7 +165,7 @@ export default function Checkout() {
 
     const TagIcon = (tag) => {
         const key = (tag || '').toLowerCase();
-        if (key.includes('casa')) return Home;
+        if (key.includes('casa')) return House;
         if (key.includes('oficina')) return Briefcase;
         if (key.includes('trabajo')) return Briefcase;
         return MapPin;

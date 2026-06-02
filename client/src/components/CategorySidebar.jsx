@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     X, Tag, ChevronRight, LayoutGrid, CarFront, Film, 
-    BookOpen, Bot, Gamepad2, Package, Mail, MapPin, Info, ShieldCheck, Truck, ChevronDown, Trophy, Home
+    BookOpen, Bot, Gamepad2, Package, Mail, MapPin, Info, ShieldCheck, Truck, ChevronDown, Trophy, House
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
@@ -90,7 +90,7 @@ export default function CategorySidebar({ categories = [] }) {
                         onClick={closeAll}
                         className="flex items-center gap-3 px-4 py-3 bg-brand-orange/10 text-brand-orange font-black text-[11px] uppercase italic hover:bg-brand-orange hover:text-white transition-all rounded-xl mb-4"
                     >
-                        <Home size={16} /> Volver al inicio
+                        <House size={16} /> Volver al inicio
                     </Link>
                     {categories.length > 0 ? (
                         <>

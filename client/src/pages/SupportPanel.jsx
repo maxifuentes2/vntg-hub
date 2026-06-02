@@ -4,19 +4,19 @@ import {
     Mail, 
     MessageSquare, 
     Clock, 
-    CheckCircle2, 
+    CircleCheck, 
     Send, 
     Search, 
-    Filter,
+    ListFilter,
     ChevronRight,
-    Loader2,
+    Loader,
     ArrowLeft,
     Trash2,
-    XCircle,
-    Home,
+    CircleX,
+    House,
     Shield,
     RefreshCw,
-    AlertTriangle
+    TriangleAlert
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -41,6 +41,8 @@ export default function SupportPanel() {
             return;
         }
         fetchMessages();
+        const interval = setInterval(fetchMessages, 30000);
+        return () => clearInterval(interval);
     }, [navigate]);
 
     const fetchMessages = async () => {
@@ -150,6 +152,15 @@ export default function SupportPanel() {
 
     const currentUser = JSON.parse(localStorage.getItem('vntg_user') || 'null');
 
+    const threadMessages = selectedMsg
+        ? messages.filter(m =>
+            m.id === selectedMsg.thread_id ||
+            m.thread_id === selectedMsg.id ||
+            (selectedMsg.thread_id && m.thread_id === selectedMsg.thread_id) ||
+            (selectedMsg.thread_id && m.id === selectedMsg.thread_id)
+          ).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        : [];
+
     return (
         <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-24 xs:pt-32 pb-12 xs:pb-20 px-4 font-sans text-zinc-900 dark:text-white">
             <div className="max-w-[1400px] mx-auto">
@@ -162,7 +173,7 @@ export default function SupportPanel() {
                                 to="/"
                                 className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
                             >
-                                <Home size={14} /> Volver
+                                <House size={14} /> Volver
                             </Link>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0">
                                 <button
@@ -253,7 +264,12 @@ export default function SupportPanel() {
                                                 ) : null}
                                                 <div className="flex justify-between items-start mb-2">
                                                     <p className="text-[10px] font-black text-brand-blue uppercase italic">{msg.email}</p>
-                                                    <p className="text-[9px] font-bold text-zinc-500">{new Date(msg.created_at).toLocaleDateString()}</p>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {msg.source === 'email' && (
+                                                            <span className="px-1.5 py-0.5 text-[8px] font-black uppercase italic rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500">Email</span>
+                                                        )}
+                                                        <p className="text-[9px] font-bold text-zinc-500">{new Date(msg.created_at).toLocaleDateString()}</p>
+                                                    </div>
                                                 </div>
                                                 <h3 className="font-black italic uppercase text-sm mb-1 truncate">{msg.nombre}</h3>
                                                 <p className="text-xs text-zinc-500 line-clamp-2 italic">{msg.mensaje}</p>
@@ -286,7 +302,7 @@ export default function SupportPanel() {
                                                             className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase italic rounded-lg bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white transition-all border border-zinc-500/20"
                                                             title="Marcar como terminado"
                                                         >
-                                                            <XCircle size={14} /> Terminar
+                                                            <CircleX size={14} /> Terminar
                                                         </button>
                                                     )}
                                                     <button
@@ -315,6 +331,30 @@ export default function SupportPanel() {
                                                     <p className="text-sm font-bold italic">{new Date(selectedMsg.created_at).toLocaleString()}</p>
                                                 </div>
                                             </div>
+
+                                            {threadMessages.length > 0 && (
+                                                <div className="space-y-3 border-l-2 border-zinc-200 dark:border-zinc-700 ml-4 pl-6">
+                                                    {threadMessages.map(tm => (
+                                                        <div key={tm.id} className={`relative ${tm.id === selectedMsg.id ? 'ring-2 ring-brand-blue/30 rounded-xl' : ''}`}>
+                                                            <div className="absolute -left-8 top-4 w-3 h-0.5 bg-zinc-300 dark:bg-zinc-600"></div>
+                                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-700">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <p className="text-[9px] font-black uppercase italic text-zinc-500">{tm.nombre} ({tm.email})</p>
+                                                                    {tm.source === 'email' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500">Email</span>}
+                                                                    <span className="text-[8px] text-zinc-400 ml-auto">{new Date(tm.created_at).toLocaleString()}</span>
+                                                                </div>
+                                                                <p className="text-xs font-medium leading-relaxed">{tm.mensaje}</p>
+                                                                {tm.respuesta && (
+                                                                    <div className="mt-2 pl-3 border-l-2 border-green-400">
+                                                                        <p className="text-[9px] font-black uppercase text-green-500">Respuesta</p>
+                                                                        <p className="text-xs italic text-zinc-500">{tm.respuesta}</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 border-l-4 border-brand-blue relative rounded-r-2xl">
                                                 <MessageSquare size={40} className="absolute top-4 right-4 text-brand-blue/5" />
@@ -346,7 +386,7 @@ export default function SupportPanel() {
                                                         disabled={sendingReply || !replyText.trim()}
                                                         className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all disabled:opacity-50 rounded-2xl shadow-lg active:scale-95"
                                                     >
-                                                        {sendingReply ? <Loader2 className="animate-spin" /> : <><Send size={18} /> Enviar Respuesta</>}
+                                                        {sendingReply ? <Loader className="animate-spin" /> : <><Send size={18} /> Enviar Respuesta</>}
                                                     </button>
                                                 </form>
                                             </div>
@@ -372,7 +412,7 @@ export default function SupportPanel() {
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange to-transparent opacity-50"></div>
                             <div className="flex flex-col items-center text-center">
                                 <div className="bg-brand-orange/10 p-4 rounded-full mb-6">
-                                    <AlertTriangle className="text-brand-orange" size={40} />
+                                    <TriangleAlert className="text-brand-orange" size={40} />
                                 </div>
                                 <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">¿Eliminar Mensaje?</h3>
                                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">

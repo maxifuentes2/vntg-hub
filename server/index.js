@@ -2,12 +2,14 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const db = require("./db");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require("bcryptjs");
-// nodemailer eliminado — emails delegados a n8n
 const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const ImapPoller = require("./imapPoller");
 
 // Tablas creadas manualmente en TiDB Cloud
 
@@ -16,48 +18,131 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const mpClient = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
 });
+const genAI = process.env.GEMINI_API_KEY
+    ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    : null;
 
-// Función para disparar un email a través de n8n webhook
-const triggerN8nEmail = async (type, to, data) => {
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (!webhookUrl) {
-        console.warn("⚠️ N8N_WEBHOOK_URL no configurada. Correo no enviado.");
-        return { skipped: true, reason: "N8N_WEBHOOK_URL not set" };
+// --- Configuración de nodemailer (fallback directo) ---
+const createTransporter = (prefix) => {
+    const host = process.env[`${prefix}HOST`] || "smtp.gmail.com";
+    const port = parseInt(process.env[`${prefix}PORT`] || "587");
+    const user = process.env[`${prefix}USER`];
+    const pass = process.env[`${prefix}PASS`];
+    if (!user || !pass) return null;
+    return nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
+};
+
+const buildEmailHtml = (type, data) => {
+    switch (type) {
+        case "2fa_code":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#f97316">Código de verificación</h2>
+                <p>Tu código de un solo uso es:</p>
+                <div style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:24px;background:#f5f5f5;border-radius:12px;margin:16px 0">${data.code}</div>
+                <p style="color:#666">Válido por 5 minutos. Si no solicitaste este código, ignorá este mensaje.</p>
+                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
+                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+            </div>`;
+
+        case "stock_alert":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#22c55e">¡Stock disponible!</h2>
+                <p>Hola ${data.userName},</p>
+                <p>El producto <strong>${data.productTitle}</strong> que tenías en tu lista de deseos ya tiene stock.</p>
+                <p>No esperes demasiado, ¡se agota rápido!</p>
+                <a href="https://vntg-hub.vercel.app/producto/${data.productId}" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;margin:16px 0;font-weight:bold">Ver producto</a>
+                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
+                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+            </div>`;
+
+        case "order_status":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#f97316">${data.title}</h2>
+                <p>${data.message}</p>
+                ${data.btnText ? `<a href="${data.btnUrl}" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;margin:16px 0;font-weight:bold">${data.btnText}</a>` : ""}
+                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
+                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+            </div>`;
+
+        case "support_reply":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#f97316">Respuesta de soporte</h2>
+                <p>Hola ${data.nombre},</p>
+                <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
+                    <p style="font-size:12px;color:#666;margin:0 0 8px"><strong>Tu mensaje:</strong></p>
+                    <p style="margin:0">${data.mensajeOriginal}</p>
+                </div>
+                <div style="background:#fff7ed;padding:16px;border-radius:8px;margin:12px 0;border-left:4px solid #f97316">
+                    <p style="font-size:12px;color:#666;margin:0 0 8px"><strong>Nuestra respuesta:</strong></p>
+                    <p style="margin:0">${data.respuesta}</p>
+                </div>
+                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
+                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+            </div>`;
+
+        case "contact":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#f97316">Nuevo mensaje de contacto</h2>
+                <p><strong>Nombre:</strong> ${data.nombre}</p>
+                <p><strong>Email:</strong> ${data.email}</p>
+                <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
+                    <p style="margin:0">${data.mensaje}</p>
+                </div>
+                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
+                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+            </div>`;
+
+        case "chat_summary":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#f97316">Resumen de conversación</h2>
+                <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
+                    <p style="margin:0">${data.summary}</p>
+                </div>
+                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
+                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+            </div>`;
+
+        default:
+            return `<p>${JSON.stringify(data)}</p>`;
+    }
+};
+
+const getEmailSubject = (type, data) => {
+    const subjects = {
+        "2fa_code": "Tu código de verificación — VNTG Hub",
+        "stock_alert": `¡${data.productTitle} tiene stock! — VNTG Hub`,
+        "order_status": data.subject || "Estado de tu pedido — VNTG Hub",
+        "support_reply": "Respuesta de soporte — VNTG Hub",
+        "contact": `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
+        "chat_summary": "Resumen de tu conversación — VNTG Hub",
+    };
+    return subjects[type] || "Notificación — VNTG Hub";
+};
+
+const sendEmail = async (type, to, data) => {
+    const isSupport = type === "support_reply" || type === "contact";
+    const prefix = isSupport ? "SMTP_SUPPORT_" : "SMTP_";
+    const fromKey = isSupport ? "EMAIL_SUPPORT_FROM" : "EMAIL_FROM";
+    const from = process.env[fromKey] || (isSupport ? '"VNTG Soporte" <soportehubvntg@gmail.com>' : '"VNTG Hub" <hubvntg@gmail.com>');
+    const subject = getEmailSubject(type, data);
+    const html = buildEmailHtml(type, data);
+
+    const transporter = createTransporter(prefix);
+    if (!transporter) {
+        console.error(`[email] SMTP${isSupport ? " soporte" : ""} no configurado. No se pudo enviar email type="${type}" to="${to}"`);
+        return { error: true, reason: `SMTP${isSupport ? "_SUPPORT" : ""} not configured` };
     }
 
-    const payload = { type, to, data };
-    console.log(`[n8n] Enviando email type="${type}" to="${to}"...`);
-
+    const mailOptions = { from, to, subject, html };
+    if (type === "support_reply" && data.ticketId) {
+        mailOptions.messageId = `<vntg-ticket-${data.ticketId}@vntg-hub.vercel.app>`;
+    }
     try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-
-        const res = await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
-        });
-        clearTimeout(timeout);
-
-        const body = await res.text();
-        if (!res.ok) {
-            console.error(`[n8n] Error HTTP ${res.status} para type="${type}": ${body}`);
-            return { error: true, status: res.status, body };
-        }
-
-        console.log(`[n8n] OK type="${type}" to="${to}" — ${res.status}`);
-        try {
-            return JSON.parse(body);
-        } catch {
-            return { raw: body };
-        }
+        await transporter.sendMail(mailOptions);
+        console.log(`[email] OK type="${type}" to="${to}"`);
+        return { sentVia: "smtp" };
     } catch (err) {
-        if (err.name === "AbortError") {
-            console.error(`[n8n] Timeout (15s) para type="${type}" to="${to}"`);
-            return { error: true, reason: "timeout" };
-        }
-        console.error(`[n8n] Error en type="${type}" to="${to}":`, err.message);
+        console.error(`[email] Error SMTP type="${type}" to="${to}":`, err.message);
         return { error: true, reason: err.message };
     }
 };
@@ -570,7 +655,7 @@ app.post("/api/auth/login/local", async (req, res) => {
             [code, users[0].id],
         );
 
-        await triggerN8nEmail("2fa_code", email, { code });
+        await sendEmail("2fa_code", email, { code });
         res.json({ message: "Código enviado", requireCode: true, email });
     } catch (error) {
         res.status(500).json({ error: "Error" });
@@ -897,6 +982,61 @@ app.post("/api/cart/sync", verifyToken, async (req, res) => {
 // --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
 // ==========================================
 
+// --- REINTENTAR PAGO PARA ÓRDENES PENDIENTES ---
+app.post("/api/orders/:id/retry-payment", verifyToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [orders] = await db.query("SELECT * FROM orders WHERE id = ? AND user_id = ?", [id, req.user.id]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+
+        const order = orders[0];
+        if (order.status !== "pending") return res.status(400).json({ error: "La orden no está pendiente" });
+        if (order.payment_id) return res.status(400).json({ error: "Esta orden ya tiene un pago asociado" });
+
+        const [items] = await db.query("SELECT oi.*, p.title FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?", [id]);
+        if (items.length === 0) return res.status(400).json({ error: "La orden no tiene productos" });
+
+        const info = order.shipping_info ? JSON.parse(order.shipping_info) : {};
+        const shippingCost = info.shippingCost ? Number(info.shippingCost) : 0;
+        const totalPrevio = Number(order.total) + shippingCost;
+        const ratio = totalPrevio > 0 ? Number(order.total) / totalPrevio : 1;
+
+        const preference = new Preference(mpClient);
+        const response = await preference.create({
+            body: {
+                items: [
+                    ...items.map(i => ({
+                        title: i.title,
+                        quantity: Number(i.quantity),
+                        unit_price: Number((Number(i.price) * ratio).toFixed(2)),
+                        currency_id: "ARS",
+                    })),
+                    ...(shippingCost > 0 ? [{
+                        title: `Envío (${info.shippingType || ""})`,
+                        quantity: 1,
+                        unit_price: Number((shippingCost * ratio).toFixed(2)),
+                        currency_id: "ARS",
+                    }] : []),
+                ],
+                notification_url: "https://vntg-hub.onrender.com/api/webhooks/mercadopago",
+                auto_return: "approved",
+                back_urls: {
+                    success: `https://vntg-hub.vercel.app/pedido/${id}`,
+                    failure: `https://vntg-hub.vercel.app/pedido/${id}`,
+                    pending: `https://vntg-hub.vercel.app/pedido/${id}`,
+                },
+                external_reference: id,
+                binary_mode: true,
+            },
+        });
+
+        res.json({ init_point: response.init_point, preferenceId: response.id });
+    } catch (error) {
+        console.error("Error al reintentar pago:", error);
+        res.status(500).json({ error: "Error al generar link de pago" });
+    }
+});
+
 // ==========================================
 // --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
 // ==========================================
@@ -1090,7 +1230,7 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
                 [id],
             );
             for (let u of interesados) {
-                await triggerN8nEmail("stock_alert", u.email, {
+                await sendEmail("stock_alert", u.email, {
                     userName: u.name,
                     productTitle: title,
                     productId: id,
@@ -1255,7 +1395,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
         }
 
         if (subject) {
-            await triggerN8nEmail("order_status", order.email, {
+            await sendEmail("order_status", order.email, {
                 name: order.name,
                 orderId: id,
                 status,
@@ -1500,7 +1640,7 @@ app.post("/api/chat", async (req, res) => {
                     const summaryText = summaryData.choices?.[0]?.message?.content || "";
 
                     if (summaryText) {
-                        await triggerN8nEmail("chat_summary", userEmail, {
+                        await sendEmail("chat_summary", userEmail, {
                             summary: summaryText,
                         });
                     }
@@ -1535,7 +1675,7 @@ app.post("/api/contact", async (req, res) => {
             [nombre, email, mensaje]
         );
 
-        await triggerN8nEmail("contact", "hubvntg@gmail.com", {
+        await sendEmail("contact", "hubvntg@gmail.com", {
             nombre,
             email,
             mensaje,
@@ -1572,7 +1712,8 @@ app.post("/api/support/reply/:id", verifySupport, async (req, res) => {
 
         await db.query("UPDATE support_messages SET respuesta = ?, status = 'replied' WHERE id = ?", [respuesta, id]);
 
-        await triggerN8nEmail("support_reply", message.email, {
+        await sendEmail("support_reply", message.email, {
+            ticketId: message.id,
             nombre: message.nombre,
             mensajeOriginal: message.mensaje,
             respuesta: respuesta
@@ -1637,6 +1778,23 @@ setInterval(async () => {
 }, 60000);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
+// ─── IMAP Poller ───
+const imapPoller = new ImapPoller();
+
+app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`);
+
+    // Agregar columnas para threading de soporte
+    try {
+        const [cols] = await db.query("SHOW COLUMNS FROM support_messages LIKE 'thread_id'");
+        if (cols.length === 0) {
+            await db.query("ALTER TABLE support_messages ADD COLUMN thread_id INT NULL");
+            await db.query("ALTER TABLE support_messages ADD COLUMN source VARCHAR(10) DEFAULT 'web'");
+            console.log('[db] Columnas thread_id y source agregadas a support_messages');
+        }
+    } catch (e) {
+        console.log('[db] Columnas ya existen o error:', e.message);
+    }
+
+    imapPoller.start();
 });

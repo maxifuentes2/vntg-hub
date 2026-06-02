@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Package, RefreshCw, Plus, Edit2, Trash2, X, Tag, ClipboardList, ChevronDown, AlertTriangle, MessageSquare, Home } from 'lucide-react';
+import { Search, Package, RefreshCw, Plus, Pen, Trash2, X, Tag, ClipboardList, ChevronDown, TriangleAlert, MessageSquare, House } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -93,22 +93,29 @@ export default function AdminPanel() {
 
     const fetchData = () => {
         const token = localStorage.getItem('vntg_token');
+        if (!token) {
+            navigate('/login');
+            return;
+        }
         const headers = { 'Authorization': `Bearer ${token}` };
-
-        fetch(`${API_URL}/api/admin/products`, { headers })
-            .then(res => res.json())
-            .then(data => setProducts(data))
-            .catch(err => console.error(err));
-
-        fetch(`${API_URL}/api/admin/categories`, { headers })
-            .then(res => res.json())
-            .then(data => setCategories(data))
-            .catch(err => console.error(err));
-
-        fetch(`${API_URL}/api/admin/orders`, { headers })
-            .then(res => res.json())
-            .then(data => setOrders(data))
-            .catch(err => console.error(err));
+        const handleResponse = async (url, setter) => {
+            try {
+                const res = await fetch(url, { headers });
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('vntg_token');
+                    localStorage.removeItem('vntg_user');
+                    navigate('/login');
+                    return;
+                }
+                const data = await res.json();
+                if (Array.isArray(data)) setter(data);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        handleResponse(`${API_URL}/api/admin/products`, setProducts);
+        handleResponse(`${API_URL}/api/admin/categories`, setCategories);
+        handleResponse(`${API_URL}/api/admin/orders`, setOrders);
     };
 
     // --- MANEJO DE PRODUCTOS ---
@@ -318,7 +325,7 @@ export default function AdminPanel() {
                                 to="/"
                                 className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
                             >
-                                <Home size={16} /> Volver
+                                <House size={16} /> Volver
                             </Link>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:gap-1">
                                 <button
@@ -400,7 +407,7 @@ export default function AdminPanel() {
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
-                                                    <Edit2 size={14} />
+                                                    <Pen size={14} />
                                                 </button>
                                                 <button onClick={() => openConfirmDelete(p.id, p.title, 'product')} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
                                                     <Trash2 size={14} />
@@ -423,7 +430,7 @@ export default function AdminPanel() {
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleOpenCategoryModal(c)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
-                                                <Edit2 size={16} />
+                                                <Pen size={16} />
                                             </button>
                                             <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all">
                                                 <Trash2 size={16} />
@@ -809,7 +816,7 @@ export default function AdminPanel() {
 
                         <div className="flex flex-col items-center text-center">
                             <div className="bg-brand-orange/10 p-4 rounded-full mb-6">
-                                <AlertTriangle className="text-brand-orange" size={40} />
+                                <TriangleAlert className="text-brand-orange" size={40} />
                             </div>
 
                             <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">

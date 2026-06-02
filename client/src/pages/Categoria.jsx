@@ -7,7 +7,7 @@ import {
     SlidersHorizontal, 
     CircleDollarSign,
     Tag,
-    Loader2,
+    Loader,
     Heart
 } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
@@ -177,7 +177,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     if (loading && productos.length === 0) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
-                <Loader2 className="animate-spin text-brand-orange" size={40} />
+                <Loader className="animate-spin text-brand-orange" size={40} />
             </div>
         );
     }

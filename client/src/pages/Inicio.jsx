@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Box, ArrowRight, Loader2, ChevronDown, Heart, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Box, ArrowRight, Loader, ChevronDown, Heart, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import Reveal from '../components/Reveal';
@@ -298,7 +298,7 @@ export default function Inicio() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white dark:bg-brand-dark">
-                <Loader2 className="animate-spin text-brand-orange" size={40} />
+                <Loader className="animate-spin text-brand-orange" size={40} />
             </div>
         );
     }

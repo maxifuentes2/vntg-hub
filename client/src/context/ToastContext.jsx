@@ -1,5 +1,5 @@
 import { createContext, useState, useContext } from 'react';
-import { CheckCircle, X, AlertCircle, Info } from 'lucide-react'; // Agregamos Info
+import { CircleCheck, X, CircleAlert, Info } from 'lucide-react';
 
 const ToastContext = createContext();
 
@@ -30,21 +30,21 @@ export const ToastProvider = ({ children }) => {
                             {toast.product?.images ? (
                                 <img src={toast.product.images} className="w-full h-full object-cover opacity-90" alt="" />
                             ) : toast.type === 'error' ? (
-                                <AlertCircle size={32} className="text-red-500" />
+                                <CircleAlert size={32} className="text-red-500" />
                             ) : toast.type === 'info' ? (
                                 <Info size={32} className="text-brand-orange" />
                             ) : (
-                                <CheckCircle size={32} className="text-emerald-500" />
+                                <CircleCheck size={32} className="text-emerald-500" />
                             )}
                         </div>
                         <div className="flex-1 px-5 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                                 {toast.type === 'error' ? (
-                                    <AlertCircle size={14} className="text-red-500" />
+                                    <CircleAlert size={14} className="text-red-500" />
                                 ) : toast.type === 'info' ? (
                                     <Info size={14} className="text-brand-orange" />
                                 ) : (
-                                    <CheckCircle size={14} className="text-emerald-500" />
+                                    <CircleCheck size={14} className="text-emerald-500" />
                                 )}
                                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">
                                     {toast.type === 'error' ? 'Error' : toast.type === 'info' ? 'Aviso' : 'Éxito'}
