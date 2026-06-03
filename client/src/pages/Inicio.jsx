@@ -46,7 +46,6 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
     const scrollContainerRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
-
     const checkScroll = () => {
         if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
@@ -69,25 +68,23 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
     };
 
     return (
-        <div className="relative group/carousel -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="relative -mx-4 px-4 sm:mx-0 sm:px-0">
             {items.length > 3 && (
                 <>
-                    {canScrollLeft && (
-                        <button 
-                            onClick={() => scroll('left')}
-                            className="absolute -left-4 md:-left-8 lg:-left-16 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-0 group-hover/carousel:opacity-100 transition-all disabled:opacity-0 hidden md:flex hover:scale-110 border border-zinc-200 dark:border-zinc-700"
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
-                    )}
-                    {canScrollRight && (
-                        <button 
-                            onClick={() => scroll('right')}
-                            className="absolute -right-4 md:-right-8 lg:-right-16 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-0 group-hover/carousel:opacity-100 transition-all disabled:opacity-0 hidden md:flex hover:scale-110 border border-zinc-200 dark:border-zinc-700"
-                        >
-                            <ChevronRight size={24} />
-                        </button>
-                    )}
+                    <button 
+                        onClick={() => scroll('left')}
+                        disabled={!canScrollLeft}
+                        className="absolute left-1 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white p-2.5 rounded-full shadow-lg transition-all hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-110 disabled:opacity-0 disabled:pointer-events-none border border-zinc-200 dark:border-zinc-700"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+                    <button 
+                        onClick={() => scroll('right')}
+                        disabled={!canScrollRight}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white p-2.5 rounded-full shadow-lg transition-all hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-110 disabled:opacity-0 disabled:pointer-events-none border border-zinc-200 dark:border-zinc-700"
+                    >
+                        <ChevronRight size={20} />
+                    </button>
                 </>
             )}
 
@@ -98,12 +95,10 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {items.map(item => {
-                    // VERIFICAMOS SI EL ITEM ACTUAL ESTÁ EN LA WISHLIST
                     const isWished = wishListItems.some(wItem => String(wItem.id) === String(item.id));
                     
                     return (
                         <div key={item.id} className="w-[85vw] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] snap-start shrink-0">
-                            {/* --- LÍNEA CORREGIDA PARA BORDES NÍTIDOS --- */}
                             <div className={`group h-full flex flex-col bg-zinc-50 dark:bg-brand-card transition-all duration-500 border-2 border-transparent hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
                                 <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-zinc-600 shrink-0">
                                     <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
@@ -157,6 +152,7 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
                     );
                 })}
             </div>
+
         </div>
     );
 };
