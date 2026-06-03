@@ -82,7 +82,13 @@ export default function Tutoriales() {
   };
 
   const setVideoRef = useCallback((id) => (el) => {
-    if (el) videoRefs.current[id] = el;
+    if (el) {
+      videoRefs.current[id] = el;
+      el.addEventListener('webkitendfullscreen', () => {
+        setFullscreenVideoId(null);
+        try { screen.orientation.unlock(); } catch {}
+      });
+    }
   }, []);
 
   const togglePlay = (id) => {
@@ -180,9 +186,13 @@ export default function Tutoriales() {
 
   const toggleFullscreen = (id) => {
     const container = containerRefs.current[id];
+    const video = videoRefs.current[id];
     if (!container) return;
     if (fullscreenVideoId === id) {
       document.exitFullscreen();
+    } else if (video && video.webkitSupportsFullscreen) {
+      video.webkitEnterFullscreen();
+      setFullscreenVideoId(id);
     } else {
       container.requestFullscreen();
       setFullscreenVideoId(id);
