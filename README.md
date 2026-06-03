@@ -1,48 +1,105 @@
 # VNTG Hub - E-commerce de Coleccionables
 
-Plataforma de comercio electrónico para coleccionistas de cultura pop con diseño glassmorphism, modo oscuro y chatbot IA.
+Plataforma de comercio electrónico para coleccionistas de cultura pop. Catálogo de funkos, figuras de acción, artículos de anime y gaming con carrito, wishlist, chatbot con IA, panel de administración y pagos integrados.
+
+### Funcionalidades principales
+
+- **Catálogo**: Productos con variantes, descuentos, filtros por categoría/precio/búsqueda, vista de grilla con cards glassmorphism.
+- **Carrito**: Persistente por sesión, suma descuentos automáticos, enlace directo a compra.
+- **Wishlist**: Guardar favoritos con un clic (corazón), sincronizado por contexto global.
+- **Autenticación**: Registro/login con email + Google OAuth via Clerk.
+- **Chatbot IA**: Asistente conversacional con Groq (Llama 3) que responde dudas de productos, pedidos y envíos. Consulta de órdenes por email. Formulario de contacto a humanos.
+- **Pagos**: Integración con Mercado Pago (tarjetas, efectivo, transferencia).
+- **Suscripción por email**: Bienvenida, recuperación de contraseña y confirmación de compra.
+- **Puntos y canjeo**: Sistema de puntos por compras, canjeables por descuentos en el checkout.
+- **Reproductor de video custom**: Reproductor en Tutoriales con controles de skip (-10s/+10s), timeline arrastrable, pantalla completa con orientación landscape, soporte Safari, barra de progreso fina, spinner de carga.
+- **Soporte IMAP**: Escaneo automático de bandeja de entrada para respuestas de soporte vía ImapFlow.
+- **Panel admin**: Gestión de productos (CRUD), variantes, canjeo de puntos, vista de catálogo completo.
+- **Panel de soporte**: Gestión de consultas y respuestas.
+- **Multi-moneda**: Selector USD / ARS con banderas.
+- **Modo oscuro**: Toggle persistente con next-themes.
+- **Diseño responsive**: Adaptado a mobile (320px+), tablet y desktop.
+- **Sidebar categorías**: Navegación lateral por categorías de coleccionables.
 
 ## Stack Tecnológico
 
 ### Frontend
-- **Core**: React 19 + Vite 8
-- **Estilos**: Tailwind CSS 4
+- **Core**: React 19 + Vite 8 + React Router 7
+- **Estilos**: Tailwind CSS 4 + PostCSS + Autoprefixer
 - **Iconos**: Lucide React
-- **Estado Global**: React Context API (Carrito, Wishlist)
-- **Autenticación**: Clerk + Google OAuth
+- **Autenticación**: Clerk + Google OAuth (`@react-oauth/google`)
+- **Tema oscuro**: next-themes
+- **Pagos**: Mercado Pago SDK (`@mercadopago/sdk-react`)
+- **HTTP**: Axios
+- **IDs**: uuid
 
 ### Backend & DB
 - **Entorno**: Node.js + Express 5 (CommonJS)
-- **Base de Datos**: MySQL (TiDB Cloud)
+- **Base de Datos**: MySQL 2 (TiDB Cloud via mysql2)
 - **Seguridad**: JWT + Bcryptjs
-- **IA**: Groq (Llama 3) para chatbot, Google Gemini para utilitarios
+- **IA**: Groq SDK (Llama 3) para chatbot, Google Generative AI (Gemini) para utilitarios
+- **Email**: Nodemailer (envío), ImapFlow + mailparser (lectura de bandeja de entrada)
+- **Archivos**: Multer
+- **Pagos**: Mercado Pago SDK
+- **Monitorización**: Nodemon (dev)
 
 ### Integraciones
-- **Mercado Pago**: Pagos con tarjetas y otros medios
+- **Mercado Pago**: Pagos con tarjetas, efectivo y transferencia
 - **Google OAuth**: Inicio de sesión con Google
-- **n8n**: Automatización de emails (bienvenida, recuperación, confirmación)
+- **Clerk**: Autenticación y gestión de usuarios
+- **Groq**: Chatbot IA (Llama 3)
+- **Gemini**: Utilidades de IA
 
 ## Estructura
 
 ```
 vntg-hub/
-├── client/          # Frontend React + Vite
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── pages/
-│   │   └── main.jsx
-│   ├── .env
-│   ├── .env.production
-│   └── package.json
-├── server/          # Backend Express
-│   ├── index.js
-│   ├── db.js
-│   ├── escaner.js
-│   ├── .env
-│   └── package.json
+├── client/                      # Frontend React + Vite
+│   ├── public/
+│   │   ├── ar.png, us.png       # Banderas multi-moneda
+│   └── src/
+│       ├── components/          # Navbar, Chatbot, Footer, CartSidebar, WishListSidebar, etc.
+│       ├── context/             # CartContext, CurrencyContext, WishListContext, SidebarContext, ToastContext
+│       ├── pages/               # 20 páginas (Inicio, Catálogo, DetalleProducto, Checkout, Tutoriales, AdminPanel, etc.)
+│       ├── App.jsx
+│       └── main.jsx
+├── server/                      # Backend Express
+│   ├── index.js                 # Servidor principal
+│   ├── db.js                    # Conexión MySQL
+│   ├── crypto.js                # Funciones criptográficas
+│   ├── shipping.js              # Lógica de envíos
+│   ├── escaner.js               # Escaneo de productos
+│   ├── imapPoller.js            # Poller de bandeja de entrada IMAP
+│   ├── migrate-shipping-config.sql
+│   └── isrgrootx1.pem           # Certificado CA
+├── .gitignore
 └── README.md
 ```
+
+### Contextos (Estado Global)
+| Contexto | Propósito |
+|----------|-----------|
+| `CartContext` | Carrito de compras persistente |
+| `WishListContext` | Lista de favoritos |
+| `CurrencyContext` | Selector USD / ARS |
+| `SidebarContext` | Estado de sidebars (carrito, wishlist, categorías) |
+| `ToastContext` | Notificaciones toast |
+
+### Páginas Principales
+| Ruta | Página |
+|------|--------|
+| `/` | Inicio |
+| `/categoria/:slug` | Catálogo por categoría (funkos, figuras, anime, gaming) |
+| `/producto/:id` | Detalle de producto |
+| `/checkout` | Checkout con Mercado Pago |
+| `/login`, `/registro` | Autenticación |
+| `/mi-cuenta` | Perfil de usuario |
+| `/puntos` | Canjeo de puntos |
+| `/tutoriales` | Videoteca con reproductor custom |
+| `/admin` | Panel de administración (CRUD productos) |
+| `/soporte` | Panel de soporte |
+| `/contacto` | Formulario de contacto |
+| `/pedido/:id` | Detalle de pedido |
 
 ## Requisitos
 
