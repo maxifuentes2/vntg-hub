@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
 import { useWishList } from '../context/WishListContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -42,6 +43,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
     const location = useLocation(); 
     const { addToCart } = useCart(); 
     const { addToWishList } = useWishList();
+    const { formatPrice } = useCurrency();
     
     const [categoryId, setCategoryId] = useState(null);
     const [productos, setProductos] = useState([]);
@@ -240,7 +242,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                     {item.title}
                                 </h3>
                                 <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
-                                    <p className="text-xl max-[400px]:text-lg font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
+                                    <p className="text-xl max-[400px]:text-lg font-black italic">{formatPrice(item.price)}</p>
                                     <div className="flex items-center gap-4">
                                         <button 
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToWishList(item); }} 
@@ -293,7 +295,7 @@ const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
                                         <CircleDollarSign size={14} className="text-brand-orange" /> Rango de Precio
                                     </h4>
                                     <span className="text-xs font-black italic text-brand-orange">
-                                        ${Number(precioMinLocal).toLocaleString()} - ${Number(precioMaxLocal).toLocaleString()}
+                                        {formatPrice(precioMinLocal)} - {formatPrice(precioMaxLocal)}
                                     </span>
                                 </div>
                                 <div className="relative h-12 flex items-center px-2">

@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useSidebar } from '../context/SidebarContext';
+import { useCurrency } from '../context/CurrencyContext';
 import SidebarWrapper from './SidebarWrapper';
 
 export default function CartSidebar() {
     const { isCartOpen, closeAll } = useSidebar();
-    const { cart, removeFromCart, updateQuantity, shippingType, setShippingType, finalTotal, cartTotal, FREE_SHIPPING_THRESHOLD, clearCart } = useCart();
+    const { cart, removeFromCart, updateQuantity, shippingType, setShippingType, finalTotal, cartTotal, FREE_SHIPPING_THRESHOLD, COSTO_NORMAL, COSTO_PRIO, clearCart } = useCart();
+    const { formatPrice } = useCurrency();
     const [confirmClear, setConfirmClear] = useState(false);
 
     useEffect(() => {
@@ -41,7 +43,7 @@ export default function CartSidebar() {
                 <div className="mb-6 p-4 bg-zinc-50 dark:bg-zinc-800/50  rounded-2xl shadow-sm">
                     <div className="flex justify-between items-center mb-2">
                         <span className={`text-[9px] font-black uppercase italic tracking-widest ${tieneEnvioGratis ? 'text-emerald-500' : 'text-zinc-500'}`}>
-                            {tieneEnvioGratis ? '¡Envío Gratis Desbloqueado!' : `Faltan $${faltante.toLocaleString('es-AR')} para envío gratis`}
+                            {tieneEnvioGratis ? '¡Envío Gratis Desbloqueado!' : `Faltan ${formatPrice(faltante)} para envío gratis`}
                         </span>
                         <Truck size={14} className={tieneEnvioGratis ? 'text-emerald-500' : 'text-zinc-500'} />
                     </div>
@@ -57,7 +59,7 @@ export default function CartSidebar() {
                         <img src={item.images} className="w-16 xs:w-20 h-16 xs:h-20 object-cover  rounded-xl shadow-sm" alt="" />
                         <div className="flex-grow">
                             <h3 className="text-xs font-black uppercase italic line-clamp-1">{item.title}</h3>
-                            <p className="text-brand-orange font-black italic text-sm mb-3">${item.price.toLocaleString('es-AR')}</p>
+                            <p className="text-brand-orange font-black italic text-sm mb-3">{formatPrice(item.price)}</p>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800  px-2 py-1 rounded-xl">
                                     <button onClick={() => updateQuantity(item.id, -1)} className="hover:text-brand-orange transition-colors"><Minus size={14} /></button>
@@ -97,7 +99,7 @@ export default function CartSidebar() {
                                             {type === 'retiro' ? 'Retiro en Sucursal' : type === 'normal' ? 'Correo Argentino Clásico' : 'Correo Argentino Expreso'}
                                         </span>
                                         <span className="text-[10px] font-black text-emerald-500">
-                                            {(type === 'retiro' || tieneEnvioGratis) ? 'GRATIS' : type === 'normal' ? '$9.426' : '$17.276'}
+                                            {(type === 'retiro' || tieneEnvioGratis) ? 'GRATIS' : type === 'normal' ? formatPrice(COSTO_NORMAL) : formatPrice(COSTO_PRIO)}
                                         </span>
                                     </div>
                                 </button>
@@ -107,7 +109,7 @@ export default function CartSidebar() {
 
                     <div className="flex justify-between items-end border-t border-zinc-100 dark:border-zinc-800 pt-6">
                         <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Total Final</span>
-                        <span className="text-2xl xs:text-3xl font-black italic text-brand-orange">${finalTotal.toLocaleString('es-AR')}</span>
+                        <span className="text-2xl xs:text-3xl font-black italic text-brand-orange">{formatPrice(finalTotal)}</span>
                     </div>
                     
                     <Link to="/checkout" onClick={closeAll} className="w-full bg-brand-orange text-white py-4 xs:py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-orange/20 rounded-2xl text-[11px] xs:text-sm">

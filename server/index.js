@@ -10,6 +10,8 @@ const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const ImapPoller = require("./imapPoller");
+const crypto = require("./crypto");
+const shipping = require("./shipping");
 
 // Tablas creadas manualmente en TiDB Cloud
 
@@ -834,9 +836,10 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
             subtotal += prod[0].price * item.cantidad;
         }
         let shippingCost = 0;
-        if (subtotal < 200000) {
-            if (shippingType === "normal") shippingCost = 9426.05;
-            else if (shippingType === "prioritario") shippingCost = 17276.99;
+        const cfg = await shipping.loadConfig(db);
+        if (subtotal < cfg.ENVIO_GRATIS_DESDE) {
+            if (shippingType === "normal") shippingCost = cfg.COSTO_NORMAL;
+            else if (shippingType === "prioritario") shippingCost = cfg.COSTO_PRIORITARIO;
         }
         
         const totalPrevio = subtotal + shippingCost;
@@ -929,6 +932,134 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Error en checkout:", error);
         res.status(500).json({ error: "Error al procesar el pago" });
+    }
+});
+
+// --- CONFIG DE ENVÍOS ---
+app.get("/api/shipping/config", async (req, res) => {
+    const cfg = await shipping.loadConfig(db);
+    res.json({
+        envioNormal: cfg.COSTO_NORMAL,
+        envioPrioritario: cfg.COSTO_PRIORITARIO,
+        envioGratisDesde: cfg.ENVIO_GRATIS_DESDE,
+    });
+});
+
+app.get("/api/crypto/min-amounts", async (req, res) => {
+    try {
+        const coins = ["usdttrc20", "usdc", "btc", "eth", "ltc", "sol"];
+        const mins = await Promise.all(
+            coins.map(async (coin) => {
+                const min = await crypto.getMinAmount({ currency_to: coin });
+                return { coin, min: Math.ceil(min) };
+            }),
+        );
+        res.json({ mins });
+    } catch (error) {
+        console.error("Error obteniendo mínimos crypto:", error);
+        res.status(500).json({ error: "Error al obtener mínimos" });
+    }
+});
+
+// --- CHECKOUT CRYPTO ---
+app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
+    const { cart, shipping, shippingType, usePoints, payCurrency } = req.body;
+    if (!Array.isArray(cart) || cart.length === 0) {
+        return res.status(400).json({ error: "Carrito vacío" });
+    }
+    try {
+        await db.query("UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'", [req.user.id]);
+        let orderId = generatePatenteId();
+        let exists = true;
+        while (exists) {
+            const [dup] = await db.query("SELECT id FROM orders WHERE id = ?", [orderId]);
+            if (dup.length === 0) exists = false;
+            else orderId = generatePatenteId();
+        }
+
+        let subtotal = 0;
+        for (let item of cart) {
+            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
+            if (prod.length === 0) continue;
+            subtotal += Number(prod[0].price) * (item.cantidad || 1);
+        }
+        let descuento = 0;
+        let puntosARestar = 0;
+        if (usePoints && subtotal > 0) {
+            const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
+            const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
+            const valorPorPunto = 10;
+            const descuentoMaximo = puntosDisponibles * valorPorPunto;
+            if (descuentoMaximo >= subtotal) {
+                descuento = subtotal;
+                puntosARestar = Math.ceil(subtotal / valorPorPunto);
+            } else {
+                descuento = descuentoMaximo;
+                puntosARestar = puntosDisponibles;
+            }
+        }
+        const totalFinal = subtotal - descuento;
+
+        if (puntosARestar > 0) {
+            await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
+        }
+
+        await db.query(
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR), 'crypto')",
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
+        );
+        for (let item of cart) {
+            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
+            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, prod[0]?.price || 0]);
+            await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad || 1, item.id]);
+        }
+
+        if (totalFinal <= 0) {
+            await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
+            const [orderData] = await db.query("SELECT * FROM orders WHERE id = ?", [orderId]);
+            return res.json({ totalCero: true, orderId, order: orderData[0] });
+        }
+
+        const coin = payCurrency || "usdttrc20";
+        const tasaUSD = await crypto.getArsUsdRate();
+        const minUSD = await crypto.getMinAmount({ currency_to: coin });
+        const precioUSD = Math.ceil(totalFinal / tasaUSD);
+        const price_amount = Math.max(precioUSD, Math.ceil(minUSD));
+
+        const ipnUrl = `https://vntg-hub.onrender.com/api/webhooks/nowpayments?order_id=${orderId}`;
+        const payment = await crypto.createPayment({
+            price_amount,
+            pay_currency: coin,
+            order_id: orderId,
+            ipn_callback_url: ipnUrl,
+        });
+
+        await db.query("UPDATE orders SET crypto_info = ? WHERE id = ?", [
+            JSON.stringify({
+                payment_id: payment.payment_id,
+                pay_address: payment.pay_address,
+                pay_amount: payment.pay_amount,
+                pay_currency: payment.pay_currency,
+                created_at: new Date().toISOString(),
+            }),
+            orderId,
+        ]);
+
+        res.json({
+            orderId,
+            cryptoPayment: {
+                payment_id: payment.payment_id,
+                pay_address: payment.pay_address,
+                pay_amount: payment.pay_amount,
+                pay_currency: payment.pay_currency,
+                price_amount: payment.price_amount,
+                tasa_ars: tasaUSD,
+                total_ars: totalFinal,
+            },
+        });
+    } catch (error) {
+        console.error("Error en checkout crypto:", error);
+        res.status(500).json({ error: error.message || "Error al procesar pago crypto" });
     }
 });
 
@@ -1037,6 +1168,58 @@ app.post("/api/orders/:id/retry-payment", verifyToken, async (req, res) => {
     }
 });
 
+app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { payCurrency } = req.body;
+    try {
+        const [orders] = await db.query("SELECT * FROM orders WHERE id = ? AND user_id = ?", [id, req.user.id]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+
+        const order = orders[0];
+        if (order.status !== "pending") return res.status(400).json({ error: "La orden no está pendiente" });
+
+        const coin = payCurrency || "usdttrc20";
+        const tasaUSD = await crypto.getArsUsdRate();
+        const minUSD = await crypto.getMinAmount({ currency_to: coin });
+        const precioUSD = Math.ceil(Number(order.total) / tasaUSD);
+        const price_amount = Math.max(precioUSD, Math.ceil(minUSD));
+
+        const ipnUrl = `https://vntg-hub.onrender.com/api/webhooks/nowpayments?order_id=${id}`;
+        const payment = await crypto.createPayment({
+            price_amount,
+            pay_currency: coin,
+            order_id: id,
+            ipn_callback_url: ipnUrl,
+        });
+
+        await db.query("UPDATE orders SET crypto_info = ? WHERE id = ?", [
+            JSON.stringify({
+                payment_id: payment.payment_id,
+                pay_address: payment.pay_address,
+                pay_amount: payment.pay_amount,
+                pay_currency: payment.pay_currency,
+                created_at: new Date().toISOString(),
+            }),
+            id,
+        ]);
+
+        res.json({
+            crypto: {
+                payment_id: payment.payment_id,
+                pay_address: payment.pay_address,
+                pay_amount: payment.pay_amount,
+                pay_currency: payment.pay_currency,
+                price_amount,
+                tasa_ars: tasaUSD,
+                total_ars: Number(order.total),
+            },
+        });
+    } catch (error) {
+        console.error("Error al reintentar pago crypto:", error);
+        res.status(500).json({ error: "Error al generar pago crypto" });
+    }
+});
+
 // ==========================================
 // --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
 // ==========================================
@@ -1080,6 +1263,71 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
         res.status(200).send("OK");
     }
 });
+
+// --- WEBHOOK DE NOWPAYMENTS ---
+app.post("/api/webhooks/nowpayments", async (req, res) => {
+    try {
+        const orderId = req.query.order_id || req.body.order_id;
+        const paymentStatus = req.body.payment_status;
+        const paymentId = req.body.payment_id;
+
+        if (!orderId) return res.status(200).send("OK");
+        if (paymentStatus === "finished" || paymentStatus === "confirmed") {
+            const [orderCheck] = await db.query("SELECT status, total, user_id FROM orders WHERE id = ?", [orderId]);
+            await db.query("UPDATE orders SET status = 'approved', payment_id = ? WHERE id = ?", [paymentId, orderId]);
+            if (orderCheck.length > 0 && orderCheck[0].status !== "approved") {
+                const puntos = Math.floor(parseFloat(orderCheck[0].total) / 1);
+                if (puntos > 0) {
+                    await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntos, orderCheck[0].user_id]);
+                }
+            }
+            console.log(`[crypto] Pago confirmado orden ${orderId}`);
+        }
+        res.status(200).send("OK");
+    } catch (error) {
+        console.error("Error en webhook NowPayments:", error.message);
+        res.status(200).send("OK");
+    }
+});
+
+// --- CONSULTAR ESTADO PAGO CRYPTO ---
+app.get("/api/crypto/payment/:orderId", verifyToken, async (req, res) => {
+    const { orderId } = req.params;
+    try {
+        const [orders] = await db.query("SELECT id, status, crypto_info FROM orders WHERE id = ? AND user_id = ?", [orderId, req.user.id]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+
+        const order = orders[0];
+        const cryptoInfo = order.crypto_info ? JSON.parse(order.crypto_info) : null;
+        let paymentStatus = null;
+        if (cryptoInfo?.payment_id) {
+            try {
+                const info = await crypto.getPaymentStatus(cryptoInfo.payment_id);
+                paymentStatus = info.payment_status;
+                if (paymentStatus === 'finished' && order.status === 'pending') {
+                    await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
+                    order.status = 'approved';
+                }
+            } catch { }
+        }
+        res.json({ status: order.status, cryptoInfo, paymentStatus });
+    } catch (error) {
+        console.error("Error al consultar pago crypto:", error);
+        res.status(500).json({ error: "Error al consultar pago" });
+    }
+});
+
+// --- TASA ARS/USD ---
+app.get("/api/tasa-usd", async (req, res) => {
+    try {
+        const tasa = await crypto.getArsUsdRate();
+        res.json({ tasa_ars: tasa });
+    } catch (error) {
+        console.error("Error obteniendo tasa:", error);
+        res.status(500).json({ error: "Error al obtener tasa de cambio" });
+    }
+});
+
 // ==========================================
 // --- RUTAS DE ADMINISTRACIÓN (CRUD y Órdenes) ---
 // ==========================================
@@ -1440,6 +1688,30 @@ app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
 
 // ==========================================
 
+// --- SHIPPING CONFIG (admin) ---
+app.get("/api/admin/shipping-config", verifyAdmin, async (req, res) => {
+    const cfg = await shipping.loadConfig(db);
+    res.json(cfg);
+});
+
+app.put("/api/admin/shipping-config", verifyAdmin, async (req, res) => {
+    const { envio_normal, envio_prioritario, envio_gratis_desde } = req.body;
+    try {
+        await db.query(
+            "UPDATE shipping_config SET envio_normal = ?, envio_prioritario = ?, envio_gratis_desde = ? WHERE id = 1",
+            [envio_normal, envio_prioritario, envio_gratis_desde],
+        );
+        shipping.invalidateCache();
+        const cfg = await shipping.loadConfig(db);
+        res.json({ message: "Configuración de envío actualizada", config: cfg });
+    } catch (error) {
+        console.error("Error actualizando shipping config:", error);
+        res.status(500).json({ error: "Error al actualizar configuración de envío" });
+    }
+});
+
+// ==========================================
+
 // --- LOOKUP DE ORDEN POR ID (para chatbot / consulta pública) ---
 app.post("/api/orders/lookup", async (req, res) => {
     const { orderId } = req.body;
@@ -1794,6 +2066,25 @@ app.listen(PORT, "0.0.0.0", async () => {
         }
     } catch (e) {
         console.log('[db] Columnas ya existen o error:', e.message);
+    }
+
+    // Agregar columnas crypto a orders
+    try {
+        const [cols] = await db.query("SHOW COLUMNS FROM orders LIKE 'payment_method'");
+        if (cols.length === 0) {
+            await db.query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(20) DEFAULT 'mp'");
+            await db.query("ALTER TABLE orders ADD COLUMN crypto_info TEXT NULL");
+            console.log('[db] Columnas payment_method y crypto_info agregadas a orders');
+        }
+    } catch (e) {
+        console.log('[db] Columnas orders ya existen o error:', e.message);
+    }
+
+    // Cargar configuración de envío (fallback a .env si la tabla no existe)
+    try {
+        await shipping.loadConfig(db);
+    } catch (e) {
+        console.log('[db] Error cargando shipping_config:', e.message);
     }
 
     imapPoller.start();

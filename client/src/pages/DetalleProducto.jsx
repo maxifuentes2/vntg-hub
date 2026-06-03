@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext'; 
+import { useCurrency } from '../context/CurrencyContext'; 
 import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -50,6 +51,7 @@ const DetalleProducto = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { formatPrice } = useCurrency();
     const { addToWishList, removeFromWishList, wishListItems } = useWishList(); 
     
     const [producto, setProducto] = useState(null);
@@ -225,7 +227,7 @@ const DetalleProducto = () => {
                             
                             {/* PRECIO Y STOCK */}
                             <div className="flex flex-col mt-4">
-                                <p className="text-2xl max-[400px]:text-xl font-black italic text-brand-orange">${Number(producto.price).toLocaleString('es-AR')}</p>
+                                <p className="text-2xl max-[400px]:text-xl font-black italic text-brand-orange">{formatPrice(producto.price)}</p>
                                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-2">
                                     Stock Disponible: <span className={producto.stock === 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}>{producto.stock ?? '0'}</span>
                                 </p>
@@ -311,7 +313,7 @@ const DetalleProducto = () => {
                                             <h3 className="text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-3">{item.title}</h3>
                                         </Link>
                                         <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                                            <p className="text-xl font-black italic">${Number(item.price).toLocaleString('es-AR')}</p>
+                                            <p className="text-xl font-black italic">{formatPrice(item.price)}</p>
                                             <button
                                                 onClick={() => addToCart(item)}
                                                 disabled={item.stock === 0}

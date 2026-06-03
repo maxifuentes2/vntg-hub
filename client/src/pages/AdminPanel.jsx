@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Package, RefreshCw, Plus, Pen, Trash2, X, Tag, ClipboardList, ChevronDown, TriangleAlert, MessageSquare, House } from 'lucide-react';
+import { Search, Package, RefreshCw, Plus, Pen, Trash2, X, Tag, ClipboardList, ChevronDown, TriangleAlert, MessageSquare, House, Truck, Save, Loader } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function AdminPanel() {
     const { addToast } = useToast();
+    const { formatPrice } = useCurrency();
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [orders, setOrders] = useState([]);
     const [selectedOrders, setSelectedOrders] = useState(new Set());
+    const [shippingConfig, setShippingConfig] = useState({ envio_normal: 9426.05, envio_prioritario: 17276.99, envio_gratis_desde: 200000 });
+    const [savingShipping, setSavingShipping] = useState(false);
 
     const getOrderShippingType = (order) => {
         try {
@@ -116,6 +120,10 @@ export default function AdminPanel() {
         handleResponse(`${API_URL}/api/admin/products`, setProducts);
         handleResponse(`${API_URL}/api/admin/categories`, setCategories);
         handleResponse(`${API_URL}/api/admin/orders`, setOrders);
+        fetch(`${API_URL}/api/admin/shipping-config`, { headers })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d) setShippingConfig(d); })
+            .catch(() => {});
     };
 
     // --- MANEJO DE PRODUCTOS ---
@@ -167,6 +175,27 @@ export default function AdminPanel() {
             addToast({}, 'Error de conexión', 'error');
             console.error("Error al guardar:", error); 
         }
+    };
+
+    const handleSaveShipping = async () => {
+        const token = localStorage.getItem('vntg_token');
+        setSavingShipping(true);
+        try {
+            const res = await fetch(`${API_URL}/api/admin/shipping-config`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(shippingConfig),
+            });
+            if (res.ok) {
+                addToast({}, 'Configuración de envío actualizada', 'success');
+                fetchData();
+            } else {
+                addToast({}, 'Error al guardar configuración', 'error');
+            }
+        } catch {
+            addToast({}, 'Error de conexión', 'error');
+        }
+        setSavingShipping(false);
     };
 
     // --- MANEJO DE ELIMINACIÓN ESTÉTICA ---
@@ -346,6 +375,12 @@ export default function AdminPanel() {
                             >
                                 <ClipboardList size={14} /> <span className="max-[400px]:hidden">Órdenes</span><span className="hidden max-[400px]:inline">Ords.</span>
                             </button>
+                            <button
+                                onClick={() => setActiveTab('shipping')}
+                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all max-[400px]:w-auto max-[400px]:shrink-0 ${activeTab === 'shipping' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                            >
+                                <Truck size={14} /> <span className="max-[400px]:hidden">Envíos</span><span className="hidden max-[400px]:inline">Env.</span>
+                            </button>
                             </div>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:shrink-0">
                                 <button
@@ -365,10 +400,10 @@ export default function AdminPanel() {
                         <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
                             <div>
                                 <h1 className="text-4xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">
-                                    {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : 'Órdenes'}
+                                    {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : activeTab === 'shipping' ? 'Envíos' : 'Órdenes'}
                                 </h1>
                                 <p className="text-brand-orange text-[10px] font-bold uppercase tracking-widest mt-1">
-                                    {activeTab === 'products' ? 'Gestión de Inventario' : activeTab === 'categories' ? 'Clasificación de Productos' : `Total: ${metrics.total} pedidos`}
+                                    {activeTab === 'products' ? 'Gestión de Inventario' : activeTab === 'categories' ? 'Clasificación de Productos' : activeTab === 'shipping' ? 'Configuración de Envío' : `Total: ${metrics.total} pedidos`}
                                 </p>
                             </div>
 
@@ -399,7 +434,7 @@ export default function AdminPanel() {
 
                                         <div className="flex justify-between items-end">
                                             <div>
-                                                <div className="text-brand-orange font-black italic text-lg mb-1">${Number(p.price).toLocaleString()}</div>
+                                                <div className="text-brand-orange font-black italic text-lg mb-1">{formatPrice(p.price)}</div>
                                                 <div className="flex items-center gap-2">
                                                     <div className={`h-2 w-2 rounded-full ${p.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
                                                     <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-black uppercase">Stock: {p.stock}</p>
@@ -463,7 +498,7 @@ export default function AdminPanel() {
                                         </div>
                                         <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm">
                                             <p className="text-[9px] font-black uppercase text-green-500 italic tracking-wider mb-1">Ingresos</p>
-                                            <p className="text-3xl font-black italic text-zinc-900 dark:text-white">${Number(metrics.ingresos).toLocaleString()}</p>
+                                            <p className="text-3xl font-black italic text-zinc-900 dark:text-white">{formatPrice(metrics.ingresos)}</p>
                                         </div>
                                     </div>
 
@@ -569,7 +604,7 @@ export default function AdminPanel() {
                                                 <div className="flex items-center gap-2 xs:gap-6 ml-7 md:ml-0 max-[400px]:flex-wrap max-[400px]:w-full">
                                                     <div className="text-right">
                                                         <p className="text-[10px] font-bold text-zinc-500 uppercase">Total</p>
-                                                        <p className="text-brand-orange font-black italic text-lg">${Number(order.total).toLocaleString()}</p>
+                                                        <p className="text-brand-orange font-black italic text-lg">{formatPrice(order.total)}</p>
                                                     </div>
 
                                                     <div className="flex flex-col gap-1">
@@ -648,11 +683,40 @@ export default function AdminPanel() {
                                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3 mt-3">
                                                 <div className="flex justify-between items-center text-xs">
                                                     <span className="font-black uppercase italic text-zinc-900 dark:text-white">Ingresos Totales</span>
-                                                    <span className="font-black italic text-green-500">${Number(metrics.ingresos).toLocaleString()}</span>
+                                                    <span className="font-black italic text-green-500">{formatPrice(metrics.ingresos)}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'shipping' && (
+                            <div className="max-w-lg space-y-6">
+                                <div className="bg-zinc-50 dark:bg-brand-card p-6 rounded-2xl shadow-sm space-y-4">
+                                    {[
+                                        { key: 'envio_normal', label: 'Envío Normal (ARS)', value: shippingConfig.envio_normal },
+                                        { key: 'envio_prioritario', label: 'Envío Prioritario (ARS)', value: shippingConfig.envio_prioritario },
+                                        { key: 'envio_gratis_desde', label: 'Envío Gratis desde (ARS)', value: shippingConfig.envio_gratis_desde },
+                                    ].map(field => (
+                                        <div key={field.key}>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1 block">{field.label}</label>
+                                            <input
+                                                type="number"
+                                                value={shippingConfig[field.key]}
+                                                onChange={e => setShippingConfig(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))}
+                                                className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-brand-orange transition-colors"
+                                            />
+                                        </div>
+                                    ))}
+                                    <button
+                                        onClick={handleSaveShipping}
+                                        disabled={savingShipping}
+                                        className="w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95 disabled:opacity-60"
+                                    >
+                                        {savingShipping ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
+                                        {savingShipping ? 'Guardando...' : 'Guardar Configuración'}
+                                    </button>
                                 </div>
                             </div>
                         )}

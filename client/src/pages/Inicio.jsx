@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Box, ArrowRight, Loader, ChevronDown, Heart, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
+import { useCurrency } from '../context/CurrencyContext';
 import Reveal from '../components/Reveal';
 import { slugify } from '../utils/slugify';
 
@@ -10,6 +11,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // Componente de imagen con hover para mostrar segunda foto de galería
 const CardImage = ({ item }) => {
+    const { formatPrice } = useCurrency();
     const gallery = (() => {
         if (!item.gallery) return [];
         if (Array.isArray(item.gallery)) return item.gallery;
@@ -40,6 +42,7 @@ const CardImage = ({ item }) => {
 };
 
 const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], removeFromWishList }) => {
+    const { formatPrice } = useCurrency();
     const scrollContainerRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
@@ -120,7 +123,7 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
 
                                     <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 mt-auto">
                                         <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">
-                                            ${Number(item.price).toLocaleString('es-AR')}
+                                            {formatPrice(item.price)}
                                         </p>
                                         <div className="flex items-center gap-4">
                                             <button

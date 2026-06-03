@@ -21,9 +21,23 @@ export const CartProvider = ({ children }) => {
         }
     });
 
-    const FREE_SHIPPING_THRESHOLD = 200000;
-    const COSTO_NORMAL = 9426.05;
-    const COSTO_PRIO = 17276.99;
+    const [shippingConfig, setShippingConfig] = useState({
+        envioNormal: 9426.05, envioPrioritario: 17276.99, envioGratisDesde: 200000,
+    });
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/shipping/config`);
+                if (res.ok) setShippingConfig(await res.json());
+            } catch {}
+        };
+        fetchConfig();
+    }, []);
+
+    const FREE_SHIPPING_THRESHOLD = shippingConfig.envioGratisDesde;
+    const COSTO_NORMAL = shippingConfig.envioNormal;
+    const COSTO_PRIO = shippingConfig.envioPrioritario;
 
     // Persistir a localStorage en cada cambio
     useEffect(() => {
@@ -221,7 +235,7 @@ export const CartProvider = ({ children }) => {
         <CartContext.Provider value={{ 
             cart, addToCart, removeFromCart, updateQuantity, clearCart, 
             cartTotal, shippingType, setShippingType, finalTotal, getShippingCost,
-            FREE_SHIPPING_THRESHOLD, cartCount: cart.length, refreshCartPrices,
+            FREE_SHIPPING_THRESHOLD, COSTO_NORMAL, COSTO_PRIO, cartCount: cart.length, refreshCartPrices,
             syncCartToServer
         }}>
             {children}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2, Heart } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -9,6 +10,7 @@ export default function MiCuenta() {
     const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
     const [addresses, setAddresses] = useState([]); 
+    const { formatPrice } = useCurrency();
     const [categories, setCategories] = useState([]);
     const [interests, setInterests] = useState([]);
     const [showAllCategories, setShowAllCategories] = useState(false);
@@ -285,7 +287,7 @@ export default function MiCuenta() {
                                 <span className="bg-brand-orange/10 text-brand-orange text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-brand-orange/20">
                                     Beneficio Activo
                                 </span>
-                                <p className="text-[9px] text-zinc-400 mt-1.5 italic font-medium">1 PTS = $10 de descuento</p>
+                                <p className="text-[9px] text-zinc-400 mt-1.5 italic font-medium">1 PTS = {formatPrice(10)} de descuento</p>
                             </div>
                         </div>
                     </div>
@@ -477,7 +479,7 @@ export default function MiCuenta() {
                                             }`}>
                                                 {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'En Preparación' : order.status === 'ready' ? 'Listo para Retirar' : order.status === 'shipped' ? 'Enviado' : order.status === 'delivered' ? 'Entregado' : 'Pendiente'}
                                             </span>
-                                            <p className="text-xl font-black italic mt-1">${parseFloat(order.total).toLocaleString('es-AR')}</p>
+                                            <p className="text-xl font-black italic mt-1">{formatPrice(order.total)}</p>
                                         </div>
                                         <ChevronRight className="text-zinc-300 dark:text-zinc-600 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
                                     </div>

@@ -35,6 +35,7 @@ import { CartProvider } from './context/CartContext';
 import { WishListProvider } from './context/WishListContext';
 import { ToastProvider } from './context/ToastContext'; 
 import { SidebarProvider } from './context/SidebarContext'; 
+import { CurrencyProvider } from './context/CurrencyContext'; 
 
 // IMPORTACIONES DE AUTENTICACIÓN Y CHECKOUT
 import Checkout from './pages/Checkout';
@@ -75,6 +76,7 @@ function App() {
 
   return (
     <ToastProvider>
+      <CurrencyProvider>
       <SidebarProvider>
         <CartProvider>
           <WishListProvider> 
@@ -132,6 +134,7 @@ function App() {
           </WishListProvider>
         </CartProvider>
       </SidebarProvider>
+      </CurrencyProvider>
     </ToastProvider>
   );
 }

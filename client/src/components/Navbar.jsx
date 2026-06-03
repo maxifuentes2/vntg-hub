@@ -16,6 +16,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import { useSidebar } from '../context/SidebarContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -32,6 +33,7 @@ export default function Navbar() {
     const { openCart, openWishList, openCategory } = useSidebar();
     const { wishListCount } = useWishList();
     const { cartCount, cart, syncCartToServer } = useCart();
+    const { currency, toggleCurrency } = useCurrency();
     const navigate = useNavigate(); 
     const location = useLocation();
 
@@ -208,6 +210,10 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2">
+                    <button onClick={toggleCurrency} className="px-2.5 py-1.5 text-[11px] font-black uppercase italic tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors group">
+                        <span className={currency === 'USD' ? 'text-brand-orange' : 'text-zinc-500 group-hover:text-brand-orange'}>{currency}</span>
+                    </button>
+
                     <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                         {theme === 'dark' ? (
                             <Sun size={22} className="group-hover:text-brand-orange transition-colors" />
