@@ -27,6 +27,8 @@ export default function Navbar() {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [user, setUser] = useState(null);
     const userMenuRef = useRef(null);
+    const userButtonRef = useRef(null);
+    const userDropdownRef = useRef(null);
     const searchRef = useRef(null);
     
     // Conexión con el estado global de los sidebars
@@ -130,6 +132,24 @@ export default function Navbar() {
         window.location.reload();
     };
 
+    const toggleUserMenu = () => {
+        if (!isUserMenuOpen && userButtonRef.current && userDropdownRef.current) {
+            const rect = userButtonRef.current.getBoundingClientRect();
+            const isSmall = window.innerWidth <= 400;
+            const dd = userDropdownRef.current;
+            dd.style.position = 'fixed';
+            dd.style.top = (rect.bottom + 12) + 'px';
+            if (!isSmall) {
+                dd.style.right = (window.innerWidth - rect.right) + 'px';
+                dd.style.width = '256px';
+            } else {
+                dd.style.right = '';
+                dd.style.width = '';
+            }
+        }
+        setIsUserMenuOpen(!isUserMenuOpen);
+    };
+
     return (
         <nav className="sticky top-0 z-[100] bg-white dark:bg-brand-dark border-b border-zinc-100 dark:border-zinc-800 shadow-sm transition-all duration-500">
             <div className="max-w-[1700px] mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-1 sm:gap-4">
@@ -226,10 +246,10 @@ export default function Navbar() {
                     </button>
 
                     <div className="relative" ref={userMenuRef}>
-                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
+                        <button ref={userButtonRef} onClick={toggleUserMenu} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                             <User size={22} className="max-[360px]:size-5 group-hover:text-brand-orange transition-colors" />
                         </button>
-                        <div className={`absolute right-0 max-[400px]:fixed max-[400px]:left-2 max-[400px]:right-2 max-[400px]:w-auto mt-3 w-64 bg-white dark:bg-brand-card  shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
+                        <div ref={userDropdownRef} className={`fixed max-[400px]:left-2 max-[400px]:right-2 max-[400px]:w-auto mt-3 w-64 bg-white dark:bg-brand-card  shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
                             {user ? (
                                 <>
                                     <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 mb-2 bg-zinc-50/50 dark:bg-zinc-800">
