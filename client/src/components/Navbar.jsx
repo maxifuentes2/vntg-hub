@@ -11,7 +11,8 @@ import {
     LogOut,
     Settings,
     Heart,
-    Shield 
+    Shield,
+    X
 } from 'lucide-react'; 
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
@@ -115,10 +116,14 @@ export default function Navbar() {
         performSearch();
     };
 
-    const handleSelectResult = (product) => {
-        navigate(`/producto/${slugify(product.title)}`);
+    const clearSearch = () => {
         setSearchTerm('');
         setSearchResults([]);
+    };
+
+    const handleSelectResult = (product) => {
+        navigate(`/producto/${slugify(product.title)}`);
+        clearSearch();
     };
 
     const handleLogout = async () => {
@@ -176,6 +181,11 @@ export default function Navbar() {
                             placeholder="Buscar tesoros..." 
                             className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-base italic font-medium"
                         />
+                        {searchTerm && (
+                            <button type="button" onClick={clearSearch} className="pr-2 text-zinc-400 hover:text-red-400 transition-colors">
+                                <X size={18} />
+                            </button>
+                        )}
                         <button type="submit" className="px-6 text-zinc-400 hover:text-brand-orange transition-colors">
                             <Search size={20} />
                         </button>
@@ -311,6 +321,11 @@ export default function Navbar() {
                         placeholder="Buscar tesoros..." 
                         className="w-full bg-transparent py-2.5 px-6 outline-none dark:text-white text-base italic font-medium"
                     />
+                    {searchTerm && (
+                        <button type="button" onClick={clearSearch} className="pr-2 text-zinc-400 hover:text-red-400 transition-colors">
+                            <X size={18} />
+                        </button>
+                    )}
                     <button type="submit" className="px-6 text-zinc-400 hover:text-brand-orange transition-colors">
                         <Search size={20} />
                     </button>

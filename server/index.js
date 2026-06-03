@@ -41,129 +41,172 @@ const createTransporter = (prefix) => {
     });
 };
 
-const FOOTER_SOCIAL = `
-    <div style="text-align:center;margin-bottom:12px">
-        <a href="https://instagram.com/vntg.hub" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/2111/2111463.png" alt="Instagram" width="24" height="24"></a>
-        <a href="https://tiktok.com/@vntg.hub" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/3046/3046121.png" alt="TikTok" width="24" height="24"></a>
-        <a href="https://wa.me/5491123456789" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/3670/3670051.png" alt="WhatsApp" width="24" height="24"></a>
-        <a href="https://vntg-hub.vercel.app" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/1006/1006771.png" alt="Web" width="24" height="24"></a>
-    </div>`;
+const HEADER = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:16px 16px 0 0">
+        <tr>
+            <td align="center" style="padding:32px 24px 24px">
+                <a href="https://vntg-hub.vercel.app" style="text-decoration:none">
+                    <img src="https://vntg-hub.vercel.app/logo-texto-transparente.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+                </a>
+            </td>
+        </tr>
+    </table>`;
 
-const FOOTER = `${FOOTER_SOCIAL}
-    <hr style="margin:24px 0 12px;border:none;border-top:1px solid #eee">
-    <p style="color:#999;font-size:11px;text-align:center">VNTG Hub — Coleccionables Vintage</p>`;
+const FOOTER_SOCIAL = `
+    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto">
+        <tr>
+            <td style="padding:0 8px">
+                <a href="https://instagram.com/vntg.hub" style="display:inline-block;text-decoration:none" target="_blank">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="#E4405F"/><circle cx="12" cy="12" r="5" stroke="#fff" stroke-width="1.5" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff"/></svg>
+                </a>
+            </td>
+            <td style="padding:0 8px">
+                <a href="https://tiktok.com/@vntg.hub" style="display:inline-block;text-decoration:none" target="_blank">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="#111"/><path d="M17 9.5a3.5 3.5 0 0 1-3.5-3.5H11v9.75a2.25 2.25 0 1 1-1.5-2.08V10.3a4.5 4.5 0 1 0 4.5 4.7V9.5H17z" fill="#fff"/></svg>
+                </a>
+            </td>
+            <td style="padding:0 8px">
+                <a href="https://wa.me/5491123456789" style="display:inline-block;text-decoration:none" target="_blank">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="#25D366"/><path d="M17.5 6.5a7 7 0 0 1-11.05 8.65l-.7 2.6 2.7-.7A7 7 0 0 1 17.5 6.5z" stroke="#fff" stroke-width="1.3" fill="none"/><path d="M10 10.5c0-.3.3-.5.5-.5h.5c.3 0 .5.2.5.5v.5a2 2 0 0 1-2 2" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </a>
+            </td>
+            <td style="padding:0 8px">
+                <a href="https://vntg-hub.vercel.app" style="display:inline-block;text-decoration:none" target="_blank">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="#f97316"/><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </a>
+            </td>
+        </tr>
+    </table>`;
+
+const FOOTER = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:0 0 16px 16px">
+        <tr>
+            <td align="center" style="padding:4px 24px 20px">
+                ${FOOTER_SOCIAL}
+                <p style="color:#666;font-size:11px;margin:14px 0 0;font-family:Arial,sans-serif">VNTG Hub &mdash; Coleccionables Vintage</p>
+                <p style="color:#444;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Este correo fue enviado automáticamente. No respondas a este mensaje.</p>
+            </td>
+        </tr>
+    </table>`;
+
+const WRAP = (content) => `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 16px">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width:520px;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+                    <tr><td>${HEADER}</td></tr>
+                    <tr>
+                        <td style="padding:28px 32px 20px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
+                            ${content}
+                        </td>
+                    </tr>
+                    <tr><td>${FOOTER}</td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>`;
+
+const BTN = (text, url, bg = "#f97316") => `
+    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto">
+        <tr>
+            <td align="center" style="border-radius:8px;background:${bg};padding:0">
+                <a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;background:${bg};color:#ffffff;text-decoration:none;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.3px;mso-hide:all">${text}</a>
+            </td>
+        </tr>
+    </table>`;
 
 const buildEmailHtml = (type, data) => {
     switch (type) {
         case "2fa_code":
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#f97316">Código de verificación</h2>
-                <p>Tu código de un solo uso es:</p>
-                <div style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:24px;background:#f5f5f5;border-radius:12px;margin:16px 0">${data.code}</div>
-                <p style="color:#666">Válido por 5 minutos. Si no solicitaste este código, ignorá este mensaje.</p>
-                <div style="text-align:center;margin:16px 0">
-                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Ir a la Tienda</a>
+            return WRAP(`
+                <p style="font-size:14px;color:#666;margin:0 0 20px;font-family:Arial,sans-serif">Usá este código para completar tu inicio de sesión:</p>
+                <div style="background:#fff7ed;border:2px dashed #f97316;border-radius:12px;padding:20px;text-align:center;margin:0 0 20px">
+                    <span style="font-size:36px;font-weight:bold;letter-spacing:12px;color:#1a1a1a;font-family:monospace">${data.code}</span>
                 </div>
-                ${FOOTER}
-            </div>`;
+                <p style="font-size:12px;color:#999;margin:0 0 24px;font-family:Arial,sans-serif">Válido por 5 minutos. Si no solicitaste este código, ignorá este mensaje.</p>
+                ${BTN("Ir a la Tienda", "https://vntg-hub.vercel.app")}
+            `);
 
         case "stock_alert":
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#22c55e">¡Stock disponible!</h2>
-                <p>Hola ${data.userName},</p>
-                <p>El producto <strong>${data.productTitle}</strong> que tenías en tu lista de deseos ya tiene stock.</p>
-                <p>No esperes demasiado, ¡se agota rápido!</p>
-                <div style="text-align:center;margin:16px 0">
-                    <a href="https://vntg-hub.vercel.app/producto/${data.productId}" style="display:inline-block;padding:14px 32px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Ver producto</a>
+            return WRAP(`
+                <p style="font-size:14px;color:#1a1a1a;margin:0 0 6px;font-family:Arial,sans-serif">Hola ${data.userName},</p>
+                <p style="font-size:14px;color:#333;margin:0 0 16px;line-height:1.5;font-family:Arial,sans-serif">El producto que tenías en tu lista de deseos ya tiene stock.</p>
+                <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:14px 18px;border-radius:8px;margin:0 0 20px">
+                    <p style="font-size:15px;font-weight:bold;color:#15803d;margin:0;font-family:Arial,sans-serif">${data.productTitle}</p>
                 </div>
-                ${FOOTER}
-            </div>`;
+                <p style="font-size:13px;color:#666;margin:0 0 24px;font-family:Arial,sans-serif">¡No esperes demasiado! Este producto suele agotarse rápido.</p>
+                ${BTN("Ver producto", `https://vntg-hub.vercel.app/producto/${data.productId}`)}
+            `);
 
         case "order_status":
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#f97316">${data.title}</h2>
-                <p>${data.message}</p>
-                <div style="text-align:center;margin:20px 0">
-                    ${data.btnText && data.btnUrl ? `<a href="${data.btnUrl}" style="display:inline-block;padding:14px 32px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">${data.btnText}</a>` : ""}
+            return WRAP(`
+                <p style="font-size:18px;font-weight:bold;color:#f97316;margin:0 0 12px;font-family:Arial,sans-serif">${data.title}</p>
+                <p style="font-size:14px;color:#333;margin:0 0 24px;line-height:1.6;font-family:Arial,sans-serif">${data.message}</p>
+                ${data.btnText && data.btnUrl ? `<div style="margin:0 0 16px">${BTN(data.btnText, data.btnUrl)}</div>` : ""}
+                <div style="border-top:1px solid #eee;margin:20px 0 0;padding-top:20px;text-align:center">
+                    <a href="https://vntg-hub.vercel.app" style="color:#f97316;font-size:13px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif">Ir a la Tienda →</a>
                 </div>
-                <div style="text-align:center;margin:12px 0">
-                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:10px 24px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Ir a la Tienda</a>
-                </div>
-                ${FOOTER}
-            </div>`;
+            `);
 
         case "support_reply":
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#f97316">Respuesta de soporte</h2>
-                <p>Hola ${data.nombre},</p>
-                <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
-                    <p style="font-size:12px;color:#666;margin:0 0 8px"><strong>Tu mensaje:</strong></p>
-                    <p style="margin:0">${data.mensajeOriginal}</p>
+            return WRAP(`
+                <p style="font-size:14px;color:#1a1a1a;margin:0 0 18px;font-family:Arial,sans-serif">Hola ${data.nombre},</p>
+                <div style="background:#f5f5f5;padding:16px 18px;border-radius:8px;margin:0 0 14px">
+                    <p style="font-size:11px;color:#999;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">Tu consulta</p>
+                    <p style="font-size:13px;color:#333;margin:0;font-family:Arial,sans-serif">${data.mensajeOriginal}</p>
                 </div>
-                <div style="background:#fff7ed;padding:16px;border-radius:8px;margin:12px 0;border-left:4px solid #f97316">
-                    <p style="font-size:12px;color:#666;margin:0 0 8px"><strong>Nuestra respuesta:</strong></p>
-                    <p style="margin:0">${data.respuesta}</p>
+                <div style="background:#fff7ed;padding:16px 18px;border-radius:8px;margin:0 0 20px;border-left:4px solid #f97316">
+                    <p style="font-size:11px;color:#f97316;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">Nuestra respuesta</p>
+                    <p style="font-size:13px;color:#1a1a1a;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.respuesta}</p>
                 </div>
-                <div style="text-align:center;margin:16px 0">
-                    <a href="https://vntg-hub.vercel.app/perfil" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Ir a mi cuenta</a>
-                </div>
-                ${FOOTER}
-            </div>`;
+                ${BTN("Ir a mi cuenta", "https://vntg-hub.vercel.app/perfil")}
+            `);
 
         case "contact":
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#f97316">Nuevo mensaje de contacto</h2>
-                <p><strong>Nombre:</strong> ${data.nombre}</p>
-                <p><strong>Email:</strong> ${data.email}</p>
-                <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
-                    <p style="margin:0">${data.mensaje}</p>
+            return WRAP(`
+                <p style="font-size:14px;color:#666;margin:0 0 4px;font-family:Arial,sans-serif">Nuevo mensaje desde el formulario de contacto</p>
+                <p style="font-size:12px;color:#999;margin:0 0 16px;font-family:Arial,sans-serif"><strong>De:</strong> ${data.nombre} &lt;${data.email}&gt;</p>
+                <div style="background:#f5f5f5;padding:16px 18px;border-radius:8px;margin:0 0 4px">
+                    <p style="font-size:13px;color:#333;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.mensaje}</p>
                 </div>
-                ${FOOTER}
-            </div>`;
+            `);
 
-        case "chat_summary":
-            const chatHtml = Array.isArray(data.messages) ? data.messages.map((m, i) => {
+        case "chat_summary": {
+            const chatHtml = Array.isArray(data.messages) ? data.messages.map((m) => {
                 const isUser = m.role === "user";
                 const align = isUser ? "right" : "left";
                 const bg = isUser ? "#f97316" : "#f5f5f5";
                 const color = isUser ? "#fff" : "#1a1a1a";
                 const label = isUser ? "Tú" : "VNTG Bot";
-                const radius = isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
                 return `
-                    <div style="display:flex;flex-direction:column;align-items:${align};margin-bottom:12px">
-                        <span style="font-size:10px;color:#999;margin-bottom:2px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px">${label}</span>
-                        <div style="background:${bg};color:${color};padding:10px 14px;border-radius:${radius};max-width:85%;font-size:13px;line-height:1.5;word-wrap:break-word;box-shadow:0 1px 2px rgba(0,0,0,0.05)">
-                            ${m.text.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
+                    <tr>
+                        <td align="${align}" style="padding:4px 0">
+                            <span style="font-size:10px;color:#999;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px">${label}</span>
+                            <div style="display:inline-block;background:${bg};color:${color};padding:10px 14px;border-radius:18px;max-width:85%;font-size:13px;line-height:1.5;word-wrap:break-word;text-align:left;margin-top:2px;${isUser ? "border-bottom-right-radius:4px" : "border-bottom-left-radius:4px"}">
+                                ${m.text.replace(/\n/g, '<br>')}
+                            </div>
+                        </td>
+                    </tr>
                 `;
-            }).join("") : `<p style="color:#666">${data.summary || ""}</p>`;
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <div style="text-align:center;margin-bottom:20px">
-                    <h2 style="color:#f97316;margin:0 0 4px">💬 Transcripción de tu conversación</h2>
-                    <p style="color:#999;font-size:12px;margin:0">VNTG Hub — Chat de soporte</p>
-                </div>
-                <div style="background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:20px;margin:12px 0">
+            }).join("") : `<tr><td style="padding:12px 0;color:#666;font-size:13px">${data.summary || ""}</td></tr>`;
+            return WRAP(`
+                <p style="font-size:16px;font-weight:bold;color:#f97316;margin:0 0 4px;font-family:Arial,sans-serif">Transcripción de tu conversación</p>
+                <p style="font-size:12px;color:#999;margin:0 0 16px;font-family:Arial,sans-serif">VNTG Hub &mdash; Chat de soporte</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #eee;border-radius:12px;padding:16px">
                     ${chatHtml}
-                </div>
-                <div style="text-align:center;margin:16px 0">
-                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Volver a VNTG Hub</a>
-                </div>
-                ${FOOTER}
-            </div>`;
+                </table>
+                <div style="margin-top:20px">${BTN("Volver a VNTG Hub", "https://vntg-hub.vercel.app")}</div>
+            `);
+        }
 
         case "reset_password":
-            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#f97316">Restablecer contraseña</h2>
-                <p>Hola,</p>
-                <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en VNTG Hub.</p>
-                <p>Hacé clic en el botón de abajo para crear una nueva contraseña:</p>
-                <div style="text-align:center;margin:20px 0">
-                    <a href="${data.resetUrl}" style="display:inline-block;padding:14px 32px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Restablecer contraseña</a>
-                </div>
-                <p style="color:#666;font-size:12px">Este enlace expira en 1 hora. Si no solicitaste esto, ignorá este mensaje.</p>
-                ${FOOTER}
-            </div>`;
+            return WRAP(`
+                <p style="font-size:14px;color:#1a1a1a;margin:0 0 6px;font-family:Arial,sans-serif">Hola,</p>
+                <p style="font-size:14px;color:#333;margin:0 0 16px;line-height:1.5;font-family:Arial,sans-serif">Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>VNTG Hub</strong>.</p>
+                <p style="font-size:13px;color:#555;margin:0 0 20px;line-height:1.5;font-family:Arial,sans-serif">Hacé clic en el siguiente botón para crear una nueva contraseña:</p>
+                ${BTN("Restablecer contraseña", data.resetUrl)}
+                <p style="font-size:12px;color:#999;margin:16px 0 0;font-family:Arial,sans-serif">Este enlace expira en <strong>1 hora</strong>. Si no solicitaste este cambio, ignorá este mensaje.</p>
+            `);
     }
 };
 
@@ -1807,6 +1850,8 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
                 subject = "Estamos preparando tu pedido";
                 title = "En Preparación";
                 message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0, 8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
+                btnText = "Ver mi pedido";
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case "ready":
                 subject = "¡Tu pedido está listo para retirar!";
@@ -1826,6 +1871,8 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
                 subject = "Tu pedido ha sido entregado";
                 title = "¡Entrega Exitosa!";
                 message = `Hola ${order.name}, según nuestros registros el pedido #${id.slice(0, 8)} ya está en tus manos. ¡Esperamos que disfrutes tus nuevas piezas!`;
+                btnText = "Ver mi pedido";
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
         }
 
