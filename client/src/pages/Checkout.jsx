@@ -68,6 +68,19 @@ export default function Checkout() {
         const token = localStorage.getItem('vntg_token');
         if (!token) return;
 
+        // Traer datos frescos del usuario (incluyendo puntos actualizados)
+        fetch(`${API_URL}/api/user`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(freshUser => {
+                if (freshUser) {
+                    setUser(freshUser);
+                    localStorage.setItem('vntg_user', JSON.stringify(freshUser));
+                }
+            })
+            .catch(console.error);
+
         const storedUser = localStorage.getItem('vntg_user');
         const name = storedUser ? JSON.parse(storedUser).name || '' : '';
         const userData = storedUser ? JSON.parse(storedUser) : null;

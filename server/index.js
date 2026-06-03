@@ -236,6 +236,21 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+// --- USUARIO ACTUAL (datos frescos) ---
+app.get("/api/user", verifyToken, async (req, res) => {
+    try {
+        const [users] = await db.query(
+            "SELECT id, name, email, avatar, address, city, province, zip_code, phone, dni, role, points, created_at FROM users WHERE id = ?",
+            [req.user.id],
+        );
+        if (!users[0]) return res.status(404).json({ error: "Usuario no encontrado" });
+        res.json(users[0]);
+    } catch (err) {
+        console.error("Error /api/user:", err);
+        res.status(500).json({ error: "Error del servidor" });
+    }
+});
+
 // --- PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q, minPrice, maxPrice, franchise } = req.query;
