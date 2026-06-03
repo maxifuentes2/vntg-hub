@@ -72,6 +72,7 @@ export default function Footer() {
                             { name: 'Guía de Autenticidad', path: '/guia-autenticidad' },
                             { name: 'Envíos Seguros', path: '/envios' },
                             { name: 'Tutoriales', path: '/tutoriales' },
+                            { name: 'Puntos VNTG', path: '/puntos' },
                             { name: 'Contacto', path: '/contacto' }
                         ].map((link) => (
                             <Link 

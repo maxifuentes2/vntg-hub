@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2, Heart } from 'lucide-react';
+import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2, Heart, Info } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -278,7 +278,12 @@ export default function MiCuenta() {
                         {/* TARJETA VISIBLE DE PUNTOS ACUMULADOS */}
                         <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center md:col-span-2">
                             <div>
-                                <p className="text-[9px] font-black uppercase text-brand-orange tracking-wider">Mis Puntos VNTG</p>
+                                <p className="text-[9px] font-black uppercase text-brand-orange tracking-wider flex items-center gap-2">
+                                    Mis Puntos VNTG
+                                    <Link to="/puntos" className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-zinc-300 dark:bg-zinc-600 text-zinc-700 dark:text-zinc-200 hover:bg-brand-orange hover:text-white transition-all" title="Cómo funcionan los puntos">
+                                        <Info size={10} strokeWidth={3} />
+                                    </Link>
+                                </p>
                                 <p className="text-2xl font-black italic text-zinc-900 dark:text-white mt-1">
                                     {(user.points || 0).toLocaleString('es-AR')} <span className="text-sm text-zinc-500">PTS</span>
                                 </p>

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard, Bitcoin, Copy, X } from 'lucide-react';
+import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard, Bitcoin, Copy, X, AlertTriangle, XCircle } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -12,6 +12,7 @@ const estadosEnvio = [
     { key: 'preparing', label: 'En Preparación', icon: Package, bg: 'bg-brand-orange' },
     { key: 'shipped', label: 'Enviado', icon: Truck, bg: 'bg-blue-500' },
     { key: 'delivered', label: 'Entregado', icon: House, bg: 'bg-purple-500' },
+    { key: 'cancelled', label: 'Cancelado', icon: XCircle, bg: 'bg-red-500' },
 ];
 
 const estadosRetiro = [
@@ -19,6 +20,7 @@ const estadosRetiro = [
     { key: 'approved', label: 'Aprobado', icon: CircleCheck, bg: 'bg-green-500' },
     { key: 'preparing', label: 'En Preparación', icon: Package, bg: 'bg-brand-orange' },
     { key: 'ready', label: 'Listo para Retirar', icon: Store, bg: 'bg-teal-500' },
+    { key: 'cancelled', label: 'Cancelado', icon: XCircle, bg: 'bg-red-500' },
 ];
 
 export default function PedidoDetalle() {
@@ -34,6 +36,9 @@ export default function PedidoDetalle() {
     const [cryptoCurrency, setCryptoCurrency] = useState('usdttrc20');
     const [showCryptoModal, setShowCryptoModal] = useState(false);
     const [minAmounts, setMinAmounts] = useState([]);
+    const [timeLeft, setTimeLeft] = useState(null);
+    const [expired, setExpired] = useState(false);
+    const timerRef = useRef(null);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -73,6 +78,27 @@ export default function PedidoDetalle() {
             .then(data => { if (data?.mins) setMinAmounts(data.mins); })
             .catch(() => {});
     }, []);
+
+    useEffect(() => {
+        if (cryptoRetry?.expires_at) {
+            const expires = new Date(cryptoRetry.expires_at).getTime();
+            const tick = () => {
+                const now = Date.now();
+                const diff = Math.max(0, Math.floor((expires - now) / 1000));
+                setTimeLeft(diff);
+                if (diff <= 0) {
+                    setExpired(true);
+                    clearInterval(timerRef.current);
+                }
+            };
+            tick();
+            timerRef.current = setInterval(tick, 1000);
+            return () => clearInterval(timerRef.current);
+        } else {
+            setTimeLeft(null);
+            setExpired(false);
+        }
+    }, [cryptoRetry?.expires_at]);
 
     useEffect(() => {
         if (!pedido || pedido.status !== 'pending') return;
@@ -128,9 +154,11 @@ export default function PedidoDetalle() {
                 body: JSON.stringify({ payCurrency: cryptoCurrency }),
             });
             const data = await res.json();
-        if (res.ok && data.crypto) {
+            if (res.ok && data.crypto) {
             setCryptoRetry(data.crypto);
             setRetryingCrypto(false);
+            const interval = handleCryptoRetryPoll(pedido.id);
+            setCryptoRetry(prev => ({ ...prev, pollInterval: interval }));
         } else {
                 alert(data.error || "Error al generar pago crypto");
                 setRetryingCrypto(false);
@@ -139,6 +167,25 @@ export default function PedidoDetalle() {
             alert("Error de conexión");
             setRetryingCrypto(false);
         }
+    };
+
+    const handleCryptoRetryPoll = (orderId) => {
+        const token = localStorage.getItem('vntg_token');
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/crypto/payment/${orderId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.status === 'approved') {
+                    clearInterval(interval);
+                    setCryptoRetry(null);
+                    setShowCryptoModal(false);
+                    window.location.reload();
+                }
+            } catch {}
+        }, 5000);
+        return interval;
     };
 
     const handleCopyAddress = (address) => {
@@ -193,9 +240,32 @@ export default function PedidoDetalle() {
                                     </button>
                                 </div>
                             </div>
-                        ) : currentIndex < 0 ? (
+                        ) : pedido.status === 'cancelled' ? (
                             <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                                <p className="text-sm font-black italic uppercase text-red-500">Estado desconocido: {pedido.status}</p>
+                                <div className="flex items-center gap-4">
+                                    <XCircle size={24} className="text-red-500 shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-black italic uppercase text-red-500">Pago rechazado</p>
+                                        <p className="text-xs text-zinc-500 mt-1">El pago no pudo procesarse. Podés intentar de nuevo con otro método.</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex flex-col gap-3">
+                                    <button
+                                        onClick={() => setShowCryptoModal(true)}
+                                        className="w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95"
+                                    >
+                                        <Bitcoin size={20} />
+                                        Reintentar Pago Crypto
+                                    </button>
+                                    <button
+                                        onClick={handleRetryPayment}
+                                        disabled={retrying}
+                                        className="w-full flex items-center justify-center gap-2 bg-brand-blue text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-60"
+                                    >
+                                        {retrying ? <Loader className="animate-spin" size={20} /> : <CreditCard size={20} />}
+                                        {retrying ? "Generando link..." : "Reintentar Pago con Mercado Pago"}
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="relative flex justify-between items-center">
@@ -277,6 +347,7 @@ export default function PedidoDetalle() {
                                 </div>
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Nombre:</span> {infoEnvio.nombre}</p>
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Teléfono:</span> {infoEnvio.telefono}</p>
+                                {infoEnvio.dni && <p className="text-sm font-bold"><span className="text-zinc-500">DNI/CUIT:</span> {infoEnvio.dni}</p>}
 
                             </div>
                         ) : (
@@ -285,6 +356,7 @@ export default function PedidoDetalle() {
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Dirección:</span> {infoEnvio.direccion}, {infoEnvio.ciudad}</p>
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Provincia:</span> {infoEnvio.provincia} ({infoEnvio.codigoPostal})</p>
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Teléfono:</span> {infoEnvio.telefono}</p>
+                                {infoEnvio.dni && <p className="text-sm font-bold"><span className="text-zinc-500">DNI/CUIT:</span> {infoEnvio.dni}</p>}
                             </div>
                         )}
                     </div>
@@ -296,7 +368,7 @@ export default function PedidoDetalle() {
                 <div className="fixed inset-0 bg-black/80 z-[1000] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
                     <div className="bg-white dark:bg-zinc-950 border border-brand-orange/20 p-4 sm:p-8 max-w-lg w-full shadow-2xl relative rounded-3xl overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange via-brand-orange to-transparent opacity-50"></div>
-                        <button onClick={() => { setShowCryptoModal(false); setCryptoRetry(null); setRetryingCrypto(false); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 transition-colors z-10">
+                        <button onClick={() => { if (cryptoRetry?.pollInterval) clearInterval(cryptoRetry.pollInterval); setShowCryptoModal(false); setCryptoRetry(null); setRetryingCrypto(false); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 transition-colors z-10">
                             <X size={20} />
                         </button>
 
@@ -377,8 +449,29 @@ export default function PedidoDetalle() {
                                     <div className="flex items-center justify-center rounded-2xl overflow-hidden">
                                         <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoRetry.pay_address}`} alt="QR" />
                                     </div>
+                                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
+                                        {expired ? (
+                                            <div className="flex items-center gap-3 text-xs text-red-500">
+                                                <AlertTriangle className="shrink-0" size={14} />
+                                                <span className="font-bold italic">Tiempo expirado. Cancelá y volvé a intentar.</span>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                    <Loader className="animate-spin shrink-0" size={14} />
+                                                    <span className="font-medium italic">Esperando el pago... Esto puede tomar unos minutos</span>
+                                                </div>
+                                                {timeLeft !== null && (
+                                                    <div className={`flex items-center justify-center gap-2 text-sm font-black uppercase tracking-widest ${timeLeft <= 120 ? 'text-red-500' : 'text-zinc-500'}`}>
+                                                        <Clock size={14} />
+                                                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                     <button
-                                        onClick={() => { setCryptoRetry(null); setRetryingCrypto(false); }}
+                                        onClick={() => { if (cryptoRetry?.pollInterval) clearInterval(cryptoRetry.pollInterval); clearInterval(timerRef.current); setCryptoRetry(null); setRetryingCrypto(false); setTimeLeft(null); setExpired(false); }}
                                         className="w-full flex items-center justify-center gap-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all active:scale-95"
                                     >
                                         Elegir otra moneda

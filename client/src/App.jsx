@@ -20,6 +20,7 @@ import NotFound from './pages/NotFound';
 import Tutoriales from './pages/Tutoriales';
 import AdminPanel from './pages/AdminPanel';
 import SupportPanel from './pages/SupportPanel';
+import Puntos from './pages/Puntos';
 
 // NUEVA IMPORTACIÓN PARA EL RESET DE SCROLL Y TÍTULOS DINÁMICOS
 import ScrollToTopOnNavigation from './components/ScrollToTopOnNavigation';
@@ -122,6 +123,7 @@ function App() {
                     <Route path="/tutoriales" element={<Tutoriales />} />
                     <Route path="/terminos" element={<Terminos />} />
                     <Route path="/privacidad" element={<Privacidad />} />
+                    <Route path="/puntos" element={<Puntos />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

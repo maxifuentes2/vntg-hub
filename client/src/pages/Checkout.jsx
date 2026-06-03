@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, ExternalLink, Bitcoin } from 'lucide-react';
+import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, Bitcoin, Clock, AlertTriangle, Pencil, X } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -19,13 +19,17 @@ export default function Checkout() {
     const [cryptoModal, setCryptoModal] = useState(null);
     const [copied, setCopied] = useState(false);
     const [minAmounts, setMinAmounts] = useState([]);
+    const [timeLeft, setTimeLeft] = useState(null);
+    const [expired, setExpired] = useState(false);
+    const timerRef = useRef(null);
 
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [showManualForm, setShowManualForm] = useState(false);
+    const [editingAddress, setEditingAddress] = useState(null);
 
     const [shipping, setShipping] = useState({
-        nombre: '', direccion: '', ciudad: '', provincia: '', codigoPostal: '', telefono: ''
+        nombre: '', direccion: '', ciudad: '', provincia: '', codigoPostal: '', telefono: '', dni: ''
     });
 
     const [usePoints, setUsePoints] = useState(false);
@@ -51,7 +55,8 @@ export default function Checkout() {
             ciudad: parsed.city || '',
             provincia: parsed.province || '',
             codigoPostal: parsed.zip_code || '',
-            telefono: parsed.phone || ''
+            telefono: parsed.phone || '',
+            dni: parsed.dni || ''
         });
 
         if (cart.length === 0 && !checkoutSent) navigate('/');
@@ -65,6 +70,7 @@ export default function Checkout() {
 
         const storedUser = localStorage.getItem('vntg_user');
         const name = storedUser ? JSON.parse(storedUser).name || '' : '';
+        const userData = storedUser ? JSON.parse(storedUser) : null;
 
         fetch(`${API_URL}/api/addresses`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -83,7 +89,8 @@ export default function Checkout() {
                         ciudad: defaultAddr.city || '',
                         provincia: defaultAddr.province || '',
                         codigoPostal: defaultAddr.zip_code || '',
-                        telefono: defaultAddr.phone || ''
+                        telefono: defaultAddr.phone || '',
+                        dni: userData?.dni || ''
                     });
                     setShowManualForm(false);
                 }
@@ -98,6 +105,27 @@ export default function Checkout() {
             .catch(() => {});
     }, []);
 
+    useEffect(() => {
+        if (cryptoModal?.expires_at && cryptoModal.status !== 'approved') {
+            const expires = new Date(cryptoModal.expires_at).getTime();
+            const tick = () => {
+                const now = Date.now();
+                const diff = Math.max(0, Math.floor((expires - now) / 1000));
+                setTimeLeft(diff);
+                if (diff <= 0) {
+                    setExpired(true);
+                    clearInterval(timerRef.current);
+                }
+            };
+            tick();
+            timerRef.current = setInterval(tick, 1000);
+            return () => clearInterval(timerRef.current);
+        } else {
+            setTimeLeft(null);
+            setExpired(false);
+        }
+    }, [cryptoModal?.expires_at, cryptoModal?.status]);
+
     const applyAddress = (addr) => {
         setShipping({
             nombre: userName,
@@ -105,7 +133,8 @@ export default function Checkout() {
             ciudad: addr.city || '',
             provincia: addr.province || '',
             codigoPostal: addr.zip_code || '',
-            telefono: addr.phone || ''
+            telefono: addr.phone || '',
+            dni: shipping.dni || ''
         });
         setSelectedAddressId(addr.id);
         setShowManualForm(false);
@@ -116,12 +145,52 @@ export default function Checkout() {
         setShowManualForm(true);
     };
 
+    const handleEditAddress = (addr, e) => {
+        e.stopPropagation();
+        setEditingAddress({ ...addr });
+    };
+
+    const handleSaveAddress = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const res = await fetch(`${API_URL}/api/addresses/${editingAddress.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(editingAddress),
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setAddresses(prev => prev.map(a => a.id === updated.id ? updated : a));
+                if (selectedAddressId === updated.id) {
+                    setShipping(prev => ({
+                        ...prev,
+                        direccion: updated.address || '',
+                        ciudad: updated.city || '',
+                        provincia: updated.province || '',
+                        codigoPostal: updated.zip_code || '',
+                        telefono: updated.phone || '',
+                    }));
+                }
+                setEditingAddress(null);
+                addToast({}, 'Dirección actualizada', 'success');
+            } else {
+                addToast({}, 'Error al actualizar dirección', 'error');
+            }
+        } catch {
+            addToast({}, 'Error al actualizar dirección', 'error');
+        }
+    };
+
     const puntosDisponibles = user?.points || 0;
     const valorPorPunto = 10;
     const descuentoMaximo = puntosDisponibles * valorPorPunto;
 
-    const descuentoAplicado = usePoints ? Math.min(descuentoMaximo, finalTotal) : 0;
-    const totalAbonar = finalTotal - descuentoAplicado;
+    const puntosNecesarios = Math.ceil(finalTotal / valorPorPunto);
+    const puntosMaximos = Math.min(puntosDisponibles, puntosNecesarios);
+    const puntosARestar = usePoints ? puntosMaximos : 0;
+    const descuentoAplicado = puntosARestar * valorPorPunto;
+    const totalAbonar = Math.max(0, finalTotal - descuentoAplicado);
 
     const handleCryptoPoll = (orderId) => {
         const token = localStorage.getItem('vntg_token');
@@ -136,7 +205,7 @@ export default function Checkout() {
                     setCryptoModal(prev => ({ ...prev, status: 'approved' }));
                     setTimeout(() => navigate(`/pedido/${orderId}`), 2000);
                 }
-            } catch {}
+            } catch (e) { console.error("Crypto poll error:", e) }
         }, 10000);
         return interval;
     };
@@ -169,7 +238,7 @@ export default function Checkout() {
                     shipping,
                     shippingType,
                     total: finalTotal,
-                    usePoints,
+                    puntosAUsar: puntosARestar,
                     payCurrency: cryptoCurrency,
                 }),
                 signal: controller.signal,
@@ -179,9 +248,8 @@ export default function Checkout() {
             const data = await res.json();
 
             if (res.ok) {
-                if (usePoints && puntosDisponibles > 0) {
-                    const puntosGastados = Math.ceil(descuentoAplicado / valorPorPunto);
-                    const updatedUser = { ...user, points: puntosDisponibles - puntosGastados };
+                if (puntosARestar > 0) {
+                    const updatedUser = { ...user, points: Math.max(0, puntosDisponibles - puntosARestar) };
                     localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
                 }
                 if (data.totalCero) {
@@ -211,7 +279,10 @@ export default function Checkout() {
 
     const closeCryptoModal = () => {
         if (cryptoModal?.pollInterval) clearInterval(cryptoModal.pollInterval);
+        clearInterval(timerRef.current);
         setCryptoModal(null);
+        setTimeLeft(null);
+        setExpired(false);
         setLoading(false);
         navigate('/');
     };
@@ -252,15 +323,14 @@ export default function Checkout() {
                                     const Icon = TagIcon(addr.tag);
                                     const isSelected = selectedAddressId === addr.id;
                                     return (
-                                        <button
+                                        <div
                                             key={addr.id}
-                                            type="button"
-                                            onClick={() => applyAddress(addr)}
-                                            className={`text-left p-4 rounded-2xl border-2 transition-all ${
+                                            className={`relative text-left p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                                                 isSelected
                                                     ? 'border-brand-orange bg-brand-orange/5 shadow-md'
                                                     : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-brand-card hover:border-zinc-400 dark:hover:border-zinc-500'
                                             }`}
+                                            onClick={() => applyAddress(addr)}
                                         >
                                             <div className="flex items-center gap-2 mb-2">
                                                 <Icon size={16} className="text-brand-orange" />
@@ -271,14 +341,22 @@ export default function Checkout() {
                                             </div>
                                             <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{addr.address}</p>
                                             <p className="text-xs text-zinc-600 dark:text-zinc-400">{addr.city}, {addr.province} - {addr.zip_code}</p>
-                                        </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleEditAddress(addr, e)}
+                                                className="absolute bottom-2 right-2 p-1.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-500 hover:text-brand-orange hover:bg-brand-orange/10 transition-all"
+                                                title="Editar dirección"
+                                            >
+                                                <Pencil size={12} />
+                                            </button>
+                                        </div>
                                     );
                                 })}
                                 <button
                                     type="button"
                                     onClick={handleUseManual}
                                     className={`text-left p-4 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 min-h-[120px] ${
-                                        showManualForm
+                                        showManualForm && !selectedAddressId
                                             ? 'border-brand-orange bg-brand-orange/5'
                                             : 'border-zinc-300 dark:border-zinc-600 hover:border-brand-orange text-zinc-400 hover:text-brand-orange'
                                     }`}
@@ -287,6 +365,20 @@ export default function Checkout() {
                                     <span className="text-xs font-black uppercase italic">Otra Dirección</span>
                                 </button>
                             </div>
+
+                            {/* Resumen de dirección seleccionada */}
+                            {selectedAddressId && !showManualForm && (() => {
+                                const sel = addresses.find(a => a.id === selectedAddressId);
+                                if (!sel) return null;
+                                return (
+                                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-600 dark:text-green-400 mb-1">Dirección de envío</p>
+                                        <p className="text-sm font-bold">{sel.address}</p>
+                                        <p className="text-xs text-zinc-500">{sel.city}, {sel.province} - {sel.zip_code}</p>
+                                        <p className="text-xs text-zinc-500">{sel.phone}</p>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
 
@@ -331,7 +423,7 @@ export default function Checkout() {
                             required
                             className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic focus:border-brand-orange outline-none capitalize rounded-xl shadow-inner"
                         />
-                        {!esRetiro && (
+                        {!esRetiro && (addresses.length === 0 || showManualForm || !selectedAddressId) && (
                             <div className="space-y-4">
                                 <div className="flex gap-4">
                                     <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
@@ -351,28 +443,42 @@ export default function Checkout() {
                             required
                             className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
                         />
+                        <input
+                            type="text"
+                            placeholder="DNI / CUIT (facturación)"
+                            value={shipping.dni}
+                            onChange={e => setShipping({ ...shipping, dni: e.target.value })}
+                            required
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
+                        />
 
                         {puntosDisponibles > 0 && (
-                            <div className="mt-6 p-5 bg-brand-orange/10 border border-brand-orange/30 rounded-xl flex items-center justify-between shadow-sm">
-                                <div className="flex items-center gap-3">
+                            <div className="mt-6 p-5 bg-brand-orange/10 border border-brand-orange/30 rounded-xl shadow-sm">
+                                <div className="flex items-center gap-3 mb-4">
                                     <div className="bg-brand-orange text-white p-2 rounded-full">
                                         <Star size={20} className="fill-white" />
                                     </div>
                                     <div>
-                                        <h3 className="font-black italic uppercase text-sm">Aplicar Puntos VNTG</h3>
+                                        <h3 className="font-black italic uppercase text-sm">Puntos VNTG</h3>
                                         <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium mt-0.5">
-                                            Tienes {puntosDisponibles} pts equivalentes a <span className="font-bold text-brand-orange">{formatPrice(descuentoMaximo)}</span>
+                                            Tenés <span className="font-bold text-brand-orange">{puntosDisponibles.toLocaleString('es-AR')} pts</span> ({formatPrice(descuentoMaximo)} de descuento)
                                         </p>
                                     </div>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer" 
+                                <label className="relative inline-flex items-center cursor-pointer gap-3">
+                                    <input
+                                        type="checkbox"
                                         checked={usePoints}
                                         onChange={(e) => setUsePoints(e.target.checked)}
+                                        className="sr-only peer"
                                     />
-                                    <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-orange"></div>
+                                    <div className="w-11 h-6 bg-zinc-300 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-orange"></div>
+                                    <span className="text-xs font-bold italic text-zinc-600 dark:text-zinc-400">
+                                        {usePoints
+                                            ? `Canjeando ${puntosARestar} pts (${formatPrice(descuentoAplicado)})`
+                                            : `Canjear hasta ${puntosMaximos} pts (${formatPrice(descuentoMaximo)})`
+                                        }
+                                    </span>
                                 </label>
                             </div>
                         )}
@@ -404,7 +510,11 @@ export default function Checkout() {
                                             <div className="mt-2 space-y-1">
                                                 <p className="text-zinc-500">Tu pedido: <span className="font-bold text-zinc-700 dark:text-zinc-300">~USD {totalUSD.toFixed(2)}</span></p>
                                                 {usable.length > 0 ? (
-                                                    <p className="text-green-600 dark:text-green-400 font-bold">Podés pagar con {usable.map(m => m.coin === best.coin ? <span key={m.coin} className="underline">{m.coin.toUpperCase()}</span> : m.coin.toUpperCase()).join(', ')}</p>
+                                                    <p className="text-green-600 dark:text-green-400 font-bold">
+                                                        Podés pagar con {usable.map((m, i) => (
+                                                            <span key={m.coin}>{i > 0 && <span>, </span>}{m.coin === best.coin ? <span className="underline">{m.coin.toUpperCase()}</span> : m.coin.toUpperCase()}</span>
+                                                        ))}
+                                                    </p>
                                                 ) : (
                                                     <p className="text-yellow-600 dark:text-yellow-400 font-bold">El mínimo más bajo es <span className="underline">{best.coin.toUpperCase()}</span> (USD {best.min})</p>
                                                 )}
@@ -495,19 +605,31 @@ export default function Checkout() {
                                             </div>
 
                                             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
-                                                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                                                    <Loader className="animate-spin shrink-0" size={14} />
-                                                    <span className="font-medium italic">Esperando el pago... Esto puede tomar unos minutos</span>
-                                                </div>
+                                                {expired ? (
+                                                    <div className="flex items-center gap-3 text-xs text-red-500">
+                                                        <AlertTriangle className="shrink-0" size={14} />
+                                                        <span className="font-bold italic">Tiempo expirado. Cancelá y volvé a intentar.</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                            <Loader className="animate-spin shrink-0" size={14} />
+                                                            <span className="font-medium italic">Esperando el pago... Esto puede tomar unos minutos</span>
+                                                        </div>
+                                                        {timeLeft !== null && (
+                                                            <div className={`flex items-center justify-center gap-2 text-sm font-black uppercase tracking-widest ${timeLeft <= 120 ? 'text-red-500' : 'text-zinc-500'}`}>
+                                                                <Clock size={14} />
+                                                                {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex gap-3">
-                                                <button onClick={closeCryptoModal} className="flex-1 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">
+                                                <button onClick={closeCryptoModal} className="w-full py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">
                                                     Cancelar
                                                 </button>
-                                                <a href={`https://nowpayments.io/payment/${cryptoModal.payment_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 py-4 bg-brand-blue text-white font-black uppercase italic text-xs tracking-widest hover:bg-brand-orange transition-all rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95">
-                                                    Ver en explorer <ExternalLink size={14} />
-                                                </a>
                                             </div>
                                         </div>
                                     </>
@@ -535,9 +657,9 @@ export default function Checkout() {
                             </span>
                         </div>
 
-                        {usePoints && descuentoAplicado > 0 && (
+                        {puntosARestar > 0 && (
                             <div className="flex justify-between text-xs font-black uppercase text-green-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                <span>Puntos VNTG aplicados</span>
+                                <span>Puntos VNTG: -{puntosARestar} pts</span>
                                 <span>-{formatPrice(descuentoAplicado)}</span>
                             </div>
                         )}
@@ -549,6 +671,37 @@ export default function Checkout() {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL EDITAR DIRECCIÓN */}
+            {editingAddress && (
+                <div className="fixed inset-0 bg-black/80 z-[1000] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
+                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-8 max-w-md w-full shadow-2xl relative rounded-3xl">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange via-brand-orange to-transparent opacity-50"></div>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-black italic uppercase">Editar Dirección</h3>
+                            <button onClick={() => setEditingAddress(null)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all">
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSaveAddress} className="space-y-4">
+                            <input type="text" placeholder="ETIQUETA (Casa, Trabajo...)" value={editingAddress.tag || ''} onChange={e => setEditingAddress({ ...editingAddress, tag: e.target.value })} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            <input type="text" placeholder="DIRECCIÓN" value={editingAddress.address || ''} onChange={e => setEditingAddress({ ...editingAddress, address: e.target.value })} required className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            <div className="flex gap-4">
+                                <input type="text" placeholder="CIUDAD" value={editingAddress.city || ''} onChange={e => setEditingAddress({ ...editingAddress, city: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                <input type="text" placeholder="PROVINCIA" value={editingAddress.province || ''} onChange={e => setEditingAddress({ ...editingAddress, province: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            </div>
+                            <div className="flex gap-4">
+                                <input type="text" placeholder="CP" value={editingAddress.zip_code || ''} onChange={e => setEditingAddress({ ...editingAddress, zip_code: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                <input type="tel" placeholder="TELÉFONO" value={editingAddress.phone || ''} onChange={e => setEditingAddress({ ...editingAddress, phone: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setEditingAddress(null)} className="flex-1 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">Cancelar</button>
+                                <button type="submit" className="flex-1 py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-orange-600 transition-all rounded-2xl shadow-lg active:scale-95">Guardar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

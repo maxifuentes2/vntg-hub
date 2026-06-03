@@ -35,6 +35,18 @@ const createTransporter = (prefix) => {
     return nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
 };
 
+const FOOTER_SOCIAL = `
+    <div style="text-align:center;margin-bottom:12px">
+        <a href="https://instagram.com/vntg.hub" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/2111/2111463.png" alt="Instagram" width="24" height="24"></a>
+        <a href="https://tiktok.com/@vntg.hub" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/3046/3046121.png" alt="TikTok" width="24" height="24"></a>
+        <a href="https://wa.me/5491123456789" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/3670/3670051.png" alt="WhatsApp" width="24" height="24"></a>
+        <a href="https://vntg-hub.vercel.app" style="display:inline-block;margin:0 6px"><img src="https://cdn-icons-png.flaticon.com/24/1006/1006771.png" alt="Web" width="24" height="24"></a>
+    </div>`;
+
+const FOOTER = `${FOOTER_SOCIAL}
+    <hr style="margin:24px 0 12px;border:none;border-top:1px solid #eee">
+    <p style="color:#999;font-size:11px;text-align:center">VNTG Hub — Coleccionables Vintage</p>`;
+
 const buildEmailHtml = (type, data) => {
     switch (type) {
         case "2fa_code":
@@ -43,8 +55,10 @@ const buildEmailHtml = (type, data) => {
                 <p>Tu código de un solo uso es:</p>
                 <div style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:24px;background:#f5f5f5;border-radius:12px;margin:16px 0">${data.code}</div>
                 <p style="color:#666">Válido por 5 minutos. Si no solicitaste este código, ignorá este mensaje.</p>
-                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
-                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+                <div style="text-align:center;margin:16px 0">
+                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Ir a la Tienda</a>
+                </div>
+                ${FOOTER}
             </div>`;
 
         case "stock_alert":
@@ -53,18 +67,23 @@ const buildEmailHtml = (type, data) => {
                 <p>Hola ${data.userName},</p>
                 <p>El producto <strong>${data.productTitle}</strong> que tenías en tu lista de deseos ya tiene stock.</p>
                 <p>No esperes demasiado, ¡se agota rápido!</p>
-                <a href="https://vntg-hub.vercel.app/producto/${data.productId}" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;margin:16px 0;font-weight:bold">Ver producto</a>
-                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
-                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+                <div style="text-align:center;margin:16px 0">
+                    <a href="https://vntg-hub.vercel.app/producto/${data.productId}" style="display:inline-block;padding:14px 32px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Ver producto</a>
+                </div>
+                ${FOOTER}
             </div>`;
 
         case "order_status":
             return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
                 <h2 style="color:#f97316">${data.title}</h2>
                 <p>${data.message}</p>
-                ${data.btnText ? `<a href="${data.btnUrl}" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;margin:16px 0;font-weight:bold">${data.btnText}</a>` : ""}
-                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
-                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+                <div style="text-align:center;margin:20px 0">
+                    ${data.btnText && data.btnUrl ? `<a href="${data.btnUrl}" style="display:inline-block;padding:14px 32px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">${data.btnText}</a>` : ""}
+                </div>
+                <div style="text-align:center;margin:12px 0">
+                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:10px 24px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Ir a la Tienda</a>
+                </div>
+                ${FOOTER}
             </div>`;
 
         case "support_reply":
@@ -79,8 +98,10 @@ const buildEmailHtml = (type, data) => {
                     <p style="font-size:12px;color:#666;margin:0 0 8px"><strong>Nuestra respuesta:</strong></p>
                     <p style="margin:0">${data.respuesta}</p>
                 </div>
-                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
-                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+                <div style="text-align:center;margin:16px 0">
+                    <a href="https://vntg-hub.vercel.app/perfil" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Ir a mi cuenta</a>
+                </div>
+                ${FOOTER}
             </div>`;
 
         case "contact":
@@ -91,8 +112,7 @@ const buildEmailHtml = (type, data) => {
                 <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
                     <p style="margin:0">${data.mensaje}</p>
                 </div>
-                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
-                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+                ${FOOTER}
             </div>`;
 
         case "chat_summary":
@@ -101,23 +121,36 @@ const buildEmailHtml = (type, data) => {
                 <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
                     <p style="margin:0">${data.summary}</p>
                 </div>
-                <hr style="margin:24px 0;border:none;border-top:1px solid #eee">
-                <p style="color:#999;font-size:12px;text-align:center">VNTG Hub — Coleccionables</p>
+                <div style="text-align:center;margin:16px 0">
+                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Seguir comprando</a>
+                </div>
+                ${FOOTER}
             </div>`;
 
-        default:
-            return `<p>${JSON.stringify(data)}</p>`;
+        case "reset_password":
+            return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#f97316">Restablecer contraseña</h2>
+                <p>Hola,</p>
+                <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en VNTG Hub.</p>
+                <p>Hacé clic en el botón de abajo para crear una nueva contraseña:</p>
+                <div style="text-align:center;margin:20px 0">
+                    <a href="${data.resetUrl}" style="display:inline-block;padding:14px 32px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Restablecer contraseña</a>
+                </div>
+                <p style="color:#666;font-size:12px">Este enlace expira en 1 hora. Si no solicitaste esto, ignorá este mensaje.</p>
+                ${FOOTER}
+            </div>`;
     }
 };
 
 const getEmailSubject = (type, data) => {
     const subjects = {
-        "2fa_code": "Tu código de verificación — VNTG Hub",
-        "stock_alert": `¡${data.productTitle} tiene stock! — VNTG Hub`,
-        "order_status": data.subject || "Estado de tu pedido — VNTG Hub",
-        "support_reply": "Respuesta de soporte — VNTG Hub",
-        "contact": `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
-        "chat_summary": "Resumen de tu conversación — VNTG Hub",
+        "2fa_code":       "Tu código de verificación — VNTG Hub",
+        "stock_alert":    `¡${data.productTitle} tiene stock! — VNTG Hub`,
+        "order_status":   data.subject || "Estado de tu pedido — VNTG Hub",
+        "support_reply":  "Respuesta de soporte — VNTG Hub",
+        "contact":        `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
+        "chat_summary":   "Resumen de tu conversación — VNTG Hub",
+        "reset_password": "Restablecer tu contraseña — VNTG Hub",
     };
     return subjects[type] || "Notificación — VNTG Hub";
 };
@@ -752,6 +785,56 @@ app.post("/api/auth/google", async (req, res) => {
     }
 });
 
+// --- RESTABLECER CONTRASEÑA ---
+app.post("/api/auth/forgot-password", async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email requerido" });
+    try {
+        const [users] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
+        if (users.length === 0) return res.json({ message: "Si el email existe, recibirás un enlace" });
+
+        const token = require("crypto").randomBytes(32).toString("hex");
+        await db.query(
+            "UPDATE users SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = ?",
+            [token, users[0].id]
+        );
+
+        await sendEmail("reset_password", email, {
+            resetUrl: `https://vntg-hub.vercel.app/reset-password?email=${encodeURIComponent(email)}&token=${token}`,
+        });
+
+        res.json({ message: "Si el email existe, recibirás un enlace" });
+    } catch (error) {
+        console.error("Error forgot password:", error);
+        res.status(500).json({ error: "Error al procesar la solicitud" });
+    }
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+    const { email, token, newPassword } = req.body;
+    if (!email || !token || !newPassword) return res.status(400).json({ error: "Email, token y contraseña requeridos" });
+    if (newPassword.length < 6) return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
+    try {
+        const [users] = await db.query(
+            "SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_expires > NOW()",
+            [email, token]
+        );
+        if (users.length === 0) return res.status(400).json({ error: "El enlace expiró o es inválido" });
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        await db.query(
+            "UPDATE users SET password = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?",
+            [hashedPassword, users[0].id]
+        );
+
+        res.json({ message: "Contraseña actualizada con éxito." });
+    } catch (error) {
+        console.error("Error reset password:", error);
+        res.status(500).json({ error: "Error al restablecer la contraseña" });
+    }
+});
+
 // --- DETALLE DE ORDEN ESPECÍFICA (protegida con JWT) ---
 app.get("/api/orders/detail/:id", verifyToken, async (req, res) => {
     const { id } = req.params;
@@ -808,8 +891,7 @@ const generatePatenteId = () => {
 
 // --- CHECKOUT (protegido con JWT) ---
 app.post("/api/checkout", verifyToken, async (req, res) => {
-    // 1. Añadimos usePoints destructurado de la petición
-    const { cart, shipping, shippingType, usePoints } = req.body;
+    const { cart, shipping, shippingType, puntosAUsar } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
@@ -852,26 +934,18 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         const [userRes] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
         const puntosDisponibles = userRes[0]?.points || 0;
 
-        if (usePoints && puntosDisponibles > 0) {
-            const valorPorPunto = 10; // 1 punto equivale a $10 ARS
-            const descuentoMaximo = puntosDisponibles * valorPorPunto;
-
-            if (descuentoMaximo >= totalPrevio) {
-                descuento = totalPrevio;
-                puntosARestar = Math.ceil(totalPrevio / valorPorPunto);
-            } else {
-                descuento = descuentoMaximo;
-                puntosARestar = puntosDisponibles;
-            }
+        if (puntosAUsar > 0 && puntosDisponibles > 0) {
+            const valorPorPunto = 10;
+            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil(totalPrevio / valorPorPunto));
+            descuento = puntosValidos * valorPorPunto;
+            puntosARestar = puntosValidos;
         }
 
         const totalFinal = totalPrevio - descuento;
 
-        // Restamos inmediatamente para evitar ataques de doble consumo
         if (puntosARestar > 0) {
             await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
         }
-        // ---------------------------------
 
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
@@ -964,7 +1038,7 @@ app.get("/api/crypto/min-amounts", async (req, res) => {
 
 // --- CHECKOUT CRYPTO ---
 app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
-    const { cart, shipping, shippingType, usePoints, payCurrency } = req.body;
+    const { cart, shipping, shippingType, puntosAUsar, payCurrency } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
@@ -986,18 +1060,13 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         }
         let descuento = 0;
         let puntosARestar = 0;
-        if (usePoints && subtotal > 0) {
+        if (puntosAUsar > 0) {
             const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
             const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
             const valorPorPunto = 10;
-            const descuentoMaximo = puntosDisponibles * valorPorPunto;
-            if (descuentoMaximo >= subtotal) {
-                descuento = subtotal;
-                puntosARestar = Math.ceil(subtotal / valorPorPunto);
-            } else {
-                descuento = descuentoMaximo;
-                puntosARestar = puntosDisponibles;
-            }
+            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil(subtotal / valorPorPunto));
+            descuento = puntosValidos * valorPorPunto;
+            puntosARestar = puntosValidos;
         }
         const totalFinal = subtotal - descuento;
 
@@ -1006,7 +1075,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         }
 
         await db.query(
-            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR), 'crypto')",
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE), 'crypto')",
             [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
         );
         for (let item of cart) {
@@ -1046,6 +1115,8 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
             orderId,
         ]);
 
+        const [orderRow] = await db.query("SELECT expires_at FROM orders WHERE id = ?", [orderId]);
+
         res.json({
             orderId,
             cryptoPayment: {
@@ -1056,6 +1127,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
                 price_amount: payment.price_amount,
                 tasa_ars: tasaUSD,
                 total_ars: totalFinal,
+                expires_at: orderRow[0]?.expires_at,
             },
         });
     } catch (error) {
@@ -1193,7 +1265,7 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
             ipn_callback_url: ipnUrl,
         });
 
-        await db.query("UPDATE orders SET crypto_info = ? WHERE id = ?", [
+        await db.query("UPDATE orders SET crypto_info = ?, expires_at = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = ?", [
             JSON.stringify({
                 payment_id: payment.payment_id,
                 pay_address: payment.pay_address,
@@ -1204,6 +1276,8 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
             id,
         ]);
 
+        const [orderRow] = await db.query("SELECT expires_at FROM orders WHERE id = ?", [id]);
+
         res.json({
             crypto: {
                 payment_id: payment.payment_id,
@@ -1213,6 +1287,7 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
                 price_amount,
                 tasa_ars: tasaUSD,
                 total_ars: Number(order.total),
+                expires_at: orderRow[0]?.expires_at,
             },
         });
     } catch (error) {
@@ -1242,21 +1317,36 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
         else if (status === "rejected" || status === "cancelled" || status === "refunded") dbStatus = "cancelled";
         else dbStatus = "pending";
         
-        // --- LÓGICA DE PUNTOS VÍA WEBHOOK ---
-        // Obtenemos información previa del estado para saber si ya se le dieron puntos
-        const [orderCheck] = await db.query("SELECT status, total, user_id FROM orders WHERE id = ?", [orderId]);
+        const [orderCheck] = await db.query(
+            "SELECT o.status, o.total, o.user_id, u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [orderId]
+        );
         
-        // Actualizamos el estado de la orden
         await db.query("UPDATE orders SET status = ?, payment_id = ? WHERE id = ?", [dbStatus, data.id, orderId]);
         
-        // Si la orden pasó de pendiente a aprobada, le sumamos los puntos (DIVIDIDO 1 PARA PRUEBAS)
-        if (orderCheck.length > 0 && orderCheck[0].status !== "approved" && dbStatus === "approved") {
-            const puntosACalcular = Math.floor(parseFloat(orderCheck[0].total) / 1); 
-            if (puntosACalcular > 0) {
-                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntosACalcular, orderCheck[0].user_id]);
+        if (orderCheck.length > 0 && orderCheck[0].status !== "cancelled" && dbStatus === "cancelled") {
+            const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
+            for (const item of items) {
+                await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
             }
         }
-        // ------------------------------------
+        
+        if (orderCheck.length > 0 && orderCheck[0].status !== "approved" && dbStatus === "approved") {
+            const row = orderCheck[0];
+            const puntosACalcular = Math.floor(parseFloat(row.total) / 1000);
+            if (puntosACalcular > 0) {
+                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntosACalcular, row.user_id]);
+            }
+            await sendEmail("order_status", row.email, {
+                name: row.name,
+                orderId,
+                status: "approved",
+                subject: "¡Tu pago ha sido aprobado!",
+                title: "Compra Confirmada",
+                message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
+                btnText: "Ver mi pedido",
+                btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+            });
+        }
 
         res.status(200).send("OK");
     } catch (error) {
@@ -1273,16 +1363,38 @@ app.post("/api/webhooks/nowpayments", async (req, res) => {
         const paymentId = req.body.payment_id;
 
         if (!orderId) return res.status(200).send("OK");
+        const [orderCheck] = await db.query(
+            "SELECT o.status, o.total, o.user_id, u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [orderId]
+        );
         if (paymentStatus === "finished" || paymentStatus === "confirmed") {
-            const [orderCheck] = await db.query("SELECT status, total, user_id FROM orders WHERE id = ?", [orderId]);
             await db.query("UPDATE orders SET status = 'approved', payment_id = ? WHERE id = ?", [paymentId, orderId]);
             if (orderCheck.length > 0 && orderCheck[0].status !== "approved") {
-                const puntos = Math.floor(parseFloat(orderCheck[0].total) / 1);
+                const row = orderCheck[0];
+                const puntos = Math.floor(parseFloat(row.total) / 1000);
                 if (puntos > 0) {
-                    await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntos, orderCheck[0].user_id]);
+                    await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntos, row.user_id]);
                 }
+                await sendEmail("order_status", row.email, {
+                    name: row.name,
+                    orderId,
+                    status: "approved",
+                    subject: "¡Tu pago ha sido aprobado!",
+                    title: "Compra Confirmada",
+                    message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
+                    btnText: "Ver mi pedido",
+                    btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                });
             }
             console.log(`[crypto] Pago confirmado orden ${orderId}`);
+        } else if (["failed", "expired", "rejected", "cancelled"].includes(paymentStatus)) {
+            await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [orderId]);
+            if (orderCheck.length > 0 && orderCheck[0].status !== "cancelled") {
+                const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
+                for (const item of items) {
+                    await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+                }
+            }
+            console.log(`[crypto] Pago fallido orden ${orderId}: ${paymentStatus}`);
         }
         res.status(200).send("OK");
     } catch (error) {
@@ -1303,25 +1415,47 @@ app.get("/api/crypto/payment/:orderId", verifyToken, async (req, res) => {
         let paymentStatus = null;
         if (cryptoInfo?.payment_id) {
             try {
+                console.log("[crypto] Polling payment:", cryptoInfo.payment_id);
                 const info = await crypto.getPaymentStatus(cryptoInfo.payment_id);
                 paymentStatus = info.payment_status;
+                console.log("[crypto] Status from NP:", paymentStatus, "order status:", order.status);
                 if (paymentStatus === 'finished' && order.status === 'pending') {
                     const [orderData] = await db.query(
-                        "SELECT total, user_id FROM orders WHERE id = ?", [orderId]
+                        "SELECT o.total, o.user_id, u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [orderId]
                     );
                     await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
-                    if (orderData.length > 0) {
-                        const puntos = Math.floor(parseFloat(orderData[0].total) / 1);
+                    const row = orderData[0];
+                    if (row) {
+                const puntos = Math.floor(parseFloat(row.total) / 1000);
                         if (puntos > 0) {
                             await db.query(
                                 "UPDATE users SET points = points + ? WHERE id = ?",
-                                [puntos, orderData[0].user_id]
+                                [puntos, row.user_id]
                             );
                         }
+                        await sendEmail("order_status", row.email, {
+                            name: row.name,
+                            orderId,
+                            status: "approved",
+                            subject: "¡Tu pago ha sido aprobado!",
+                            title: "Compra Confirmada",
+                            message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
+                            btnText: "Ver mi pedido",
+                            btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                        });
                     }
                     order.status = 'approved';
+                    console.log("[crypto] Order approved:", orderId);
+                } else if (["failed", "expired", "rejected", "cancelled"].includes(paymentStatus) && order.status === 'pending') {
+                    await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [orderId]);
+                    const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
+                    for (const item of items) {
+                        await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+                    }
+                    order.status = 'cancelled';
+                    console.log("[crypto] Order cancelled, stock restored:", orderId);
                 }
-            } catch { }
+            } catch (e) { console.error("[crypto] Poll error:", e?.message) }
         }
         res.json({ status: order.status, cryptoInfo, paymentStatus });
     } catch (error) {
@@ -1605,7 +1739,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
         const calificaParaPuntos = ["approved", "delivered"].includes(status);
 
         if (!yaTeniaPuntos && calificaParaPuntos) {
-            const puntosACalcular = Math.floor(parseFloat(order.total) / 1);
+            const puntosACalcular = Math.floor(parseFloat(order.total) / 1000);
             if (puntosACalcular > 0) {
                 await db.query("UPDATE users SET points = points + ? WHERE id = ?", [
                     puntosACalcular,
@@ -2091,6 +2225,18 @@ app.listen(PORT, "0.0.0.0", async () => {
         }
     } catch (e) {
         console.log('[db] Columnas orders ya existen o error:', e.message);
+    }
+
+    // Agregar columnas para reset de contraseña
+    try {
+        const [cols] = await db.query("SHOW COLUMNS FROM users LIKE 'reset_token'");
+        if (cols.length === 0) {
+            await db.query("ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL");
+            await db.query("ALTER TABLE users ADD COLUMN reset_expires DATETIME NULL");
+            console.log('[db] Columnas reset_token y reset_expires agregadas a users');
+        }
+    } catch (e) {
+        console.log('[db] Columnas reset ya existen o error:', e.message);
     }
 
     // Cargar configuración de envío (fallback a .env si la tabla no existe)
