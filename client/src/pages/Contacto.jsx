@@ -20,11 +20,16 @@ export default function Contacto() {
 
         try {
             // Mandamos los datos al backend
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+
             const response = await fetch(`${API_URL}/api/contact`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(formData),
+                signal: controller.signal,
             });
+            clearTimeout(timeout);
 
             if (response.ok) {
                 setEstadoEnviando('success');

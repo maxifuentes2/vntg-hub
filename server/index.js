@@ -32,7 +32,13 @@ const createTransporter = (prefix) => {
     const user = process.env[`${prefix}USER`];
     const pass = process.env[`${prefix}PASS`];
     if (!user || !pass) return null;
-    return nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
+    return nodemailer.createTransport({
+        host, port, secure: false,
+        auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+    });
 };
 
 const FOOTER_SOCIAL = `
@@ -2094,11 +2100,9 @@ app.post("/api/contact", async (req, res) => {
             [nombre, email, mensaje]
         );
 
-        await sendEmail("contact", "hubvntg@gmail.com", {
-            nombre,
-            email,
-            mensaje,
-        });
+        // No bloqueamos la respuesta si el email falla
+        sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje })
+            .catch(err => console.error("[contact] Error email:", err?.message));
 
         res.json({ message: "Mensaje recibido con éxito. Nos contactaremos pronto." });
     } catch (error) {
