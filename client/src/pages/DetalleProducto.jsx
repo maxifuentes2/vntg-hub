@@ -298,33 +298,45 @@ const DetalleProducto = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {relacionados.map((item) => (
-                                <div key={item.id} className="group bg-zinc-50 dark:bg-brand-card  transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden">
-                                    <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-zinc-600">
-                                        <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
-                                            <CardImage item={item} />
-                                        </Link>
-                                        <div className="absolute top-3 left-3 bg-brand-blue text-white px-2 py-0.5 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
-                                            {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
+                            {relacionados.map((item) => {
+                                const isWished = wishListItems.some(wItem => String(wItem.id) === String(item.id));
+                                return (
+                                    <div key={item.id} className={`group h-full flex flex-col bg-zinc-50 dark:bg-brand-card transition-all duration-500 border-2 border-transparent hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-60' : ''}`}>
+                                        <div className="aspect-[16/10] bg-transparent relative overflow-hidden flex items-center justify-center p-4 border-b border-white/20 dark:border-zinc-600 shrink-0">
+                                            <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
+                                                <CardImage item={item} />
+                                            </Link>
+                                            <div className="absolute top-4 left-4 bg-brand-blue text-white px-3 py-1 text-[9px] font-black uppercase italic tracking-widest z-10 rounded-full">
+                                                {item.stock === 0 ? "AGOTADO" : (item.estado || "MINT")}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 xs:p-4 sm:p-8 flex flex-col grow justify-between">
+                                            <Link to={`/producto/${slugify(item.title)}`}>
+                                                <h3 className="text-base max-[400px]:text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">{item.title}</h3>
+                                            </Link>
+                                            <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 mt-auto">
+                                                <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">{formatPrice(item.price)}</p>
+                                                <div className="flex items-center gap-4">
+                                                    <button
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (isWished) { removeFromWishList(item.id); } else { addToWishList(item); } }}
+                                                        className={`${isWished ? 'text-brand-orange' : 'text-zinc-400 hover:text-brand-orange'} transition-colors duration-300 p-2`}
+                                                        title={isWished ? "Quitar de deseados" : "Añadir a deseados"}
+                                                    >
+                                                        <Heart size={24} fill={isWished ? "currentColor" : "none"} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }}
+                                                        disabled={item.stock === 0}
+                                                        className={`p-3.5 transition-all duration-300 shadow-lg active:scale-95 rounded-2xl ${item.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-blue text-white hover:bg-brand-orange'}`}
+                                                    >
+                                                        <ShoppingCart size={24} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="p-4">
-                                        <Link to={`/producto/${slugify(item.title)}`}>
-                                            <h3 className="text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-3">{item.title}</h3>
-                                        </Link>
-                                        <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                                            <p className="text-xl font-black italic">{formatPrice(item.price)}</p>
-                                            <button
-                                                onClick={() => addToCart(item)}
-                                                disabled={item.stock === 0}
-                                                className={`p-2 transition-colors ${item.stock === 0 ? 'text-zinc-300 cursor-not-allowed' : 'text-zinc-900 dark:text-white hover:text-brand-orange'}`}
-                                            >
-                                                <ShoppingCart size={20} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
