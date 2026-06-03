@@ -1981,7 +1981,7 @@ app.post("/api/chat", async (req, res) => {
         groqMessages.push({ role: "user", content: message });
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const timeout = setTimeout(() => controller.abort(), 8000);
 
         const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",

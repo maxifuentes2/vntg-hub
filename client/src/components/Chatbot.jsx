@@ -113,11 +113,16 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+
       const res = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, history: historyForGemini, userId, userEmail })
+        body: JSON.stringify({ message: userMsg, history: historyForGemini, userId, userEmail }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
 
       if (data.reply) {
