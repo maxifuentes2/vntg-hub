@@ -273,9 +273,9 @@ export default function Tutoriales() {
                     {/* Click catcher for video area - only catches taps not on controls */}
                     <div className="absolute inset-0 z-10" onClick={() => togglePlay(tutorial.id)} />
 
-                    {/* Thin progress bar - always visible */}
+                    {/* Thin progress bar - visible only when controls are hidden */}
                     <div
-                      className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 cursor-pointer z-30"
+                      className={`absolute bottom-0 left-0 right-0 h-1 bg-white/10 cursor-pointer z-30 transition-opacity duration-300 ${showControls[tutorial.id] ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                       onMouseDown={(e) => { e.stopPropagation(); handleTimelineDown(tutorial.id, e); }}
                       onTouchStart={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); dragData.current = { id: tutorial.id, rect }; handleSeekByRect(tutorial.id, rect, e.touches[0].clientX); }}
                     >
