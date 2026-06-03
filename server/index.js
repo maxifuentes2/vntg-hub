@@ -240,7 +240,7 @@ const verifyToken = (req, res, next) => {
 app.get("/api/user", verifyToken, async (req, res) => {
     try {
         const [users] = await db.query(
-            "SELECT id, name, email, address, city, province, zip_code, phone, dni, role, points, created_at FROM users WHERE id = ?",
+            "SELECT id, name, email, address, city, province, zip_code, phone, role, points FROM users WHERE id = ?",
             [req.user.id],
         );
         if (!users[0]) return res.status(404).json({ error: "Usuario no encontrado" });
