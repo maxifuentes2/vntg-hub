@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Minus, Send, Headset, Package, MessageSquare, ChevronDown } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -34,6 +35,7 @@ function parseLinks(text) {
 const WELCOME_MSG = { text: "Bienvenido al Hub, piloto. ¿Buscás una pieza histórica o asistencia técnica con un envío?", isBot: true };
 
 export default function Chatbot() {
+  const { formatPrice } = useCurrency();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([WELCOME_MSG]);
   const [input, setInput] = useState('');
@@ -156,7 +158,7 @@ export default function Chatbot() {
         const statusMap = { pending: "⏳ Pendiente de pago", approved: "✅ Aprobado", preparing: "📦 Preparando", shipped: "🚚 En camino", delivered: "📬 Entregado" };
         const itemsText = o.items.map(item => `• ${item.title} x${item.quantity || 1}`).join('\n');
         setMessages(prev => [...prev, {
-          text: `📋 Orden ${o.id}\nEstado: ${statusMap[o.status] || o.status}\nTotal: $${o.total}\nFecha: ${new Date(o.created_at).toLocaleDateString()}\n\nArtículos:\n${itemsText}`,
+          text: `📋 Orden ${o.id}\nEstado: ${statusMap[o.status] || o.status}\nTotal: ${formatPrice(o.total)}\nFecha: ${new Date(o.created_at).toLocaleDateString()}\n\nArtículos:\n${itemsText}`,
           isBot: true
         }]);
       }
@@ -206,7 +208,7 @@ export default function Chatbot() {
         const statusMap = { pending: "⏳ Pendiente de pago", approved: "✅ Aprobado", preparing: "📦 Preparando", shipped: "🚚 En camino", delivered: "📬 Entregado" };
         const ordersText = orders.map((o, i) => {
           const date = new Date(o.created_at).toLocaleDateString();
-          return `  ${i + 1}. ${o.id}  ${statusMap[o.status] || o.status}  ${date}  $${o.total}`;
+          return `  ${i + 1}. ${o.id}  ${statusMap[o.status] || o.status}  ${date}  ${formatPrice(o.total)}`;
         }).join('\n');
 
         setMessages(prev => [...prev, {
@@ -244,7 +246,7 @@ export default function Chatbot() {
         const statusMap = { pending: "⏳ Pendiente de pago", approved: "✅ Aprobado", preparing: "📦 Preparando", shipped: "🚚 En camino", delivered: "📬 Entregado" };
         const itemsText = data.items.map(item => `• ${item.title} x${item.quantity || 1}`).join('\n');
         setMessages(prev => [...prev, {
-          text: `📋 Orden ${data.id}\nEstado: ${statusMap[data.status] || data.status}\nTotal: $${data.total}\nFecha: ${new Date(data.created_at).toLocaleDateString()}\n\nArtículos:\n${itemsText}`,
+          text: `📋 Orden ${data.id}\nEstado: ${statusMap[data.status] || data.status}\nTotal: ${formatPrice(data.total)}\nFecha: ${new Date(data.created_at).toLocaleDateString()}\n\nArtículos:\n${itemsText}`,
           isBot: true
         }]);
       }
