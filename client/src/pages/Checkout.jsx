@@ -489,7 +489,7 @@ export default function Checkout() {
                                     <span className="text-xs font-bold italic text-zinc-600 dark:text-zinc-400">
                                         {usePoints
                                             ? `Canjeando ${puntosARestar} pts (${formatPrice(descuentoAplicado)})`
-                                            : `Canjear hasta ${puntosMaximos} pts (${formatPrice(descuentoMaximo)})`
+                                            : `Canjear hasta ${puntosMaximos} pts (${formatPrice(puntosMaximos * valorPorPunto)})`
                                         }
                                     </span>
                                 </label>
