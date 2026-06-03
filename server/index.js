@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const BASE_URL = process.env.BASE_URL || "https://vntg-hub.onrender.com";
 const db = require("./db");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { OAuth2Client } = require("google-auth-library");
@@ -917,7 +918,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
                           ]
                         : []),
                 ],
-                notification_url: "https://vntg-hub.onrender.com/api/webhooks/mercadopago",
+                notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
                 auto_return: "approved",
                 back_urls: {
                     success: `https://vntg-hub.vercel.app/pedido/${orderId}`,
@@ -1026,7 +1027,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         const precioUSD = Math.ceil(totalFinal / tasaUSD);
         const price_amount = Math.max(precioUSD, Math.ceil(minUSD));
 
-        const ipnUrl = `https://vntg-hub.onrender.com/api/webhooks/nowpayments?order_id=${orderId}`;
+        const ipnUrl = `${BASE_URL}/api/webhooks/nowpayments?order_id=${orderId}`;
         const payment = await crypto.createPayment({
             price_amount,
             pay_currency: coin,
@@ -1149,7 +1150,7 @@ app.post("/api/orders/:id/retry-payment", verifyToken, async (req, res) => {
                         currency_id: "ARS",
                     }] : []),
                 ],
-                notification_url: "https://vntg-hub.onrender.com/api/webhooks/mercadopago",
+                notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
                 auto_return: "approved",
                 back_urls: {
                     success: `https://vntg-hub.vercel.app/pedido/${id}`,
@@ -1184,7 +1185,7 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
         const precioUSD = Math.ceil(Number(order.total) / tasaUSD);
         const price_amount = Math.max(precioUSD, Math.ceil(minUSD));
 
-        const ipnUrl = `https://vntg-hub.onrender.com/api/webhooks/nowpayments?order_id=${id}`;
+        const ipnUrl = `${BASE_URL}/api/webhooks/nowpayments?order_id=${id}`;
         const payment = await crypto.createPayment({
             price_amount,
             pay_currency: coin,
@@ -1305,7 +1306,19 @@ app.get("/api/crypto/payment/:orderId", verifyToken, async (req, res) => {
                 const info = await crypto.getPaymentStatus(cryptoInfo.payment_id);
                 paymentStatus = info.payment_status;
                 if (paymentStatus === 'finished' && order.status === 'pending') {
+                    const [orderData] = await db.query(
+                        "SELECT total, user_id FROM orders WHERE id = ?", [orderId]
+                    );
                     await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
+                    if (orderData.length > 0) {
+                        const puntos = Math.floor(parseFloat(orderData[0].total) / 1);
+                        if (puntos > 0) {
+                            await db.query(
+                                "UPDATE users SET points = points + ? WHERE id = ?",
+                                [puntos, orderData[0].user_id]
+                            );
+                        }
+                    }
                     order.status = 'approved';
                 }
             } catch { }

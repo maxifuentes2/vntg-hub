@@ -2,7 +2,7 @@ const https = require("https");
 
 const MOCK = process.env.NOWPAYMENTS_MOCK === "true";
 const SANDBOX = process.env.NOWPAYMENTS_SANDBOX === "true";
-const BASE = SANDBOX ? "https://sandbox.nowpayments.io/v1/" : "https://api.nowpayments.io/v1/";
+const BASE = SANDBOX ? "https://api-sandbox.nowpayments.io/v1/" : "https://api.nowpayments.io/v1/";
 const mockAddress = (currency, orderId) => {
   const seed = orderId.slice(0, 8) + Math.random().toString(36).slice(2, 10);
   if (currency === "usdttrc20" || currency === "usdc") {
