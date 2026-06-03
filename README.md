@@ -9,7 +9,7 @@ Plataforma de comercio electrónico para coleccionistas de cultura pop. Catálog
 - **Wishlist**: Guardar favoritos con un clic (corazón), sincronizado por contexto global.
 - **Autenticación**: Registro/login con email + Google OAuth via Clerk.
 - **Chatbot IA**: Asistente conversacional con Groq (Llama 3) que responde dudas de productos, pedidos y envíos. Consulta de órdenes por email. Formulario de contacto a humanos.
-- **Pagos**: Integración con Mercado Pago (tarjetas, efectivo, transferencia).
+- **Pagos**: Mercado Pago (tarjetas, efectivo, transferencia) + **Crypto vía NowPayments.io** (USDT, USDC, BTC, ETH, LTC, SOL) con dirección de depósito, QR y polling de estado.
 - **Suscripción por email**: Bienvenida, recuperación de contraseña y confirmación de compra.
 - **Puntos y canjeo**: Sistema de puntos por compras, canjeables por descuentos en el checkout.
 - **Reproductor de video custom**: Reproductor en Tutoriales con controles de skip (-10s/+10s), timeline arrastrable, pantalla completa con orientación landscape, soporte Safari, barra de progreso fina, spinner de carga.
@@ -29,22 +29,23 @@ Plataforma de comercio electrónico para coleccionistas de cultura pop. Catálog
 - **Iconos**: Lucide React
 - **Autenticación**: Clerk + Google OAuth (`@react-oauth/google`)
 - **Tema oscuro**: next-themes
-- **Pagos**: Mercado Pago SDK (`@mercadopago/sdk-react`)
+- **Pagos**: Mercado Pago SDK (`@mercadopago/sdk-react`) + NowPayments.io API
 - **HTTP**: Axios
 - **IDs**: uuid
 
 ### Backend & DB
 - **Entorno**: Node.js + Express 5 (CommonJS)
-- **Base de Datos**: MySQL 2 (TiDB Cloud via mysql2)
+- **Base de Datos**: MySQL 2 (Railway via mysql2)
 - **Seguridad**: JWT + Bcryptjs
 - **IA**: Groq SDK (Llama 3) para chatbot, Google Generative AI (Gemini) para utilitarios
 - **Email**: Nodemailer (envío), ImapFlow + mailparser (lectura de bandeja de entrada)
 - **Archivos**: Multer
-- **Pagos**: Mercado Pago SDK
+- **Pagos**: Mercado Pago SDK + NowPayments.io API
 - **Monitorización**: Nodemon (dev)
 
 ### Integraciones
 - **Mercado Pago**: Pagos con tarjetas, efectivo y transferencia
+- **NowPayments.io**: Pagos con crypto (USDT, USDC, BTC, ETH, LTC, SOL)
 - **Google OAuth**: Inicio de sesión con Google
 - **Clerk**: Autenticación y gestión de usuarios
 - **Groq**: Chatbot IA (Llama 3)
@@ -71,7 +72,6 @@ vntg-hub/
 │   ├── escaner.js               # Escaneo de productos
 │   ├── imapPoller.js            # Poller de bandeja de entrada IMAP
 │   ├── migrate-shipping-config.sql
-│   └── isrgrootx1.pem           # Certificado CA
 ├── .gitignore
 └── README.md
 ```
@@ -147,6 +147,8 @@ DB_NAME=
 JWT_SECRET=
 GOOGLE_CLIENT_ID=
 MP_ACCESS_TOKEN=
+NOWPAYMENTS_API_KEY=
+NOWPAYMENTS_MOCK=true
 GROQ_API_KEY=
 GEMINI_API_KEY=
 N8N_WEBHOOK_URL=
