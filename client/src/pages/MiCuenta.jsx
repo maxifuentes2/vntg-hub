@@ -271,13 +271,13 @@ export default function MiCuenta() {
                     <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-3">
                         <User size={14} className="text-brand-orange" /> Perfil de Usuario
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-50 dark:bg-brand-card shadow-lg overflow-hidden rounded-2xl">
+                    <div className="grid grid-cols-1 gap-px bg-zinc-50 dark:bg-brand-card shadow-lg overflow-hidden rounded-2xl">
                         <UserDataField label="Nombre" field="name" value={user.name} />
                         <UserDataField label="Email" field="email" value={user.email} />
                         <UserDataField label="DNI" field="dni" value={user.dni || ''} />
                         
                         {/* TARJETA VISIBLE DE PUNTOS ACUMULADOS */}
-                        <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center md:col-span-2">
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
                             <div>
                                 <p className="text-[9px] font-black uppercase text-brand-orange tracking-wider flex items-center gap-2">
                                     Mis Puntos VNTG
