@@ -259,7 +259,7 @@ const verifyToken = (req, res, next) => {
 app.get("/api/user", verifyToken, async (req, res) => {
     try {
         const [users] = await db.query(
-            "SELECT id, name, email, address, city, province, zip_code, phone, role, points FROM users WHERE id = ?",
+            "SELECT id, name, email, address, city, province, zip_code, phone, dni, role, points FROM users WHERE id = ?",
             [req.user.id],
         );
         if (!users[0]) return res.status(404).json({ error: "Usuario no encontrado" });
@@ -480,7 +480,7 @@ app.delete("/api/wishlist/:userId", verifyToken, async (req, res) => {
 // --- PERFIL DE USUARIO (protegido con JWT) ---
 app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
     const { field, value } = req.body;
-    const allowedFields = ["address", "city", "province", "zip_code", "phone"];
+    const allowedFields = ["address", "city", "province", "zip_code", "phone", "dni"];
     if (!allowedFields.includes(field)) {
         return res.status(400).json({ error: "Campo no permitido" });
     }
@@ -654,7 +654,7 @@ app.delete("/api/addresses/:id", verifyToken, async (req, res) => {
 // --- AUTENTICACIÓN ---
 
 app.post("/api/auth/register", async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, dni } = req.body;
 
     try {
         const [existingUsers] = await db.query(
@@ -671,8 +671,8 @@ app.post("/api/auth/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         await db.query(
-            "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-            [name, email, hashedPassword],
+            "INSERT INTO users (name, email, password, dni) VALUES (?, ?, ?, ?)",
+            [name, email, hashedPassword, dni || ""],
         );
 
         res.status(201).json({ message: "Usuario registrado exitosamente" });

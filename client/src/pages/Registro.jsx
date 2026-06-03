@@ -10,6 +10,7 @@ export default function Registro() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [dni, setDni] = useState('');
     const [error, setError] = useState('');
 
     const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +28,7 @@ export default function Registro() {
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
+                body: JSON.stringify({ name, email, password, dni })
             });
 
             const data = await response.json();
@@ -71,6 +72,14 @@ export default function Registro() {
                         placeholder="CORREO ELECTRÓNICO" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
+                        required 
+                    />
+                    <input 
+                        type="text" 
+                        placeholder="DNI" 
+                        value={dni}
+                        onChange={(e) => setDni(e.target.value)}
                         className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic placeholder:uppercase focus:border-brand-orange outline-none rounded-xl transition-all" 
                         required 
                     />

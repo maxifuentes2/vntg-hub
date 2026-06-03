@@ -87,10 +87,11 @@ const createPayment = async ({
   ipn_callback_url,
 }) => {
   if (MOCK) {
+    const isStablecoin = pay_currency === "usdttrc20" || pay_currency === "usdc";
     return {
       payment_id: `mock_${order_id}_${Date.now()}`,
       pay_address: mockAddress(pay_currency, order_id),
-      pay_amount: (price_amount / 1200).toFixed(8),
+      pay_amount: isStablecoin ? price_amount.toFixed(8) : (price_amount / 1200).toFixed(8),
       pay_currency,
       price_amount,
       price_currency,
@@ -165,7 +166,8 @@ const getMinAmount = async ({ currency_from = "usd", currency_to = "usdttrc20" }
 
 const estimatePrice = async ({ amount, currency_from = "usd", currency_to = "usdttrc20" }) => {
   if (MOCK) {
-    return { amount, currency_from, currency_to, estimated_amount: (amount / 1200).toFixed(8) };
+    const isStablecoin = currency_to === "usdttrc20" || currency_to === "usdc";
+    return { amount, currency_from, currency_to, estimated_amount: isStablecoin ? amount.toFixed(8) : (amount / 1200).toFixed(8) };
   }
   if (!process.env.NOWPAYMENTS_API_KEY) {
     throw new Error("NOWPAYMENTS_API_KEY no configurada");

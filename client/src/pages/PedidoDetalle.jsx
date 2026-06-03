@@ -431,11 +431,8 @@ export default function PedidoDetalle() {
                                     <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                         <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
                                         <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange break-all">{parseFloat(cryptoRetry.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoRetry.pay_currency}</span></p>
-                                        <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoRetry.price_amount).toFixed(2)}</p>
-                                        <p className="text-[10px] text-zinc-500">≈ ${(parseFloat(cryptoRetry.price_amount) * (cryptoRetry.tasa_ars || 1200)).toLocaleString('es-AR')} ARS</p>
-                                        {cryptoRetry.total_ars && (
-                                            <p className="text-[9px] text-zinc-400 mt-1">Total del pedido: ${Number(cryptoRetry.total_ars).toLocaleString('es-AR')} ARS <span className="text-yellow-500">(mínimo por red)</span></p>
-                                        )}
+                                        <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoRetry.price_amount).toFixed(2)}{parseFloat(cryptoRetry.price_amount) > Math.ceil(Number(cryptoRetry.total_ars) / (cryptoRetry.tasa_ars || 1200)) && <span className="text-yellow-500 text-[10px] ml-1">(mín)</span>}</p>
+                                        <p className="text-[10px] text-zinc-500">≈ ${Number(cryptoRetry.total_ars).toLocaleString('es-AR')} ARS</p>
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black uppercase text-zinc-500 mb-2">Dirección de depósito</p>

@@ -241,6 +241,21 @@ export default function Checkout() {
             const timeout = setTimeout(() => controller.abort(), 20000);
 
             const token = localStorage.getItem('vntg_token');
+            
+            // Guardar DNI en la cuenta si cambió
+            if (token && shipping.dni && shipping.dni !== (user.dni || '')) {
+                try {
+                    await fetch(`${API_URL}/api/auth/update-profile`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ field: 'dni', value: shipping.dni }),
+                    });
+                    const updatedUser = { ...user, dni: shipping.dni };
+                    localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
+                    setUser(updatedUser);
+                } catch {}
+            }
+
             const endpoint = paymentMethod === 'crypto' ? '/api/checkout-crypto' : '/api/checkout';
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
@@ -596,11 +611,8 @@ export default function Checkout() {
                                             <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                                 <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
                                                 <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange break-all">{parseFloat(cryptoModal.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoModal.pay_currency}</span></p>
-                                                <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoModal.price_amount).toFixed(2)}</p>
-                                                <p className="text-[10px] text-zinc-500">≈ ${(parseFloat(cryptoModal.price_amount) * (cryptoModal.tasa_ars || 1200)).toLocaleString('es-AR')} ARS</p>
-                                                {cryptoModal.total_ars && (
-                                                    <p className="text-[9px] text-zinc-400 mt-1">Total del pedido: ${Number(cryptoModal.total_ars).toLocaleString('es-AR')} ARS <span className="text-yellow-500">(mínimo por red)</span></p>
-                                                )}
+                                                <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoModal.price_amount).toFixed(2)}{parseFloat(cryptoModal.price_amount) > Math.ceil(Number(cryptoModal.total_ars) / (cryptoModal.tasa_ars || 1200)) && <span className="text-yellow-500 text-[10px] ml-1">(mín)</span>}</p>
+                                                <p className="text-[10px] text-zinc-500">≈ ${Number(cryptoModal.total_ars).toLocaleString('es-AR')} ARS</p>
                                             </div>
 
                                             <div>
