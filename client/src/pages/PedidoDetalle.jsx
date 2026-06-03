@@ -268,10 +268,10 @@ export default function PedidoDetalle() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative flex justify-between items-center">
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-zinc-200 dark:bg-zinc-700 z-0 rounded-full"></div>
+                            <div className="relative flex max-[360px]:flex-col max-[360px]:gap-3 justify-between items-center">
+                                <div className="absolute left-0 max-[360px]:hidden top-1/2 -translate-y-1/2 w-full h-1 bg-zinc-200 dark:bg-zinc-700 z-0 rounded-full"></div>
                                 <div
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 h-1 z-0 bg-brand-orange rounded-full transition-all duration-1000 ease-out"
+                                    className="absolute left-0 max-[360px]:hidden top-1/2 -translate-y-1/2 h-1 z-0 bg-brand-orange rounded-full transition-all duration-1000 ease-out"
                                     style={{ width: `${progressWidth}%` }}
                                 ></div>
 
@@ -281,11 +281,11 @@ export default function PedidoDetalle() {
                                     const Icon = estado.icon;
 
                                     return (
-                                        <div key={estado.key} className="relative z-10 flex flex-col items-center gap-3">
+                                        <div key={estado.key} className="relative z-10 flex flex-col max-[360px]:flex-row items-center gap-3 max-[360px]:gap-4">
                                             <div className={`w-8 xs:w-12 h-8 xs:h-12 rounded-full flex items-center justify-center border-2 xs:border-4 transition-all duration-500 ${isCompleted ? `${estado.bg} border-white dark:border-brand-dark text-white shadow-lg scale-110` : 'bg-zinc-200 dark:bg-brand-card border-zinc-50 dark:border-brand-dark text-zinc-400'}`}>
                                                 <Icon size={20} />
                                             </div>
-                                            <span className={`text-[10px] font-black uppercase italic tracking-wider absolute -bottom-6 xs:-bottom-8 whitespace-nowrap ${isCurrent ? 'text-brand-orange' : (isCompleted ? 'text-zinc-900 dark:text-white' : 'text-zinc-400')}`}>
+                                            <span className={`text-[10px] font-black uppercase italic tracking-wider absolute -bottom-6 xs:-bottom-8 max-[360px]:static max-[360px]:text-left whitespace-nowrap max-[360px]:whitespace-normal ${isCurrent ? 'text-brand-orange' : (isCompleted ? 'text-zinc-900 dark:text-white' : 'text-zinc-400')}`}>
                                                 {estado.label}
                                             </span>
                                         </div>
@@ -395,7 +395,7 @@ export default function PedidoDetalle() {
                                         </div>
                                     );
                                 })()}
-                                <div className="grid grid-cols-3 gap-2 mb-6">
+                                <div className="grid grid-cols-3 max-[360px]:grid-cols-2 gap-2 mb-6">
                                     {[
                                         { id: 'usdttrc20', label: 'USDT TRC20' },
                                         { id: 'usdc', label: 'USDC' },
@@ -430,7 +430,7 @@ export default function PedidoDetalle() {
                                 <div className="space-y-4">
                                     <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                         <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
-                                        <p className="text-3xl font-black italic text-brand-orange">{parseFloat(cryptoRetry.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoRetry.pay_currency}</span></p>
+                                        <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange break-all">{parseFloat(cryptoRetry.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoRetry.pay_currency}</span></p>
                                         <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoRetry.price_amount).toFixed(2)}</p>
                                         <p className="text-[10px] text-zinc-500">≈ ${(parseFloat(cryptoRetry.price_amount) * (cryptoRetry.tasa_ars || 1200)).toLocaleString('es-AR')} ARS</p>
                                         {cryptoRetry.total_ars && (
@@ -447,7 +447,7 @@ export default function PedidoDetalle() {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-center rounded-2xl overflow-hidden">
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoRetry.pay_address}`} alt="QR" />
+                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoRetry.pay_address}`} alt="QR" className="max-w-full h-auto" />
                                     </div>
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
                                         {expired ? (

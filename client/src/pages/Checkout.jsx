@@ -391,7 +391,7 @@ export default function Checkout() {
                     {/* SELECCIÓN DE TIPO DE ENVÍO */}
                     <div className="mb-6">
                         <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 mb-3">Tipo de envío</h2>
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        <div className="grid grid-cols-3 max-[360px]:grid-cols-1 gap-2 sm:gap-3">
                             {['retiro', 'normal', 'prioritario'].map((type) => {
                                 const labels = { retiro: 'Retiro en Sucursal', normal: 'Correo Argentino Clásico', prioritario: 'Correo Argentino Expreso' };
                                 const costMap = {
@@ -425,13 +425,13 @@ export default function Checkout() {
                         />
                         {!esRetiro && (addresses.length === 0 || showManualForm || !selectedAddressId) && (
                             <div className="space-y-4">
-                                <div className="flex gap-4">
-                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                <div className="flex max-[360px]:flex-col gap-4">
+                                    <input type="text" placeholder="DIRECCIÓN" value={shipping.direccion} onChange={e => setShipping({ ...shipping, direccion: e.target.value })} required className="w-2/3 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="CP" value={shipping.codigoPostal} onChange={e => setShipping({ ...shipping, codigoPostal: e.target.value })} required className="w-1/3 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                                 </div>
-                                <div className="flex gap-4">
-                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                <div className="flex max-[360px]:flex-col gap-4">
+                                    <input type="text" placeholder="CIUDAD" value={shipping.ciudad} onChange={e => setShipping({ ...shipping, ciudad: e.target.value })} required className="w-1/2 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                    <input type="text" placeholder="PROVINCIA" value={shipping.provincia} onChange={e => setShipping({ ...shipping, provincia: e.target.value })} required className="w-1/2 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                                 </div>
                             </div>
                         )}
@@ -441,7 +441,7 @@ export default function Checkout() {
                             value={shipping.telefono}
                             onChange={e => setShipping({ ...shipping, telefono: e.target.value })}
                             required
-                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
                         />
                         <input
                             type="text"
@@ -449,7 +449,7 @@ export default function Checkout() {
                             value={shipping.dni}
                             onChange={e => setShipping({ ...shipping, dni: e.target.value })}
                             required
-                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
                         />
 
                         {puntosDisponibles > 0 && (
@@ -526,7 +526,7 @@ export default function Checkout() {
                             {paymentMethod === 'crypto' && (
                                 <div className="mt-3">
                                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">Moneda</p>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-3 max-[360px]:grid-cols-2 gap-2">
                                         {[
                                             { id: 'usdttrc20', label: 'USDT TRC20' },
                                             { id: 'usdc', label: 'USDC' },
@@ -582,7 +582,7 @@ export default function Checkout() {
                                         <div className="space-y-4">
                                             <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                                 <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
-                                                <p className="text-3xl font-black italic text-brand-orange">{parseFloat(cryptoModal.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoModal.pay_currency}</span></p>
+                                                <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange break-all">{parseFloat(cryptoModal.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoModal.pay_currency}</span></p>
                                                 <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoModal.price_amount).toFixed(2)}</p>
                                                 <p className="text-[10px] text-zinc-500">≈ ${(parseFloat(cryptoModal.price_amount) * (cryptoModal.tasa_ars || 1200)).toLocaleString('es-AR')} ARS</p>
                                                 {cryptoModal.total_ars && (
@@ -601,7 +601,7 @@ export default function Checkout() {
                                             </div>
 
                                             <div className="flex items-center justify-center rounded-2xl overflow-hidden">
-                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoModal.pay_address}`} alt="QR" />
+                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoModal.pay_address}`} alt="QR" className="max-w-full h-auto" />
                                             </div>
 
                                             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
@@ -684,15 +684,15 @@ export default function Checkout() {
                             </button>
                         </div>
                         <form onSubmit={handleSaveAddress} className="space-y-4">
-                            <input type="text" placeholder="ETIQUETA (Casa, Trabajo...)" value={editingAddress.tag || ''} onChange={e => setEditingAddress({ ...editingAddress, tag: e.target.value })} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                            <input type="text" placeholder="DIRECCIÓN" value={editingAddress.address || ''} onChange={e => setEditingAddress({ ...editingAddress, address: e.target.value })} required className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                            <div className="flex gap-4">
-                                <input type="text" placeholder="CIUDAD" value={editingAddress.city || ''} onChange={e => setEditingAddress({ ...editingAddress, city: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                <input type="text" placeholder="PROVINCIA" value={editingAddress.province || ''} onChange={e => setEditingAddress({ ...editingAddress, province: e.target.value })} required className="w-1/2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            <input type="text" placeholder="ETIQUETA (Casa, Trabajo...)" value={editingAddress.tag || ''} onChange={e => setEditingAddress({ ...editingAddress, tag: e.target.value })} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            <input type="text" placeholder="DIRECCIÓN" value={editingAddress.address || ''} onChange={e => setEditingAddress({ ...editingAddress, address: e.target.value })} required className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            <div className="flex max-[360px]:flex-col gap-4">
+                                <input type="text" placeholder="CIUDAD" value={editingAddress.city || ''} onChange={e => setEditingAddress({ ...editingAddress, city: e.target.value })} required className="w-1/2 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                <input type="text" placeholder="PROVINCIA" value={editingAddress.province || ''} onChange={e => setEditingAddress({ ...editingAddress, province: e.target.value })} required className="w-1/2 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                             </div>
-                            <div className="flex gap-4">
-                                <input type="text" placeholder="CP" value={editingAddress.zip_code || ''} onChange={e => setEditingAddress({ ...editingAddress, zip_code: e.target.value })} required className="w-1/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                <input type="tel" placeholder="TELÉFONO" value={editingAddress.phone || ''} onChange={e => setEditingAddress({ ...editingAddress, phone: e.target.value })} required className="w-2/3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                            <div className="flex max-[360px]:flex-col gap-4">
+                                <input type="text" placeholder="CP" value={editingAddress.zip_code || ''} onChange={e => setEditingAddress({ ...editingAddress, zip_code: e.target.value })} required className="w-1/3 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                <input type="tel" placeholder="TELÉFONO" value={editingAddress.phone || ''} onChange={e => setEditingAddress({ ...editingAddress, phone: e.target.value })} required className="w-2/3 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
                             </div>
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={() => setEditingAddress(null)} className="flex-1 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">Cancelar</button>

@@ -464,7 +464,7 @@ export default function MiCuenta() {
                                 <Link 
                                     to={`/pedido/${order.id}`} 
                                     key={order.id} 
-                                    className="bg-white dark:bg-brand-card p-6 rounded-2xl flex justify-between items-center hover:border-brand-orange/50 transition-all cursor-pointer group shadow-sm border border-transparent dark:hover:border-zinc-700"
+                                    className="bg-white dark:bg-brand-card p-6 max-[360px]:p-4 rounded-2xl flex max-[360px]:flex-col justify-between items-start max-[360px]:items-start hover:border-brand-orange/50 transition-all cursor-pointer group shadow-sm border border-transparent dark:hover:border-zinc-700"
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">
@@ -472,7 +472,7 @@ export default function MiCuenta() {
                                         </div>
                                         <p className="font-bold italic uppercase text-sm group-hover:text-brand-orange transition-colors">Orden #{order.id.slice(0,8)}</p>
                                     </div>
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-6 max-[360px]:w-full max-[360px]:justify-between max-[360px]:mt-2">
                                         <div className="text-right">
                                             <span className={`text-[10px] font-black uppercase italic px-3 py-1 rounded-full ${
                                                 order.status === 'approved' ? 'bg-green-500/10 text-green-500' :
@@ -484,9 +484,9 @@ export default function MiCuenta() {
                                             }`}>
                                                 {order.status === 'approved' ? 'Aprobado' : order.status === 'preparing' ? 'En Preparación' : order.status === 'ready' ? 'Listo para Retirar' : order.status === 'shipped' ? 'Enviado' : order.status === 'delivered' ? 'Entregado' : 'Pendiente'}
                                             </span>
-                                            <p className="text-xl font-black italic mt-1">{formatPrice(order.total)}</p>
+                                            <p className="text-xl max-[360px]:text-base font-black italic mt-1">{formatPrice(order.total)}</p>
                                         </div>
-                                        <ChevronRight className="text-zinc-300 dark:text-zinc-600 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
+                                        <ChevronRight className="text-zinc-300 dark:text-zinc-600 group-hover:text-brand-orange group-hover:translate-x-1 transition-all max-[360px]:hidden" />
                                     </div>
                                 </Link>
                             )) : (

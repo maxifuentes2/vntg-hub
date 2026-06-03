@@ -209,22 +209,22 @@ export default function Navbar() {
                     )}
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2">
-                    <button onClick={toggleCurrency} className="px-2.5 py-1.5 text-[11px] font-black uppercase italic tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors group">
+                <div className="flex items-center gap-1 sm:gap-2 max-[360px]:gap-0.5">
+                    <button onClick={toggleCurrency} className="px-2.5 py-1.5 max-[360px]:px-1.5 max-[360px]:py-1 text-[11px] max-[360px]:text-[10px] font-black uppercase italic tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors group">
                         <span className={currency === 'USD' ? 'text-brand-orange' : 'text-zinc-500 group-hover:text-brand-orange'}>{currency}</span>
                     </button>
 
-                    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
+                    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                         {theme === 'dark' ? (
-                            <Sun size={22} className="group-hover:text-brand-orange transition-colors" />
+                            <Sun size={22} className="max-[360px]:size-5 group-hover:text-brand-orange transition-colors" />
                         ) : (
-                            <Moon size={22} className="group-hover:text-brand-orange transition-colors" />
+                            <Moon size={22} className="max-[360px]:size-5 group-hover:text-brand-orange transition-colors" />
                         )}
                     </button>
 
                     <div className="relative" ref={userMenuRef}>
-                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
-                            <User size={22} className="group-hover:text-brand-orange transition-colors" />
+                        <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
+                            <User size={22} className="max-[360px]:size-5 group-hover:text-brand-orange transition-colors" />
                         </button>
                         <div className={`absolute right-0 max-[400px]:fixed max-[400px]:left-2 max-[400px]:right-2 max-[400px]:w-auto mt-3 w-64 bg-white dark:bg-brand-card  shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isUserMenuOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
                             {user ? (
@@ -262,15 +262,15 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    <button onClick={openWishList} className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
-                        <Heart size={22} className="group-hover:text-brand-orange transition-colors" />
+                    <button onClick={openWishList} className="relative p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
+                        <Heart size={22} className="max-[360px]:size-5 group-hover:text-brand-orange transition-colors" />
                         {wishListCount > 0 && (
                             <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-brand-dark">{wishListCount}</span>
                         )}
                     </button>
 
-                    <button onClick={openCart} className="relative p-2 bg-brand-orange text-white rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all ml-1">
-                        <ShoppingCart size={22} />
+                    <button onClick={openCart} className="relative p-2 max-[360px]:p-1.5 bg-brand-orange text-white rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all ml-1">
+                        <ShoppingCart size={22} className="max-[360px]:size-5" />
                         {cartCount > 0 && (
                             <span className="absolute -top-1 -right-1 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-orange">{cartCount}</span>
                         )}

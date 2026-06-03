@@ -399,7 +399,7 @@ export default function AdminPanel() {
                         {/* HEADER GLOBAL */}
                         <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
                             <div>
-                                <h1 className="text-4xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">
+                                <h1 className="text-4xl max-[360px]:text-2xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">
                                     {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : activeTab === 'shipping' ? 'Envíos' : 'Órdenes'}
                                 </h1>
                                 <p className="text-brand-orange text-[10px] font-bold uppercase tracking-widest mt-1">
@@ -486,19 +486,19 @@ export default function AdminPanel() {
                                     <div className="grid grid-cols-2 xs:grid-cols-4 gap-4">
                                         <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm">
                                             <p className="text-[9px] font-black uppercase text-brand-orange italic tracking-wider mb-1">Procesando</p>
-                                            <p className="text-3xl font-black italic text-zinc-900 dark:text-white">{metrics.procesando}</p>
+                                            <p className="text-3xl max-[360px]:text-xl font-black italic text-zinc-900 dark:text-white">{metrics.procesando}</p>
                                         </div>
                                         <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm">
                                             <p className="text-[9px] font-black uppercase text-yellow-500 italic tracking-wider mb-1">Pendientes</p>
-                                            <p className="text-3xl font-black italic text-zinc-900 dark:text-white">{metrics.pendientes}</p>
+                                            <p className="text-3xl max-[360px]:text-xl font-black italic text-zinc-900 dark:text-white">{metrics.pendientes}</p>
                                         </div>
                                         <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm">
                                             <p className="text-[9px] font-black uppercase text-purple-500 italic tracking-wider mb-1">Entregados</p>
-                                            <p className="text-3xl font-black italic text-zinc-900 dark:text-white">{metrics.entregados}</p>
+                                            <p className="text-3xl max-[360px]:text-xl font-black italic text-zinc-900 dark:text-white">{metrics.entregados}</p>
                                         </div>
                                         <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm">
                                             <p className="text-[9px] font-black uppercase text-green-500 italic tracking-wider mb-1">Ingresos</p>
-                                            <p className="text-3xl font-black italic text-zinc-900 dark:text-white">{formatPrice(metrics.ingresos)}</p>
+                                            <p className="text-3xl max-[360px]:text-xl font-black italic text-zinc-900 dark:text-white truncate">{formatPrice(metrics.ingresos)}</p>
                                         </div>
                                     </div>
 
