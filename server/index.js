@@ -122,13 +122,32 @@ const buildEmailHtml = (type, data) => {
             </div>`;
 
         case "chat_summary":
+            const chatHtml = Array.isArray(data.messages) ? data.messages.map((m, i) => {
+                const isUser = m.role === "user";
+                const align = isUser ? "right" : "left";
+                const bg = isUser ? "#f97316" : "#f5f5f5";
+                const color = isUser ? "#fff" : "#1a1a1a";
+                const label = isUser ? "Tú" : "VNTG Bot";
+                const radius = isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
+                return `
+                    <div style="display:flex;flex-direction:column;align-items:${align};margin-bottom:12px">
+                        <span style="font-size:10px;color:#999;margin-bottom:2px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px">${label}</span>
+                        <div style="background:${bg};color:${color};padding:10px 14px;border-radius:${radius};max-width:85%;font-size:13px;line-height:1.5;word-wrap:break-word;box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+                            ${m.text.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                `;
+            }).join("") : `<p style="color:#666">${data.summary || ""}</p>`;
             return `<div style="font-family:sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#f97316">Resumen de conversación</h2>
-                <div style="background:#f5f5f5;padding:16px;border-radius:8px;margin:12px 0">
-                    <p style="margin:0">${data.summary}</p>
+                <div style="text-align:center;margin-bottom:20px">
+                    <h2 style="color:#f97316;margin:0 0 4px">💬 Transcripción de tu conversación</h2>
+                    <p style="color:#999;font-size:12px;margin:0">VNTG Hub — Chat de soporte</p>
+                </div>
+                <div style="background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:20px;margin:12px 0">
+                    ${chatHtml}
                 </div>
                 <div style="text-align:center;margin:16px 0">
-                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Seguir comprando</a>
+                    <a href="https://vntg-hub.vercel.app" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px">Volver a VNTG Hub</a>
                 </div>
                 ${FOOTER}
             </div>`;
@@ -155,7 +174,7 @@ const getEmailSubject = (type, data) => {
         "order_status":   data.subject || "Estado de tu pedido — VNTG Hub",
         "support_reply":  "Respuesta de soporte — VNTG Hub",
         "contact":        `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
-        "chat_summary":   "Resumen de tu conversación — VNTG Hub",
+        "chat_summary":   "Transcripción de tu conversación — VNTG Hub",
         "reset_password": "Restablecer tu contraseña — VNTG Hub",
     };
     return subjects[type] || "Notificación — VNTG Hub";
@@ -1908,7 +1927,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 app.post("/api/chat", async (req, res) => {
-    const { message, history, userId, userEmail } = req.body;
+    const { message, history, fullHistory, userId, userEmail } = req.body;
     if (!message) return res.status(400).json({ error: "Mensaje vacío" });
 
     try {
@@ -1978,7 +1997,44 @@ app.post("/api/chat", async (req, res) => {
             DERIVACIÓN A SOPORTE HUMANO:
             Si el problema es complejo (devoluciones, quejas severas, reembolsos) o el usuario lo solicita explícitamente, indícale que puede usar la opción "Hablar con un humano" en el chat para llenar un formulario de contacto, o bien escribir a soportehubvntg@gmail.com.
 
-            DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.`;
+            DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.
+
+            === TUTORIALES DISPONIBLES ===
+            La página /tutoriales contiene 4 videos tutoriales:
+            - "Cómo utilizar el Chat Bot": explica cómo usar el chat del soporte.
+            - "Cómo utilizar los Filtros de búsqueda": muestra cómo filtrar productos por categoría, franquicia, etc.
+            - "Cómo gestionar tus intereses": enseña a agregar/quitar categorías de interés desde Mi Cuenta.
+            - "Cómo guardar tus direcciones": muestra cómo agregar direcciones de envío en Mi Cuenta.
+            Todos los videos están alojados en Cloudinary y se reproducen directamente en la página. Si el usuario pregunta sobre tutoriales o guías, recomendale visitar la página [/tutoriales](/tutoriales).
+
+            === PUNTOS VNTG ===
+            Los Puntos VNTG son un programa de fidelidad. Cada compra acumula puntos automáticamente cuando el pedido pasa a estado "aprobado". 1 punto = $10 ARS de descuento. Se pueden canjear en el checkout sin monto mínimo. No tienen fecha de vencimiento. El saldo se consulta desde Mi Cuenta. Para más info: [/puntos](/puntos).
+
+            === AUTENTICIDAD ===
+            En VNTG HUB cada producto pasa por un riguroso proceso de verificación antes de publicarse: inspección experta de materiales, marcas y estado de conservación, más validación con agencias oficiales. Para más info: [/guia-autenticidad](/guia-autenticidad).
+
+            === MI CUENTA ===
+            En [/mi-cuenta](/mi-cuenta) el usuario puede: editar su nombre, email y celular, gestionar direcciones de envío, ver el historial de pedidos, ver su saldo de puntos VNTG, seleccionar categorías de interés, y cerrar sesión.
+
+            === REGISTRO E INICIO DE SESIÓN ===
+            Los usuarios pueden registrarse en [/register](/register) con nombre, email y contraseña. También pueden iniciar sesión en [/login](/login). Si olvidan la contraseña, pueden recuperarla en [/recuperar-password](/recuperar-password). El registro es obligatorio para comprar.
+
+            === CHECKOUT ===
+            El checkout está en [/checkout](/checkout). Requiere iniciar sesión. El usuario puede: seleccionar/agregar dirección de envío, canjear puntos VNTG por descuento, elegir método de envío (normal o prioritario), y pagar con Mercado Pago. Al confirmar se genera una orden con ID de 7 caracteres.
+
+            === WISHLIST ===
+            Los usuarios pueden agregar productos a su lista de deseos desde cualquier card de producto (corazón) o desde la página de detalle. La lista se consulta desde el sidebar de deseos (ícono de corazón en el navbar).
+
+            === CARRITO ===
+            El carrito se abre como sidebar desde el navbar. Los productos se agregan desde las cards o desde la página de detalle. Muestra el total, y tiene un botón "Iniciar Compra" que redirige al checkout.
+
+            === CATEGORÍAS ===
+            Las categorías se navegan desde el sidebar de categorías (menú hamburguesa) o desde la página principal. Cada categoría agrupa productos por tipo (autos, películas, cómics, figuras, juegos, etc.). También se ve el catálogo completo en [/categoria/all](/categoria/all).
+
+            === TÉRMINOS Y PRIVACIDAD ===
+            - [/terminos](/terminos): Términos de Servicio de la plataforma.
+            - [/privacidad](/privacidad): Política de Privacidad.
+            - [/contacto](/contacto): Formulario de contacto y email soportehubvntg@gmail.com.`;
 
         const groqMessages = [
             { role: "system", content: systemPrompt },
@@ -2060,32 +2116,18 @@ app.post("/api/chat", async (req, res) => {
 
             if (userEmail) {
                 try {
-                    const summaryRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Bearer ${GROQ_API_KEY}`,
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            model: GROQ_MODEL,
-                            messages: [
-                                { role: "system", content: "Resumís conversaciones de soporte técnico en 1-2 párrafos concisos, solo texto claro y formal." },
-                                { role: "user", content: `Resume esta conversación:\n\nHistorial:\n${JSON.stringify(history)}\n\nCliente: ${message}\nSoporte: ${response}` },
-                            ],
-                            temperature: 0.3,
-                            max_tokens: 512,
-                        }),
-                    });
-                    const summaryData = await summaryRes.json();
-                    const summaryText = summaryData.choices?.[0]?.message?.content || "";
+                    const chatMessages = (fullHistory || history || []).map(m => ({
+                        role: m.role === "user" ? "user" : "bot",
+                        text: m.parts?.[0]?.text || "",
+                    }));
+                    chatMessages.push({ role: "user", text: message });
+                    chatMessages.push({ role: "bot", text: response });
 
-                    if (summaryText) {
-                        await sendEmail("chat_summary", userEmail, {
-                            summary: summaryText,
-                        });
-                    }
-                } catch (summaryError) {
-                    console.error("Error al generar/enviar resumen del chat:", summaryError);
+                    await sendEmail("chat_summary", userEmail, {
+                        messages: chatMessages,
+                    });
+                } catch (transcriptError) {
+                    console.error("Error al enviar transcripción del chat:", transcriptError);
                 }
             }
         }

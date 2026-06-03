@@ -26,6 +26,10 @@ class ImapPoller {
       logger: false,
     });
 
+    this.client.on('error', (err) => {
+      console.error('[imap] Error en conexión IMAP:', err.message);
+    });
+
     try {
       await this.client.connect();
       console.log('[imap] Conectado a Gmail IMAP');
@@ -95,6 +99,8 @@ class ImapPoller {
         this.poll();
         this.interval = setInterval(() => this.poll(), 30000);
       }
+    }).catch((err) => {
+      console.error('[imap] Error en start:', err.message);
     });
   }
 

@@ -185,6 +185,9 @@ export default function CategorySidebar({ categories = [] }) {
                                 <Link to="/envios" onClick={closeAll} className="flex items-center gap-3 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl text-[10px] font-black uppercase italic text-zinc-600 dark:text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 transition-all border border-transparent hover:border-brand-orange/20">
                                     <Truck size={14} className="text-brand-orange" /> Envíos Seguros
                                 </Link>
+                                <Link to="/tutoriales" onClick={closeAll} className="flex items-center gap-3 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl text-[10px] font-black uppercase italic text-zinc-600 dark:text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 transition-all border border-transparent hover:border-brand-orange/20">
+                                    <BookOpen size={14} className="text-brand-orange" /> Tutoriales
+                                </Link>
                                 <Link to="/puntos" onClick={closeAll} className="flex items-center gap-3 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl text-[10px] font-black uppercase italic text-zinc-600 dark:text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 transition-all border border-transparent hover:border-brand-orange/20">
                                     <Star size={14} className="text-brand-orange" /> Puntos VNTG
                                 </Link>

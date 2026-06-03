@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { X, Send, Headset, Package, MessageSquare } from 'lucide-react';
+import { X, Minus, Send, Headset, Package, MessageSquare } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -43,6 +43,7 @@ export default function Chatbot() {
   const [showOrderLookup, setShowOrderLookup] = useState(false);
   const [orderLookupInput, setOrderLookupInput] = useState('');
   const [contactForm, setContactForm] = useState({ nombre: '', email: '', mensaje: '' });
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const chatbotRef = useRef(null);
 
@@ -97,6 +98,11 @@ export default function Chatbot() {
       parts: [{ text: m.text }]
     }));
 
+    const fullHistory = messages.slice(1).map(m => ({
+      role: m.isBot ? "model" : "user",
+      parts: [{ text: m.text }]
+    }));
+
     let userId = null;
     let userEmail = null;
     try {
@@ -119,7 +125,7 @@ export default function Chatbot() {
       const res = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, history: historyForGemini, userId, userEmail }),
+        body: JSON.stringify({ message: userMsg, history: historyForGemini, fullHistory, userId, userEmail }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -142,7 +148,11 @@ export default function Chatbot() {
       }
 
       if (data.finished) {
-        // Chat finalizado
+        setTimeout(() => {
+          setMessages([WELCOME_MSG]);
+          setShowContactForm(false);
+          setShowOrderLookup(false);
+        }, 1000);
       }
     } catch {
       setMessages(prev => [...prev, { text: "Error de conexión con el sistema. Intenta de nuevo.", isBot: true }]);
@@ -313,7 +323,7 @@ export default function Chatbot() {
       <div
         className={`absolute bottom-16 sm:bottom-24 right-0 mb-2 w-[calc(100vw-1.5rem)] xs:w-80 md:w-96 max-h-[65vh] xs:max-h-[500px] bg-white dark:bg-brand-dark  shadow-2xl transition-all duration-500 origin-bottom-right rounded-[2.5rem] overflow-hidden flex flex-col ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-0 opacity-0 translate-y-10 pointer-events-none'}`}
       >
-        <div className="bg-white dark:bg-zinc-900/90 pl-6 pr-8 pt-8 pb-6 flex justify-between items-center text-zinc-900 dark:text-white border-b-2 border-brand-orange/30">
+        <div className="bg-white dark:bg-zinc-900/90 pl-6 pr-3 pt-8 pb-6 flex justify-between items-center text-zinc-900 dark:text-white border-b-2 border-brand-orange/30">
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full">
@@ -326,9 +336,14 @@ export default function Chatbot() {
               <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">VNTG Hub</span>
             </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="hover:rotate-90 transition-transform bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full text-zinc-900 dark:text-white">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setIsOpen(false)} className="hover:bg-zinc-100 dark:hover:bg-zinc-800 p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-all">
+              <Minus size={18} />
+            </button>
+            <button onClick={() => setShowCloseConfirm(true)} className="hover:bg-red-50 dark:hover:bg-red-950/30 p-2 rounded-full text-zinc-500 hover:text-red-500 transition-all">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6 bg-zinc-50 dark:bg-zinc-950/50 custom-scrollbar">
@@ -425,6 +440,29 @@ export default function Chatbot() {
               </div>
               <div className="p-4 text-xs font-bold italic text-zinc-500">
                 Procesando telemetría...
+              </div>
+            </div>
+          )}
+
+          {showCloseConfirm && (
+            <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-red-300 dark:border-red-800 shadow-sm text-center">
+              <p className="text-xs font-black italic uppercase tracking-tighter mb-3 text-zinc-800 dark:text-white">
+                ¿Cerrar y descartar conversación?
+              </p>
+              <p className="text-[10px] text-zinc-500 mb-4">Se perderá todo el historial de este chat.</p>
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={() => { setShowCloseConfirm(false); setIsOpen(false); setMessages([WELCOME_MSG]); setShowContactForm(false); setShowOrderLookup(false); }}
+                  className="px-4 py-2 bg-red-500 text-white text-[10px] font-black italic uppercase tracking-tighter rounded-xl hover:bg-red-600 transition-all active:scale-95"
+                >
+                  Cerrar y descartar
+                </button>
+                <button
+                  onClick={() => setShowCloseConfirm(false)}
+                  className="px-4 py-2 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold italic rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-all active:scale-95"
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
           )}
