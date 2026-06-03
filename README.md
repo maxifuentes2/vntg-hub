@@ -106,6 +106,14 @@ vntg-hub/
 - Node.js v18+
 - pnpm (obligatorio)
 
+```bash
+# Si no tenés pnpm instalado globalmente:
+npm install -g pnpm
+
+# O usando winget (Windows):
+winget install pnpm
+```
+
 ## Instalación
 
 ```bash
