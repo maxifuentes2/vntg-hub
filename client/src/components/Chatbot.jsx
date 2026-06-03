@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { X, Minus, Send, Headset, Package, MessageSquare } from 'lucide-react';
+import { X, Minus, Send, Headset, Package, MessageSquare, ChevronDown } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -44,7 +44,9 @@ export default function Chatbot() {
   const [orderLookupInput, setOrderLookupInput] = useState('');
   const [contactForm, setContactForm] = useState({ nombre: '', email: '', mensaje: '' });
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const chatbotRef = useRef(null);
 
   const scrollToBottom = useCallback(() => {
@@ -62,6 +64,18 @@ export default function Chatbot() {
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(dist > 60);
+  }, []);
+
+  const scrollToBottomNow = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowScrollBtn(false);
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -346,7 +360,7 @@ export default function Chatbot() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6 bg-zinc-50 dark:bg-zinc-950/50 custom-scrollbar">
+        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6 bg-zinc-50 dark:bg-zinc-950/50 custom-scrollbar relative" onScroll={handleScroll}>
           {messages.map((msg, index) => renderMessage(msg, index))}
 
           {isOpen && messages.length === 1 && !isLoading && (
@@ -444,30 +458,15 @@ export default function Chatbot() {
             </div>
           )}
 
-          {showCloseConfirm && (
-            <div className="bg-white dark:bg-zinc-800 p-4 rounded-2xl border border-red-300 dark:border-red-800 shadow-sm text-center">
-              <p className="text-xs font-black italic uppercase tracking-tighter mb-3 text-zinc-800 dark:text-white">
-                ¿Cerrar y descartar conversación?
-              </p>
-              <p className="text-[10px] text-zinc-500 mb-4">Se perderá todo el historial de este chat.</p>
-              <div className="flex gap-2 justify-center">
-                <button
-                  onClick={() => { setShowCloseConfirm(false); setIsOpen(false); setMessages([WELCOME_MSG]); setShowContactForm(false); setShowOrderLookup(false); }}
-                  className="px-4 py-2 bg-red-500 text-white text-[10px] font-black italic uppercase tracking-tighter rounded-xl hover:bg-red-600 transition-all active:scale-95"
-                >
-                  Cerrar y descartar
-                </button>
-                <button
-                  onClick={() => setShowCloseConfirm(false)}
-                  className="px-4 py-2 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold italic rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-all active:scale-95"
-                >
-                  Cancelar
-                </button>
-              </div>
+          <div ref={messagesEndRef} />
+
+          {showScrollBtn && (
+            <div className="sticky bottom-0 flex justify-center pointer-events-none z-10">
+              <button onClick={scrollToBottomNow} className="pointer-events-auto bg-brand-orange text-white rounded-full p-2 shadow-lg hover:bg-orange-600 transition-all active:scale-95">
+                <ChevronDown size={18} />
+              </button>
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
         <div className="p-4 bg-white dark:bg-brand-dark border-t dark:border-white/5 flex gap-2">
@@ -488,6 +487,31 @@ export default function Chatbot() {
             <Send size={16} />
           </button>
         </div>
+
+        {showCloseConfirm && (
+          <div className="absolute inset-0 z-50 bg-black/40 flex items-center justify-center p-6">
+            <div className="bg-white dark:bg-zinc-800 w-full max-w-xs rounded-2xl border border-red-300 dark:border-red-800 shadow-xl text-center p-6">
+              <p className="text-sm font-black italic uppercase tracking-tighter mb-2 text-zinc-800 dark:text-white">
+                ¿Cerrar y descartar conversación?
+              </p>
+              <p className="text-xs text-zinc-500 mb-5">Se perderá todo el historial de este chat.</p>
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={() => { setShowCloseConfirm(false); setIsOpen(false); setMessages([WELCOME_MSG]); setShowContactForm(false); setShowOrderLookup(false); }}
+                  className="px-5 py-2.5 bg-red-500 text-white text-xs font-black italic uppercase tracking-tighter rounded-xl hover:bg-red-600 transition-all active:scale-95"
+                >
+                  Cerrar y descartar
+                </button>
+                <button
+                  onClick={() => setShowCloseConfirm(false)}
+                  className="px-5 py-2.5 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold italic rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-all active:scale-95"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <button

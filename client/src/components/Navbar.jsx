@@ -211,7 +211,10 @@ export default function Navbar() {
 
                 <div className="flex items-center gap-1 sm:gap-2 max-[360px]:gap-0.5">
                     <button onClick={toggleCurrency} className="px-2.5 py-1.5 max-[360px]:px-1.5 max-[360px]:py-1 text-[11px] max-[360px]:text-[10px] font-black uppercase italic tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors group">
-                        <span className={currency === 'USD' ? 'text-brand-orange' : 'text-zinc-500 group-hover:text-brand-orange'}>{currency}</span>
+                        <span className={`flex items-center gap-1.5 ${currency === 'USD' ? 'text-brand-orange' : 'text-zinc-500 group-hover:text-brand-orange'}`}>
+                            <img src={currency === 'USD' ? '/us.png' : '/ar.png'} alt="" className="w-4 h-4 rounded-sm object-cover" />
+                            {currency}
+                        </span>
                     </button>
 
                     <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
