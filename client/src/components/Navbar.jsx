@@ -18,6 +18,7 @@ import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import { useSidebar } from '../context/SidebarContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -26,7 +27,7 @@ export default function Navbar() {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [user, setUser] = useState(null);
+    const { user, logout: authLogout } = useAuth();
     const userMenuRef = useRef(null);
     const userButtonRef = useRef(null);
     const userDropdownRef = useRef(null);
@@ -70,18 +71,6 @@ export default function Navbar() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem('vntg_user');
-        if (storedUser && storedUser !== "undefined") {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                console.error("Dato corrupto en localStorage", error);
-                localStorage.removeItem('vntg_user');
-            }
-        }
-    }, [location.pathname]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -128,13 +117,10 @@ export default function Navbar() {
 
     const handleLogout = async () => {
         await syncCartToServer(cart);
-        localStorage.removeItem('vntg_user');
-        localStorage.removeItem('vntg_token');
         localStorage.removeItem('vntg_interests');
-        setUser(null);
+        authLogout();
         setIsUserMenuOpen(false);
         navigate('/');
-        window.location.reload();
     };
 
     const toggleUserMenu = () => {

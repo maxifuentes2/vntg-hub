@@ -37,6 +37,7 @@ import { WishListProvider } from './context/WishListContext';
 import { ToastProvider } from './context/ToastContext'; 
 import { SidebarProvider } from './context/SidebarContext'; 
 import { CurrencyProvider } from './context/CurrencyContext'; 
+import { AuthProvider, useAuth } from './context/AuthContext'; 
 
 // IMPORTACIONES DE AUTENTICACIÓN Y CHECKOUT
 import Checkout from './pages/Checkout';
@@ -50,6 +51,7 @@ function ChatbotWrapper() {
 
 function GoogleOAuthHandler() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -67,8 +69,7 @@ function GoogleOAuthHandler() {
           .then(res => res.json())
           .then(data => {
             if (data.user) {
-              localStorage.setItem('vntg_user', JSON.stringify(data.user));
-              if (data.token) localStorage.setItem('vntg_token', data.token);
+              login(data.user, data.token);
               navigate('/', { replace: true });
             } else {
               navigate('/login', { state: { googleError: data.error || "Error al iniciar sesión con Google" }, replace: true });
@@ -111,6 +112,7 @@ function App() {
   }, []);
 
   return (
+    <AuthProvider>
     <ToastProvider>
       <CurrencyProvider>
       <SidebarProvider>
@@ -171,6 +173,7 @@ function App() {
       </SidebarProvider>
       </CurrencyProvider>
     </ToastProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
+    const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const justRegistered = location.state?.registered;
@@ -69,9 +71,7 @@ export default function Login() {
 
             if (response.ok) {
                 if (data.skipCode) {
-                    // Si el dispositivo es de confianza, entramos directo
-                    localStorage.setItem('vntg_user', JSON.stringify(data.user));
-                    if (data.token) localStorage.setItem('vntg_token', data.token);
+                    login(data.user, data.token);
                     navigate('/');
                 } else if (data.requireCode) {
                     // Si no, procedemos a la verificación por código
@@ -110,12 +110,10 @@ export default function Login() {
             const data = await response.json();
 
             if (response.ok) {
-                // Si el servidor generó un token de confianza, lo guardamos localmente
                 if (data.deviceToken) {
                     localStorage.setItem('vntg_device_token', data.deviceToken);
                 }
-                localStorage.setItem('vntg_user', JSON.stringify(data.user));
-                if (data.token) localStorage.setItem('vntg_token', data.token);
+                login(data.user, data.token);
                 navigate('/');
             } else {
                 setError(data.error || "Código incorrecto o expirado");
