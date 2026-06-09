@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'; 
-import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
