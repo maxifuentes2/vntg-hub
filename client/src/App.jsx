@@ -69,7 +69,7 @@ function GoogleOAuthHandler() {
             if (data.user) {
               localStorage.setItem('vntg_user', JSON.stringify(data.user));
               if (data.token) localStorage.setItem('vntg_token', data.token);
-              navigate('/', { replace: true });
+              window.location.href = '/';
             } else {
               navigate('/login', { state: { googleError: data.error || "Error al iniciar sesión con Google" }, replace: true });
             }
