@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { QRCode } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, Bitcoin, Clock, AlertTriangle, Pencil, X, Landmark, Upload } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -717,7 +717,7 @@ export default function Checkout() {
                                             </div>
 
                                             <div className="flex items-center justify-center rounded-2xl overflow-hidden bg-white p-4">
-                                                <QRCode value={paymentModal.address} size={200} level="M" />
+                                                <QRCodeCanvas value={paymentModal.address} size={200} level="M" />
                                             </div>
 
                                             {!paymentModal.proofUploaded ? (
