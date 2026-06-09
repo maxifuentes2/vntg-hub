@@ -11,7 +11,7 @@ const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const GmailPoller = require("./imapPoller");
-const crypto = require("./crypto");
+
 const shipping = require("./shipping");
 const multer = require("multer");
 const path = require("path");
@@ -1136,24 +1136,24 @@ app.get("/api/shipping/config", async (req, res) => {
 });
 
 app.get("/api/crypto/min-amounts", async (req, res) => {
-    try {
-        const coins = ["usdttrc20", "usdc", "btc", "eth", "ltc", "sol"];
-        const mins = await Promise.all(
-            coins.map(async (coin) => {
-                const min = await crypto.getMinAmount({ currency_to: coin });
-                return { coin, min: Math.ceil(min) };
-            }),
-        );
-        res.json({ mins });
-    } catch (error) {
-        console.error("Error obteniendo mínimos crypto:", error);
-        res.status(500).json({ error: "Error al obtener mínimos" });
-    }
+    const MOCK_MINS = { usdttrc20: 5, usdc: 5, btc: 10, eth: 8, ltc: 7, sol: 6 };
+    const mins = Object.entries(MOCK_MINS).map(([coin, min]) => ({ coin, min }));
+    res.json({ mins });
 });
+
+const getTasaUsd = async () => {
+    try {
+        const res = await fetch("https://dolarapi.com/v1/dolares/oficial");
+        const data = await res.json();
+        return data.venta || 1200;
+    } catch {
+        return 1200;
+    }
+};
 
 const getNetworkFeeArs = async (coin) => {
     try {
-        const tasa = await crypto.getArsUsdRate();
+        const tasa = await getTasaUsd();
         const coinFeeMap = {
             btc: async () => {
                 const res = await fetch("https://mempool.space/api/v1/fees/recommended");
@@ -1190,9 +1190,9 @@ const getNetworkFeeArs = async (coin) => {
             },
         };
         if (coinFeeMap[coin]) return await coinFeeMap[coin]();
-        return Math.round(2 * tasa); // default ~USD 2
+        return Math.round(2 * tasa);
     } catch {
-        return Math.round(3 * (await crypto.getArsUsdRate().catch(() => 1200))); // fallback ~USD 3
+        return Math.round(3 * 1200);
     }
 };
 
@@ -1651,53 +1651,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     }
 });
 
-// --- WEBHOOK DE NOWPAYMENTS ---
-app.post("/api/webhooks/nowpayments", async (req, res) => {
-    try {
-        const orderId = req.query.order_id || req.body.order_id;
-        const paymentStatus = req.body.payment_status;
-        const paymentId = req.body.payment_id;
 
-        if (!orderId) return res.status(200).send("OK");
-        const [orderCheck] = await db.query(
-            "SELECT o.status, o.total, o.user_id, u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [orderId]
-        );
-        if (paymentStatus === "finished" || paymentStatus === "confirmed") {
-            await db.query("UPDATE orders SET status = 'approved', payment_id = ? WHERE id = ?", [paymentId, orderId]);
-            if (orderCheck.length > 0 && orderCheck[0].status !== "approved") {
-                const row = orderCheck[0];
-                const puntos = Math.floor(parseFloat(row.total) / 1000);
-                if (puntos > 0) {
-                    await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntos, row.user_id]);
-                }
-                await sendEmail("order_status", row.email, {
-                    name: row.name,
-                    orderId,
-                    status: "approved",
-                    subject: "¡Tu pago ha sido aprobado!",
-                    title: "Compra Confirmada",
-                    message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
-                    btnText: "Ver mi pedido",
-                    btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
-                });
-            }
-            console.log(`[crypto] Pago confirmado orden ${orderId}`);
-        } else if (["failed", "expired", "rejected", "cancelled"].includes(paymentStatus)) {
-            await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [orderId]);
-            if (orderCheck.length > 0 && orderCheck[0].status !== "cancelled") {
-                const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
-                for (const item of items) {
-                    await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
-                }
-            }
-            console.log(`[crypto] Pago fallido orden ${orderId}: ${paymentStatus}`);
-        }
-        res.status(200).send("OK");
-    } catch (error) {
-        console.error("Error en webhook NowPayments:", error.message);
-        res.status(200).send("OK");
-    }
-});
 
 // --- CONSULTAR ESTADO PAGO CRYPTO / TRANSFER ---
 app.get("/api/order/payment-status/:orderId", verifyToken, async (req, res) => {
@@ -1726,7 +1680,7 @@ app.get("/api/order/payment-status/:orderId", verifyToken, async (req, res) => {
 // --- TASA ARS/USD ---
 app.get("/api/tasa-usd", async (req, res) => {
     try {
-        const tasa = await crypto.getArsUsdRate();
+        const tasa = await getTasaUsd();
         res.json({ tasa_ars: tasa });
     } catch (error) {
         console.error("Error obteniendo tasa:", error);
