@@ -63,7 +63,6 @@ function FloatingHomeButton() {
 }
 
 function App() {
-  const [isFilterOpen, setIsFilterOpen] = useState(false); 
   const [categories, setCategories] = useState([]); 
 
   // Carga de categorías para el CategorySidebar
@@ -102,10 +101,7 @@ function App() {
                     <Route 
                       path="/categoria/:slug" 
                       element={
-                        <Categoria 
-                          isFilterOpen={isFilterOpen} 
-                          setIsFilterOpen={setIsFilterOpen} 
-                        />
+                        <Categoria />
                       } 
                     />
                     <Route path="/checkout" element={<Checkout />} />

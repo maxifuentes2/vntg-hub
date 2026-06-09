@@ -38,7 +38,8 @@ const CardImage = ({ item }) => {
     );
 };
 
-const Categoria = ({ isFilterOpen, setIsFilterOpen }) => {
+const Categoria = () => {
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const { slug } = useParams();
     const location = useLocation(); 
     const { addToCart } = useCart(); 

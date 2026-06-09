@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, Bitcoin, Clock, AlertTriangle, Pencil, X } from 'lucide-react';
+import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, Bitcoin, Clock, AlertTriangle, Pencil, X, Landmark, Upload } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -16,12 +16,10 @@ export default function Checkout() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('mp');
-    const [cryptoModal, setCryptoModal] = useState(null);
+    const [paymentModal, setPaymentModal] = useState(null);
     const [copied, setCopied] = useState(false);
-    const [minAmounts, setMinAmounts] = useState([]);
-    const [timeLeft, setTimeLeft] = useState(null);
-    const [expired, setExpired] = useState(false);
-    const timerRef = useRef(null);
+    const [proofFile, setProofFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -111,16 +109,13 @@ export default function Checkout() {
             .catch(console.error);
     }, []);
 
-    useEffect(() => {
-        fetch(`${API_URL}/api/crypto/min-amounts`)
-            .then(res => res.ok ? res.json() : null)
-            .then(data => { if (data?.mins) setMinAmounts(data.mins); })
-            .catch(() => {});
-    }, []);
+    const [timeLeft, setTimeLeft] = useState(null);
+    const timerRef = useRef(null);
+    const [expired, setExpired] = useState(false);
 
     useEffect(() => {
-        if (cryptoModal?.expires_at && cryptoModal.status !== 'approved') {
-            const expires = new Date(cryptoModal.expires_at).getTime();
+        if (paymentModal?.expires_at && paymentModal.status !== 'approved') {
+            const expires = new Date(paymentModal.expires_at).getTime();
             const tick = () => {
                 const now = Date.now();
                 const diff = Math.max(0, Math.floor((expires - now) / 1000));
@@ -137,7 +132,7 @@ export default function Checkout() {
             setTimeLeft(null);
             setExpired(false);
         }
-    }, [cryptoModal?.expires_at, cryptoModal?.status]);
+    }, [paymentModal?.expires_at, paymentModal?.status]);
 
     const applyAddress = (addr) => {
         setShipping({
@@ -205,22 +200,46 @@ export default function Checkout() {
     const descuentoAplicado = puntosARestar * valorPorPunto;
     const totalAbonar = Math.max(0, finalTotal - descuentoAplicado);
 
-    const handleCryptoPoll = (orderId) => {
+    const handlePollStatus = (orderId) => {
         const token = localStorage.getItem('vntg_token');
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(`${API_URL}/api/crypto/payment/${orderId}`, {
+                const res = await fetch(`${API_URL}/api/order/payment-status/${orderId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
                 if (data.status === 'approved') {
                     clearInterval(interval);
-                    setCryptoModal(prev => ({ ...prev, status: 'approved' }));
+                    setPaymentModal(prev => ({ ...prev, status: 'approved' }));
                     setTimeout(() => navigate(`/pedido/${orderId}`), 2000);
                 }
-            } catch (e) { console.error("Crypto poll error:", e) }
+            } catch (e) { console.error("Payment poll error:", e) }
         }, 10000);
         return interval;
+    };
+
+    const handleUploadProof = async () => {
+        if (!proofFile || !paymentModal?.orderId) return;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const formData = new FormData();
+            formData.append('proof', proofFile);
+            formData.append('orderId', paymentModal.orderId);
+            const res = await fetch(`${API_URL}/api/orders/upload-proof`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setPaymentModal(prev => ({ ...prev, proofUploaded: true }));
+                setProofFile(null);
+            }
+        } catch (e) {
+            console.error("Upload error:", e);
+        }
+        setUploading(false);
     };
 
     const handleCopyAddress = (address) => {
@@ -256,7 +275,7 @@ export default function Checkout() {
                 } catch {}
             }
 
-            const endpoint = paymentMethod === 'crypto' ? '/api/checkout-crypto' : '/api/checkout';
+            const endpoint = paymentMethod === 'crypto' ? '/api/checkout-crypto' : paymentMethod === 'transfer' ? '/api/checkout-transfer' : '/api/checkout';
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
@@ -283,11 +302,11 @@ export default function Checkout() {
                 if (data.totalCero) {
                     clearCart();
                     navigate(`/pedido/${data.orderId}`);
-                } else if (paymentMethod === 'crypto' && data.cryptoPayment) {
-                    clearCart();
-                    setCryptoModal({ ...data.cryptoPayment, orderId: data.orderId, status: 'pending' });
-                    const interval = handleCryptoPoll(data.orderId);
-                    setCryptoModal(prev => ({ ...prev, pollInterval: interval }));
+                } else if ((paymentMethod === 'crypto' && data.cryptoPayment) || (paymentMethod === 'transfer' && data.transfer)) {
+                    const info = paymentMethod === 'crypto' ? data.cryptoPayment : data.transfer;
+                    setPaymentModal({ ...info, orderId: data.orderId, status: 'pending', type: paymentMethod });
+                    const interval = handlePollStatus(data.orderId);
+                    setPaymentModal(prev => ({ ...prev, pollInterval: interval }));
                 } else if (data.init_point) {
                     clearCart();
                     window.location.href = data.init_point;
@@ -305,14 +324,15 @@ export default function Checkout() {
         }
     };
 
-    const closeCryptoModal = () => {
-        if (cryptoModal?.pollInterval) clearInterval(cryptoModal.pollInterval);
+    const closePaymentModal = () => {
+        if (paymentModal?.pollInterval) clearInterval(paymentModal.pollInterval);
         clearInterval(timerRef.current);
-        setCryptoModal(null);
+        setPaymentModal(null);
         setTimeLeft(null);
         setExpired(false);
+        setProofFile(null);
         setLoading(false);
-        navigate('/');
+        setCheckoutSent(false);
     };
 
     if (!user) {
@@ -514,11 +534,17 @@ export default function Checkout() {
                         {/* MÉTODO DE PAGO */}
                         <div className="mt-6 space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Método de pago</p>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <button type="button" onClick={() => setPaymentMethod('mp')} className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === 'mp' ? 'border-brand-blue bg-brand-blue/5 shadow-md' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'}`}>
                                     <ShieldCheck size={20} className="text-brand-blue mb-1" />
                                     <p className="text-xs font-black uppercase italic">Mercado Pago</p>
-                                    <p className="text-[9px] text-zinc-500 font-medium">Tarjeta (Credito/Debito/Dinero en cuentas)</p>
+                                    <p className="text-[9px] text-zinc-500 font-medium">Tarjeta / Dinero en cuenta</p>
+                                </button>
+                                <button type="button" onClick={() => setPaymentMethod('transfer')} className={`relative p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === 'transfer' ? 'border-emerald-500 bg-emerald-500/5 shadow-md' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'}`}>
+                                    <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md">-10%</div>
+                                    <Landmark size={20} className="text-emerald-500 mb-1" />
+                                    <p className="text-xs font-black uppercase italic">Transferencia</p>
+                                    <p className="text-[9px] text-zinc-500 font-medium">10% de descuento</p>
                                 </button>
                                 <button type="button" onClick={() => setPaymentMethod('crypto')} className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === 'crypto' ? 'border-brand-orange bg-brand-orange/5 shadow-md' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'}`}>
                                     <Bitcoin size={20} className="text-brand-orange mb-1" />
@@ -526,31 +552,6 @@ export default function Checkout() {
                                     <p className="text-[9px] text-zinc-500 font-medium">USDT, BTC, ETH, USDC</p>
                                 </button>
                             </div>
-                            {paymentMethod === 'crypto' && minAmounts.length > 0 && (
-                                <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl text-[10px]">
-                                    <p className="font-black uppercase text-yellow-600 dark:text-yellow-400 mb-1">⚠ Mínimo por red</p>
-                                    <p className="text-zinc-500">Los pagos crypto requieren un monto mínimo por transacción según la red. Si tu pedido es menor, el monto se ajustará al mínimo.</p>
-                                    {(() => {
-                                        const totalUSD = finalTotal / (tasaUSD || 1200);
-                                        const best = [...minAmounts].sort((a, b) => a.min - b.min)[0];
-                                        const usable = minAmounts.filter(m => totalUSD >= m.min);
-                                        return (
-                                            <div className="mt-2 space-y-1">
-                                                <p className="text-zinc-500">Tu pedido: <span className="font-bold text-zinc-700 dark:text-zinc-300">~USD {totalUSD.toFixed(2)}</span></p>
-                                                {usable.length > 0 ? (
-                                                    <p className="text-green-600 dark:text-green-400 font-bold">
-                                                        Podés pagar con {usable.map((m, i) => (
-                                                            <span key={m.coin}>{i > 0 && <span>, </span>}{m.coin === best.coin ? <span className="underline">{m.coin.toUpperCase()}</span> : m.coin.toUpperCase()}</span>
-                                                        ))}
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-yellow-600 dark:text-yellow-400 font-bold">El mínimo más bajo es <span className="underline">{best.coin.toUpperCase()}</span> (USD {best.min})</p>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            )}
                             {paymentMethod === 'crypto' && (
                                 <div className="mt-3">
                                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">Moneda</p>
@@ -582,78 +583,189 @@ export default function Checkout() {
                             disabled={loading}
                             className="w-full mt-4 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 rounded-2xl shadow-xl shadow-brand-orange/20 active:scale-95"
                         >
-                            {loading ? 'Procesando...' : (totalAbonar <= 0 ? 'Confirmar Pedido Gratis' : (paymentMethod === 'crypto' ? 'Pagar con Crypto' : 'Pagar con Mercado Pago'))} {paymentMethod === 'crypto' ? <Bitcoin size={20} /> : <ShieldCheck size={20} />}
+                            {loading ? 'Procesando...' : (totalAbonar <= 0 ? 'Confirmar Pedido Gratis' : paymentMethod === 'crypto' ? 'Pagar con Crypto' : paymentMethod === 'transfer' ? 'Transferir' : 'Pagar con Mercado Pago')} {paymentMethod === 'crypto' ? <Bitcoin size={20} /> : paymentMethod === 'transfer' ? <Landmark size={20} /> : <ShieldCheck size={20} />}
                         </button>
                     </form>
 
                     {error && <p className="mt-4 text-red-500 font-bold italic uppercase text-xs text-center">{error}</p>}
 
-                    {/* MODAL CRYPTO */}
-                    {cryptoModal && (
-                        <div className="fixed inset-0 bg-black/80 z-[1000] flex justify-center items-start p-4 pt-24 md:pt-32 overflow-y-auto">
+                    {/* MODAL DE PAGO (Crypto / Transferencia) */}
+                    {paymentModal && (
+                        <div className="fixed inset-0 bg-black/80 z-[1000] flex justify-center items-start p-4 pt-20 md:pt-24 overflow-y-auto">
                             <div className="bg-white dark:bg-zinc-950 border border-brand-orange/20 p-4 sm:p-8 max-w-lg w-full shadow-2xl relative rounded-3xl overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange via-brand-orange to-transparent opacity-50"></div>
 
-                                {cryptoModal.status === 'approved' ? (
+                                {paymentModal.status === 'approved' ? (
                                     <div className="text-center py-8">
                                         <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                                             <CircleCheck size={48} className="text-green-500" />
                                         </div>
-                                        <h3 className="text-2xl font-black italic uppercase mb-2">¡Pago Recibido!</h3>
+                                        <h3 className="text-2xl font-black italic uppercase mb-2">¡Pago Verificado!</h3>
                                         <p className="text-sm text-zinc-500 font-medium">Redirigiendo a tu pedido...</p>
                                     </div>
+                                ) : paymentModal.type === 'transfer' ? (
+                                    <>
+                                        <h3 className="text-xl font-black italic uppercase tracking-tighter mb-1">Transferencia Bancaria</h3>
+                                        <p className="text-xs text-zinc-500 font-medium mb-6">Realizá la transferencia y subí el comprobante</p>
+
+                                        <div className="space-y-4">
+                                            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center">
+                                                <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a transferir</p>
+                                                <p className="text-3xl max-[360px]:text-xl font-black italic text-emerald-500">${Number(paymentModal.monto).toLocaleString('es-AR')} ARS</p>
+                                                {paymentModal.descuentoTransfer > 0 && (
+                                                    <p className="text-[10px] text-emerald-500 font-bold mt-1">Incluye 10% de descuento por transferencia (-${Number(paymentModal.descuentoTransfer).toLocaleString('es-AR')})</p>
+                                                )}
+                                            </div>
+
+                                            <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-5 space-y-3 border border-zinc-200 dark:border-zinc-700">
+                                                <p className="text-[9px] font-black uppercase text-zinc-500 tracking-wider">Datos Bancarios</p>
+                                                <div className="space-y-1.5 text-sm">
+                                                    <p><span className="font-bold">Banco:</span> {paymentModal.bank}</p>
+                                                    <p><span className="font-bold">Titular:</span> {paymentModal.holder}</p>
+                                                    <p><span className="font-bold">CUIT:</span> {paymentModal.cuit}</p>
+                                                    <p><span className="font-bold">Alias:</span> <span className="text-emerald-500 font-bold">{paymentModal.alias}</span>
+                                                        <button onClick={() => handleCopyAddress(paymentModal.alias)} className="ml-2 p-1 inline-flex align-middle bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">
+                                                            {copied ? <CircleCheck size={12} /> : <Copy size={12} />}
+                                                        </button>
+                                                    </p>
+                                                    <p><span className="font-bold">CBU:</span> <span className="font-mono text-xs break-all">{paymentModal.cbu}</span>
+                                                        <button onClick={() => handleCopyAddress(paymentModal.cbu)} className="ml-2 p-1 inline-flex align-middle bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">
+                                                            {copied ? <CircleCheck size={12} /> : <Copy size={12} />}
+                                                        </button>
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {!paymentModal.proofUploaded ? (
+                                                <>
+                                                    <div className="bg-yellow-500/10 border border-dashed border-yellow-500/40 rounded-2xl p-5">
+                                                        <p className="text-[9px] font-black uppercase text-zinc-500 mb-3">Subí tu comprobante de pago</p>
+                                                        <label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
+                                                            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                                                                <Upload size={24} className="text-yellow-600" />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-zinc-500">
+                                                                {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
+                                                            </span>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*,.pdf"
+                                                                onChange={e => setProofFile(e.target.files[0])}
+                                                                className="hidden"
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleUploadProof}
+                                                        disabled={!proofFile || uploading}
+                                                        className="w-full py-4 bg-emerald-500 text-white font-black uppercase italic text-xs tracking-widest hover:bg-emerald-600 transition-all rounded-2xl disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+                                                    >
+                                                        {uploading ? 'Subiendo...' : 'Subir Comprobante'} <Upload size={16} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-5 text-center">
+                                                    <CircleCheck size={24} className="text-green-500 mx-auto mb-2" />
+                                                    <p className="text-sm font-bold text-green-600 dark:text-green-400">Comprobante subido</p>
+                                                    <p className="text-xs text-zinc-500 mt-1">Un administrador verificará el pago y aprobará tu pedido.</p>
+                                                </div>
+                                            )}
+
+                                            {paymentModal.proofUploaded && (
+                                                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
+                                                    <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                        <Loader className="animate-spin shrink-0" size={14} />
+                                                        <span className="font-medium italic">Esperando verificación del administrador...</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-3">
+                                                <button onClick={closePaymentModal} className="w-full py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">
+                                                    Cerrar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
                                 ) : (
                                     <>
-                                        <h3 className="text-xl font-black italic uppercase tracking-tighter mb-1">Pagar con Crypto</h3>
+                                        <h3 className="text-xl font-black italic uppercase tracking-tighter mb-1">Pagar con {paymentModal.coinName || 'Crypto'}</h3>
                                         <p className="text-xs text-zinc-500 font-medium mb-6">Enviá el monto exacto a la dirección de abajo</p>
 
                                         <div className="space-y-4">
                                             <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                                 <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
-                                                <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange break-all">{parseFloat(cryptoModal.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoModal.pay_currency}</span></p>
-                                                <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoModal.price_amount).toFixed(2)}{parseFloat(cryptoModal.price_amount) > Math.ceil(Number(cryptoModal.total_ars) / (cryptoModal.tasa_ars || 1200)) && <span className="text-yellow-500 text-[10px] ml-1">(mín)</span>}</p>
-                                                <p className="text-[10px] text-zinc-500">≈ ${Number(cryptoModal.total_ars).toLocaleString('es-AR')} ARS</p>
+                                                <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange">${Number(paymentModal.monto).toLocaleString('es-AR')} ARS</p>
+                                                <p className="text-xs text-zinc-500 mt-1">equivalente en {paymentModal.coinName || 'USDT'}</p>
+                                                {paymentModal.comision > 0 && (
+                                                    <div className="mt-3 pt-3 border-t border-brand-orange/20 text-[10px] space-y-1">
+                                                        <p className="text-zinc-500">Subtotal: <span className="font-bold text-zinc-700 dark:text-zinc-300">${Number(paymentModal.subtotal).toLocaleString('es-AR')} ARS</span></p>
+                                                        <p className="text-zinc-500">Fee de red: <span className="font-bold text-brand-orange">+${Number(paymentModal.comision).toLocaleString('es-AR')} ARS</span></p>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div>
                                                 <p className="text-[9px] font-black uppercase text-zinc-500 mb-2">Dirección de depósito</p>
                                                 <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-2xl p-4">
-                                                    <code className="flex-1 text-xs font-mono break-all">{cryptoModal.pay_address}</code>
-                                                    <button onClick={() => handleCopyAddress(cryptoModal.pay_address)} className="shrink-0 p-2 bg-brand-orange text-white rounded-xl hover:bg-orange-600 transition-all active:scale-95">
+                                                    <code className="flex-1 text-xs font-mono break-all">{paymentModal.address}</code>
+                                                    <button onClick={() => handleCopyAddress(paymentModal.address)} className="shrink-0 p-2 bg-brand-orange text-white rounded-xl hover:bg-orange-600 transition-all active:scale-95">
                                                         {copied ? <CircleCheck size={16} /> : <Copy size={16} />}
                                                     </button>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center justify-center rounded-2xl overflow-hidden">
-                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoModal.pay_address}`} alt="QR" className="max-w-full h-auto" />
+                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${paymentModal.address}`} alt="QR" className="max-w-full h-auto" />
                                             </div>
 
-                                            <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
-                                                {expired ? (
-                                                    <div className="flex items-center gap-3 text-xs text-red-500">
-                                                        <AlertTriangle className="shrink-0" size={14} />
-                                                        <span className="font-bold italic">Tiempo expirado. Cancelá y volvé a intentar.</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-3 text-xs text-zinc-500">
-                                                            <Loader className="animate-spin shrink-0" size={14} />
-                                                            <span className="font-medium italic">Esperando el pago... Esto puede tomar unos minutos</span>
-                                                        </div>
-                                                        {timeLeft !== null && (
-                                                            <div className={`flex items-center justify-center gap-2 text-sm font-black uppercase tracking-widest ${timeLeft <= 120 ? 'text-red-500' : 'text-zinc-500'}`}>
-                                                                <Clock size={14} />
-                                                                {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                                            {!paymentModal.proofUploaded ? (
+                                                <>
+                                                    <div className="bg-yellow-500/10 border border-dashed border-yellow-500/40 rounded-2xl p-5">
+                                                        <p className="text-[9px] font-black uppercase text-zinc-500 mb-3">Subí tu comprobante de pago</p>
+                                                        <label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
+                                                            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                                                                <Upload size={24} className="text-yellow-600" />
                                                             </div>
-                                                        )}
+                                                            <span className="text-xs font-bold text-zinc-500">
+                                                                {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
+                                                            </span>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*,.pdf"
+                                                                onChange={e => setProofFile(e.target.files[0])}
+                                                                className="hidden"
+                                                            />
+                                                        </label>
                                                     </div>
-                                                )}
-                                            </div>
+                                                    <button
+                                                        onClick={handleUploadProof}
+                                                        disabled={!proofFile || uploading}
+                                                        className="w-full py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-orange-600 transition-all rounded-2xl disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+                                                    >
+                                                        {uploading ? 'Subiendo...' : 'Subir Comprobante'} <Upload size={16} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-5 text-center">
+                                                    <CircleCheck size={24} className="text-green-500 mx-auto mb-2" />
+                                                    <p className="text-sm font-bold text-green-600 dark:text-green-400">Comprobante subido</p>
+                                                    <p className="text-xs text-zinc-500 mt-1">Un administrador verificará el pago y aprobará tu pedido.</p>
+                                                </div>
+                                            )}
+
+                                            {paymentModal.proofUploaded && (
+                                                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
+                                                    <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                        <Loader className="animate-spin shrink-0" size={14} />
+                                                        <span className="font-medium italic">Esperando verificación del administrador...</span>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             <div className="flex gap-3">
-                                                <button onClick={closeCryptoModal} className="w-full py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">
-                                                    Cancelar
+                                                <button onClick={closePaymentModal} className="w-full py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">
+                                                    Cerrar
                                                 </button>
                                             </div>
                                         </div>
@@ -686,6 +798,12 @@ export default function Checkout() {
                             <div className="flex justify-between text-xs font-black uppercase text-green-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                                 <span>Puntos VNTG: -{puntosARestar} pts</span>
                                 <span>-{formatPrice(descuentoAplicado)}</span>
+                            </div>
+                        )}
+                        {paymentMethod === 'transfer' && (
+                            <div className="flex justify-between text-xs font-black uppercase text-emerald-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                <span>Descuento por transferencia (10%)</span>
+                                <span>-{formatPrice(Math.round(finalTotal * 0.10))}</span>
                             </div>
                         )}
                     </div>

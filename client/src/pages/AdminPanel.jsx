@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Package, RefreshCw, Plus, Pen, Trash2, X, Tag, ClipboardList, ChevronDown, TriangleAlert, MessageSquare, House, Truck, Save, Loader } from 'lucide-react';
+import { Search, Package, RefreshCw, Plus, Pen, Trash2, X, Tag, ClipboardList, ChevronDown, TriangleAlert, MessageSquare, House, Truck, Save, Loader, Landmark, CircleCheck, Eye, Upload, Bitcoin } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -15,6 +15,7 @@ export default function AdminPanel() {
     const [selectedOrders, setSelectedOrders] = useState(new Set());
     const [shippingConfig, setShippingConfig] = useState({ envio_normal: 9426.05, envio_prioritario: 17276.99, envio_gratis_desde: 200000 });
     const [savingShipping, setSavingShipping] = useState(false);
+    const [pendingPayments, setPendingPayments] = useState([]);
 
     const getOrderShippingType = (order) => {
         try {
@@ -120,6 +121,17 @@ export default function AdminPanel() {
         handleResponse(`${API_URL}/api/admin/products`, setProducts);
         handleResponse(`${API_URL}/api/admin/categories`, setCategories);
         handleResponse(`${API_URL}/api/admin/orders`, setOrders);
+        fetch(`${API_URL}/api/admin/orders`, { headers })
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+                const arr = Array.isArray(data) ? data : [];
+                setPendingPayments(arr.filter(o =>
+                    o.status === 'pending' &&
+                    (o.payment_method === 'transfer' || o.payment_method === 'crypto') &&
+                    o.crypto_info && (() => { try { const info = JSON.parse(o.crypto_info); return info.proofUrl; } catch { return false; } })()
+                ));
+            })
+            .catch(() => {});
         fetch(`${API_URL}/api/admin/shipping-config`, { headers })
             .then(r => r.ok ? r.json() : null)
             .then(d => { if (d) setShippingConfig(d); })
@@ -381,6 +393,12 @@ export default function AdminPanel() {
                                             >
                                                 <Truck size={14} /> <span className="max-[400px]:hidden">Envíos</span><span className="hidden max-[400px]:inline">Env.</span>
                                             </button>
+                                            <button
+                                                onClick={() => setActiveTab('verificarPagos')}
+                                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'verificarPagos' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                            >
+                                                <Landmark size={14} /> <span className="max-[400px]:hidden">Verificar Pagos</span><span className="hidden max-[400px]:inline">Pagos</span>
+                                            </button>
                             </div>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:shrink-0">
                                 <button
@@ -400,10 +418,10 @@ export default function AdminPanel() {
                         <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
                             <div>
                                 <h1 className="text-4xl max-[360px]:text-2xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">
-                                    {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : activeTab === 'shipping' ? 'Envíos' : 'Órdenes'}
+                                    {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : activeTab === 'shipping' ? 'Envíos' : activeTab === 'verificarPagos' ? 'Verificar Pagos' : 'Órdenes'}
                                 </h1>
                                 <p className="text-brand-orange text-[10px] font-bold uppercase tracking-widest mt-1">
-                                    {activeTab === 'products' ? 'Gestión de Inventario' : activeTab === 'categories' ? 'Clasificación de Productos' : activeTab === 'shipping' ? 'Configuración de Envío' : `Total: ${metrics.total} pedidos`}
+                                    {activeTab === 'products' ? 'Gestión de Inventario' : activeTab === 'categories' ? 'Clasificación de Productos' : activeTab === 'shipping' ? 'Configuración de Envío' : activeTab === 'verificarPagos' ? `${pendingPayments.length} pagos pendientes de verificación` : `Total: ${metrics.total} pedidos`}
                                 </p>
                             </div>
 
@@ -718,6 +736,74 @@ export default function AdminPanel() {
                                         {savingShipping ? 'Guardando...' : 'Guardar Configuración'}
                                     </button>
                                 </div>
+                            </div>
+                        )}
+                        {activeTab === 'verificarPagos' && (
+                            <div className="space-y-6">
+                                {pendingPayments.length === 0 ? (
+                                    <div className="bg-zinc-50 dark:bg-brand-card p-10 rounded-2xl shadow-sm text-center">
+                                        <CircleCheck size={48} className="text-green-500 mx-auto mb-4" />
+                                        <p className="text-lg font-black italic uppercase text-green-500">No hay pagos pendientes</p>
+                                        <p className="text-xs text-zinc-500 mt-2">Todos los pagos han sido verificados.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingPayments.map(order => {
+                                            const cryptoInfo = order.crypto_info ? JSON.parse(order.crypto_info) : {};
+                                            const esTransfer = order.payment_method === 'transfer';
+                                            const proofUrl = cryptoInfo.proofUrl;
+                                            return (
+                                                <div key={order.id} className="bg-zinc-50 dark:bg-brand-card rounded-2xl shadow-sm p-6">
+                                                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="flex items-center gap-3">
+                                                                {esTransfer ? <Landmark size={20} className="text-emerald-500" /> : <Bitcoin size={20} className="text-brand-orange" />}
+                                                                <h3 className="text-sm font-black uppercase italic">Orden #{order.id.slice(0, 8)}</h3>
+                                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${esTransfer ? 'bg-emerald-500/10 text-emerald-500' : 'bg-brand-orange/10 text-brand-orange'}`}>
+                                                                    {esTransfer ? 'Transferencia' : 'Crypto'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-zinc-500"><span className="font-bold">Cliente:</span> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})</p>
+                                                            <p className="text-xs text-zinc-500"><span className="font-bold">Total:</span> <span className="font-black italic text-brand-orange">{formatPrice(order.total)}</span></p>
+                                                            <p className="text-xs text-zinc-500"><span className="font-bold">Fecha:</span> {new Date(order.created_at).toLocaleString('es-AR')}</p>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 sm:items-end">
+                                                            {proofUrl && (
+                                                                <a
+                                                                    href={`${API_URL}${proofUrl}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-4 py-3 rounded-xl text-[10px] font-black uppercase italic hover:bg-brand-orange hover:text-white transition-all"
+                                                                >
+                                                                    <Eye size={14} /> Ver Comprobante
+                                                                </a>
+                                                            )}
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const token = localStorage.getItem('vntg_token');
+                                                                    const res = await fetch(`${API_URL}/api/admin/orders/${order.id}/verify-payment`, {
+                                                                        method: 'PUT',
+                                                                        headers: { 'Authorization': `Bearer ${token}` },
+                                                                    });
+                                                                    if (res.ok) {
+                                                                        setPendingPayments(prev => prev.filter(o => o.id !== order.id));
+                                                                        fetchData();
+                                                                    } else {
+                                                                        const err = await res.json();
+                                                                        alert(err.error || 'Error al verificar');
+                                                                    }
+                                                                }}
+                                                                className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase italic hover:bg-emerald-600 transition-all shadow-lg active:scale-95"
+                                                            >
+                                                                <CircleCheck size={14} /> Aprobar Pago
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </main>

@@ -13,6 +13,37 @@ const nodemailer = require("nodemailer");
 const ImapPoller = require("./imapPoller");
 const crypto = require("./crypto");
 const shipping = require("./shipping");
+const multer = require("multer");
+const path = require("path");
+
+// Configuración de multer para subida de comprobantes
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname, "uploads")),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `proof_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`);
+    },
+});
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Datos bancarios para transferencia
+const BANK_ACCOUNT = {
+    bank: process.env.BANK_NAME || "Banco de la Nación Argentina",
+    holder: process.env.BANK_HOLDER || "VNTG Hub S.A.",
+    cuit: process.env.BANK_CUIT || "30-12345678-9",
+    alias: process.env.BANK_ALIAS || "VNTG.HUB.TRANSFER",
+    cbu: process.env.BANK_CBU || "0123456789012345678901",
+};
+
+// Direcciones crypto estáticas para pago manual
+const CRYPTO_ADDRESSES = {
+    usdttrc20: process.env.CRYPTO_USDT_TRC20 || "TXYZ1234567890abcdef1234567890abcdef12",
+    usdc: process.env.CRYPTO_USDC || "0xABCDEF1234567890ABCDEF1234567890ABCDEF12",
+    btc: process.env.CRYPTO_BTC || "1ABCxyz1234567890abcdef1234567890abcdef123456",
+    eth: process.env.CRYPTO_ETH || "0x1234567890ABCDEF1234567890ABCDEF12345678",
+    ltc: process.env.CRYPTO_LTC || "LXYZ1234567890abcdef1234567890abcdef12",
+    sol: process.env.CRYPTO_SOL || "ABC1234567890abcdef1234567890abcdef1234567890abc",
+};
 
 // Tablas creadas manualmente en TiDB Cloud
 
@@ -261,6 +292,7 @@ app.use(
 );
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- SEGURIDAD: Cabeceras HTTP ---
 app.use((req, res, next) => {
@@ -1119,6 +1151,51 @@ app.get("/api/crypto/min-amounts", async (req, res) => {
     }
 });
 
+const getNetworkFeeArs = async (coin) => {
+    try {
+        const tasa = await crypto.getArsUsdRate();
+        const coinFeeMap = {
+            btc: async () => {
+                const res = await fetch("https://mempool.space/api/v1/fees/recommended");
+                const data = await res.json();
+                const satPerVb = data.fastestFee || data.halfHourFee || 10;
+                const txVbytes = 200;
+                const btcPriceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+                const btcPriceData = await btcPriceRes.json();
+                const btcUsd = btcPriceData?.bitcoin?.usd || 60000;
+                const feeBtc = (satPerVb * txVbytes) / 1e8;
+                return Math.round(feeBtc * btcUsd * tasa);
+            },
+            eth: async () => {
+                const res = await fetch("https://api.etherscan.io/api?module=gastracker&action=gasoracle");
+                const data = await res.json();
+                const gwei = parseInt(data?.result?.ProposeGasPrice) || 20;
+                const gasUnits = 65000;
+                const ethPriceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+                const ethPriceData = await ethPriceRes.json();
+                const ethUsd = ethPriceData?.ethereum?.usd || 3000;
+                const feeEth = (gwei * gasUnits) / 1e9;
+                return Math.round(feeEth * ethUsd * tasa);
+            },
+            usdc: async () => {
+                const res = await fetch("https://api.etherscan.io/api?module=gastracker&action=gasoracle");
+                const data = await res.json();
+                const gwei = parseInt(data?.result?.ProposeGasPrice) || 20;
+                const gasUnits = 65000;
+                const ethPriceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+                const ethPriceData = await ethPriceRes.json();
+                const ethUsd = ethPriceData?.ethereum?.usd || 3000;
+                const feeEth = (gwei * gasUnits) / 1e9;
+                return Math.round(feeEth * ethUsd * tasa);
+            },
+        };
+        if (coinFeeMap[coin]) return await coinFeeMap[coin]();
+        return Math.round(2 * tasa); // default ~USD 2
+    } catch {
+        return Math.round(3 * (await crypto.getArsUsdRate().catch(() => 1200))); // fallback ~USD 3
+    }
+};
+
 // --- CHECKOUT CRYPTO ---
 app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
     const { cart, shipping, shippingType, puntosAUsar, payCurrency } = req.body;
@@ -1152,14 +1229,128 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
             puntosARestar = puntosValidos;
         }
         const totalFinal = subtotal - descuento;
+        const coin = payCurrency || "usdttrc20";
+        const comision = await getNetworkFeeArs(coin);
+        const totalConComision = totalFinal + comision;
 
         if (puntosARestar > 0) {
             await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
         }
 
         await db.query(
-            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE), 'crypto')",
-            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'crypto')",
+            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shipping, shippingType })],
+        );
+        for (let item of cart) {
+            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
+            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, prod[0]?.price || 0]);
+            await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad || 1, item.id]);
+        }
+
+        if (totalConComision <= 0) {
+            await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
+            const [orderData] = await db.query("SELECT * FROM orders WHERE id = ?", [orderId]);
+            return res.json({ totalCero: true, orderId, order: orderData[0] });
+        }
+
+        const coinAliases = {
+            usdttrc20: "USDT (TRC20)",
+            usdc: "USDC",
+            btc: "Bitcoin",
+            eth: "Ethereum",
+            ltc: "Litecoin",
+            sol: "Solana",
+        };
+        const cryptoAddress = CRYPTO_ADDRESSES[coin] || CRYPTO_ADDRESSES.usdttrc20;
+
+        const cryptoInfo = JSON.stringify({
+            method: "crypto",
+            coin,
+            coinName: coinAliases[coin] || coin.toUpperCase(),
+            address: cryptoAddress,
+            monto: totalConComision,
+            subtotal: totalFinal,
+            comision,
+            created_at: new Date().toISOString(),
+        });
+
+        await db.query("UPDATE orders SET expires_at = DATE_ADD(NOW(), INTERVAL 48 HOUR), crypto_info = ? WHERE id = ?", [cryptoInfo, orderId]);
+
+        const [orderRow] = await db.query("SELECT expires_at FROM orders WHERE id = ?", [orderId]);
+
+        res.json({
+            orderId,
+            cryptoPayment: {
+                coin,
+                coinName: coinAliases[coin] || coin.toUpperCase(),
+                address: cryptoAddress,
+                monto: totalConComision,
+                subtotal: totalFinal,
+                comision,
+                expires_at: orderRow[0]?.expires_at,
+            },
+        });
+    } catch (error) {
+        console.error("Error en checkout crypto:", error);
+        res.status(500).json({ error: error.message || "Error al procesar pago crypto" });
+    }
+});
+
+// --- CHECKOUT TRANSFERENCIA BANCARIA ---
+app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
+    const { cart, shipping, shippingType, puntosAUsar } = req.body;
+    if (!Array.isArray(cart) || cart.length === 0) {
+        return res.status(400).json({ error: "Carrito vacío" });
+    }
+    try {
+        await db.query("UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'", [req.user.id]);
+        let orderId = generatePatenteId();
+        let exists = true;
+        while (exists) {
+            const [dup] = await db.query("SELECT id FROM orders WHERE id = ?", [orderId]);
+            if (dup.length === 0) exists = false;
+            else orderId = generatePatenteId();
+        }
+
+        let subtotal = 0;
+        for (let item of cart) {
+            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
+            if (prod.length === 0) continue;
+            subtotal += Number(prod[0].price) * (item.cantidad || 1);
+        }
+
+        // 10% de descuento por pago por transferencia
+        const descuentoTransfer = Math.round(subtotal * 0.10);
+        let descuentoPuntos = 0;
+        let puntosARestar = 0;
+        if (puntosAUsar > 0) {
+            const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
+            const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
+            const valorPorPunto = 10;
+            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil((subtotal - descuentoTransfer) / valorPorPunto));
+            descuentoPuntos = puntosValidos * valorPorPunto;
+            puntosARestar = puntosValidos;
+        }
+        const totalFinal = subtotal - descuentoTransfer - descuentoPuntos;
+
+        if (puntosARestar > 0) {
+            await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
+        }
+
+        const paymentInfo = JSON.stringify({
+            method: 'transfer',
+            descuentoTransfer,
+            bank: BANK_ACCOUNT.bank,
+            holder: BANK_ACCOUNT.holder,
+            cuit: BANK_ACCOUNT.cuit,
+            alias: BANK_ACCOUNT.alias,
+            cbu: BANK_ACCOUNT.cbu,
+            montoTransferir: totalFinal,
+        });
+
+        await db.query(
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, crypto_info) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'transfer', ?)",
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType }), paymentInfo],
         );
         for (let item of cart) {
             const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
@@ -1169,53 +1360,72 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
 
         if (totalFinal <= 0) {
             await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
-            const [orderData] = await db.query("SELECT * FROM orders WHERE id = ?", [orderId]);
-            return res.json({ totalCero: true, orderId, order: orderData[0] });
+            return res.json({ totalCero: true, orderId });
         }
-
-        const coin = payCurrency || "usdttrc20";
-        const tasaUSD = await crypto.getArsUsdRate();
-        const minUSD = await crypto.getMinAmount({ currency_to: coin });
-        const precioUSD = Math.ceil(totalFinal / tasaUSD);
-        const price_amount = Math.max(precioUSD, Math.ceil(minUSD));
-
-        const ipnUrl = `${BASE_URL}/api/webhooks/nowpayments?order_id=${orderId}`;
-        const payment = await crypto.createPayment({
-            price_amount,
-            pay_currency: coin,
-            order_id: orderId,
-            ipn_callback_url: ipnUrl,
-        });
-
-        await db.query("UPDATE orders SET crypto_info = ? WHERE id = ?", [
-            JSON.stringify({
-                payment_id: payment.payment_id,
-                pay_address: payment.pay_address,
-                pay_amount: payment.pay_amount,
-                pay_currency: payment.pay_currency,
-                created_at: new Date().toISOString(),
-            }),
-            orderId,
-        ]);
-
-        const [orderRow] = await db.query("SELECT expires_at FROM orders WHERE id = ?", [orderId]);
 
         res.json({
             orderId,
-            cryptoPayment: {
-                payment_id: payment.payment_id,
-                pay_address: payment.pay_address,
-                pay_amount: payment.pay_amount,
-                pay_currency: payment.pay_currency,
-                price_amount: payment.price_amount,
-                tasa_ars: tasaUSD,
-                total_ars: totalFinal,
-                expires_at: orderRow[0]?.expires_at,
+            transfer: {
+                bank: BANK_ACCOUNT.bank,
+                holder: BANK_ACCOUNT.holder,
+                cuit: BANK_ACCOUNT.cuit,
+                alias: BANK_ACCOUNT.alias,
+                cbu: BANK_ACCOUNT.cbu,
+                monto: totalFinal,
+                descuentoTransfer,
             },
         });
     } catch (error) {
-        console.error("Error en checkout crypto:", error);
-        res.status(500).json({ error: error.message || "Error al procesar pago crypto" });
+        console.error("Error en checkout transfer:", error);
+        res.status(500).json({ error: error.message || "Error al procesar pago por transferencia" });
+    }
+});
+
+// --- SUBIR COMPROBANTE DE PAGO ---
+app.post("/api/orders/upload-proof", verifyToken, upload.single("proof"), async (req, res) => {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: "Falta orderId" });
+    if (!req.file) return res.status(400).json({ error: "Falta el archivo de comprobante" });
+
+    try {
+        const [orders] = await db.query("SELECT * FROM orders WHERE id = ? AND user_id = ?", [orderId, req.user.id]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+
+        const order = orders[0];
+        if (order.status !== "pending") return res.status(400).json({ error: "La orden no está pendiente" });
+        if (order.payment_method !== "transfer" && order.payment_method !== "crypto") {
+            return res.status(400).json({ error: "Esta orden no requiere comprobante" });
+        }
+
+        const proofUrl = `/uploads/${req.file.filename}`;
+        const existingInfo = order.crypto_info ? JSON.parse(order.crypto_info) : {};
+        existingInfo.proofUrl = proofUrl;
+        existingInfo.proofUploadedAt = new Date().toISOString();
+
+        await db.query("UPDATE orders SET crypto_info = ? WHERE id = ?", [JSON.stringify(existingInfo), orderId]);
+
+        try {
+            const [userRow] = await db.query("SELECT name, email FROM users WHERE id = ?", [req.user.id]);
+            if (userRow.length > 0) {
+                await sendEmail("order_status", userRow[0].email, {
+                    name: userRow[0].name,
+                    orderId,
+                    status: "pending",
+                    subject: "Comprobante recibido",
+                    title: "Comprobante Recibido",
+                    message: `Hola ${userRow[0].name}, hemos recibido tu comprobante de pago para la orden #${orderId.slice(0, 8)}. Te avisaremos cuando el pago sea verificado por nuestro equipo.`,
+                    btnText: "Ver mi pedido",
+                    btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                });
+            }
+        } catch (e) {
+            console.error("Error al enviar email de comprobante:", e.message);
+        }
+
+        res.json({ proofUrl, message: "Comprobante subido correctamente. Un administrador verificará el pago." });
+    } catch (error) {
+        console.error("Error al subir comprobante:", error);
+        res.status(500).json({ error: "Error al subir comprobante" });
     }
 });
 
@@ -1335,27 +1545,31 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
         if (order.status !== "pending") return res.status(400).json({ error: "La orden no está pendiente" });
 
         const coin = payCurrency || "usdttrc20";
-        const tasaUSD = await crypto.getArsUsdRate();
-        const minUSD = await crypto.getMinAmount({ currency_to: coin });
-        const precioUSD = Math.ceil(Number(order.total) / tasaUSD);
-        const price_amount = Math.max(precioUSD, Math.ceil(minUSD));
+        const coinAliases = {
+            usdttrc20: "USDT (TRC20)",
+            usdc: "USDC",
+            btc: "Bitcoin",
+            eth: "Ethereum",
+            ltc: "Litecoin",
+            sol: "Solana",
+        };
+        const cryptoAddress = CRYPTO_ADDRESSES[coin] || CRYPTO_ADDRESSES.usdttrc20;
+        const comision = await getNetworkFeeArs(coin);
+        const totalConComision = Number(order.total) + comision;
 
-        const ipnUrl = `${BASE_URL}/api/webhooks/nowpayments?order_id=${id}`;
-        const payment = await crypto.createPayment({
-            price_amount,
-            pay_currency: coin,
-            order_id: id,
-            ipn_callback_url: ipnUrl,
+        const cryptoInfo = JSON.stringify({
+            method: "crypto",
+            coin,
+            coinName: coinAliases[coin] || coin.toUpperCase(),
+            address: cryptoAddress,
+            monto: totalConComision,
+            subtotal: Number(order.total),
+            comision,
+            created_at: new Date().toISOString(),
         });
 
-        await db.query("UPDATE orders SET crypto_info = ?, expires_at = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = ?", [
-            JSON.stringify({
-                payment_id: payment.payment_id,
-                pay_address: payment.pay_address,
-                pay_amount: payment.pay_amount,
-                pay_currency: payment.pay_currency,
-                created_at: new Date().toISOString(),
-            }),
+        await db.query("UPDATE orders SET crypto_info = ?, expires_at = DATE_ADD(NOW(), INTERVAL 48 HOUR) WHERE id = ?", [
+            cryptoInfo,
             id,
         ]);
 
@@ -1363,13 +1577,12 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
 
         res.json({
             crypto: {
-                payment_id: payment.payment_id,
-                pay_address: payment.pay_address,
-                pay_amount: payment.pay_amount,
-                pay_currency: payment.pay_currency,
-                price_amount,
-                tasa_ars: tasaUSD,
-                total_ars: Number(order.total),
+                coin,
+                coinName: coinAliases[coin] || coin.toUpperCase(),
+                address: cryptoAddress,
+                monto: totalConComision,
+                subtotal: Number(order.total),
+                comision,
                 expires_at: orderRow[0]?.expires_at,
             },
         });
@@ -1486,64 +1699,27 @@ app.post("/api/webhooks/nowpayments", async (req, res) => {
     }
 });
 
-// --- CONSULTAR ESTADO PAGO CRYPTO ---
-app.get("/api/crypto/payment/:orderId", verifyToken, async (req, res) => {
+// --- CONSULTAR ESTADO PAGO CRYPTO / TRANSFER ---
+app.get("/api/order/payment-status/:orderId", verifyToken, async (req, res) => {
     const { orderId } = req.params;
     try {
-        const [orders] = await db.query("SELECT id, status, crypto_info FROM orders WHERE id = ? AND user_id = ?", [orderId, req.user.id]);
+        const [orders] = await db.query(
+            "SELECT id, status, payment_method, crypto_info FROM orders WHERE id = ? AND user_id = ?",
+            [orderId, req.user.id]
+        );
         if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
 
         const order = orders[0];
         const cryptoInfo = order.crypto_info ? JSON.parse(order.crypto_info) : null;
-        let paymentStatus = null;
-        if (cryptoInfo?.payment_id) {
-            try {
-                console.log("[crypto] Polling payment:", cryptoInfo.payment_id);
-                const info = await crypto.getPaymentStatus(cryptoInfo.payment_id);
-                paymentStatus = info.payment_status;
-                console.log("[crypto] Status from NP:", paymentStatus, "order status:", order.status);
-                if (paymentStatus === 'finished' && order.status === 'pending') {
-                    const [orderData] = await db.query(
-                        "SELECT o.total, o.user_id, u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [orderId]
-                    );
-                    await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
-                    const row = orderData[0];
-                    if (row) {
-                const puntos = Math.floor(parseFloat(row.total) / 1000);
-                        if (puntos > 0) {
-                            await db.query(
-                                "UPDATE users SET points = points + ? WHERE id = ?",
-                                [puntos, row.user_id]
-                            );
-                        }
-                        await sendEmail("order_status", row.email, {
-                            name: row.name,
-                            orderId,
-                            status: "approved",
-                            subject: "¡Tu pago ha sido aprobado!",
-                            title: "Compra Confirmada",
-                            message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
-                            btnText: "Ver mi pedido",
-                            btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
-                        });
-                    }
-                    order.status = 'approved';
-                    console.log("[crypto] Order approved:", orderId);
-                } else if (["failed", "expired", "rejected", "cancelled"].includes(paymentStatus) && order.status === 'pending') {
-                    await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [orderId]);
-                    const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
-                    for (const item of items) {
-                        await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
-                    }
-                    order.status = 'cancelled';
-                    console.log("[crypto] Order cancelled, stock restored:", orderId);
-                }
-            } catch (e) { console.error("[crypto] Poll error:", e?.message) }
-        }
-        res.json({ status: order.status, cryptoInfo, paymentStatus });
+
+        res.json({
+            status: order.status,
+            payment_method: order.payment_method,
+            cryptoInfo,
+        });
     } catch (error) {
-        console.error("Error al consultar pago crypto:", error);
-        res.status(500).json({ error: "Error al consultar pago" });
+        console.error("Error al consultar estado de pago:", error);
+        res.status(500).json({ error: "Error al consultar" });
     }
 });
 
@@ -1580,6 +1756,50 @@ const verifyAdmin = (req, res, next) => {
         res.status(401).json({ error: "Token inválido" });
     }
 };
+
+// --- VERIFICAR PAGO (admin) ---
+app.put("/api/admin/orders/:id/verify-payment", verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [id]);
+        if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
+        const order = orders[0];
+
+        if (order.payment_method !== "transfer" && order.payment_method !== "crypto") {
+            return res.status(400).json({ error: "Esta orden no requiere verificación manual" });
+        }
+        if (order.status !== "pending") return res.status(400).json({ error: "La orden no está pendiente" });
+
+        await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [id]);
+
+        const [userRow] = await db.query("SELECT u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [id]);
+        if (userRow.length > 0) {
+            const puntos = Math.floor(parseFloat(order.total) / 1000);
+            if (puntos > 0) {
+                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [puntos, order.user_id]);
+            }
+            try {
+                await sendEmail("order_status", userRow[0].email, {
+                    name: userRow[0].name,
+                    orderId: id,
+                    status: "approved",
+                    subject: "¡Pago verificado!",
+                    title: "Pago Confirmado",
+                    message: `Hola ${userRow[0].name}, ¡tu pago por la orden #${id.slice(0, 8)} ha sido verificado y aprobado! Pronto comenzaremos con la preparación.`,
+                    btnText: "Ver mi pedido",
+                    btnUrl: `https://vntg-hub.vercel.app/pedido/${id}`,
+                });
+            } catch (e) {
+                console.error("Error al enviar email:", e.message);
+            }
+        }
+
+        res.json({ message: "Pago verificado y orden aprobada" });
+    } catch (error) {
+        console.error("Error al verificar pago:", error);
+        res.status(500).json({ error: "Error al verificar pago" });
+    }
+});
 
 const verifySupport = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -2310,42 +2530,6 @@ const imapPoller = new ImapPoller();
 
 app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`);
-
-    // Agregar columnas para threading de soporte
-    try {
-        const [cols] = await db.query("SHOW COLUMNS FROM support_messages LIKE 'thread_id'");
-        if (cols.length === 0) {
-            await db.query("ALTER TABLE support_messages ADD COLUMN thread_id INT NULL");
-            await db.query("ALTER TABLE support_messages ADD COLUMN source VARCHAR(10) DEFAULT 'web'");
-            console.log('[db] Columnas thread_id y source agregadas a support_messages');
-        }
-    } catch (e) {
-        console.log('[db] Columnas ya existen o error:', e.message);
-    }
-
-    // Agregar columnas crypto a orders
-    try {
-        const [cols] = await db.query("SHOW COLUMNS FROM orders LIKE 'payment_method'");
-        if (cols.length === 0) {
-            await db.query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(20) DEFAULT 'mp'");
-            await db.query("ALTER TABLE orders ADD COLUMN crypto_info TEXT NULL");
-            console.log('[db] Columnas payment_method y crypto_info agregadas a orders');
-        }
-    } catch (e) {
-        console.log('[db] Columnas orders ya existen o error:', e.message);
-    }
-
-    // Agregar columnas para reset de contraseña
-    try {
-        const [cols] = await db.query("SHOW COLUMNS FROM users LIKE 'reset_token'");
-        if (cols.length === 0) {
-            await db.query("ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL");
-            await db.query("ALTER TABLE users ADD COLUMN reset_expires DATETIME NULL");
-            console.log('[db] Columnas reset_token y reset_expires agregadas a users');
-        }
-    } catch (e) {
-        console.log('[db] Columnas reset ya existen o error:', e.message);
-    }
 
     // Cargar configuración de envío (fallback a .env si la tabla no existe)
     try {

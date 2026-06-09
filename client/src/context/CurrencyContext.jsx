@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 const CurrencyContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -48,10 +48,12 @@ export const CurrencyProvider = ({ children }) => {
         return `$${num.toLocaleString('es-AR')}`;
     }, [currency, tasaUSD]);
 
+    const value = useMemo(() => ({
+        currency, tasaUSD, toggleCurrency, convertPrice, formatPrice, setCurrency,
+    }), [currency, tasaUSD, toggleCurrency, convertPrice, formatPrice]);
+
     return (
-        <CurrencyContext.Provider value={{
-            currency, tasaUSD, toggleCurrency, convertPrice, formatPrice, setCurrency,
-        }}>
+        <CurrencyContext.Provider value={value}>
             {children}
         </CurrencyContext.Provider>
     );

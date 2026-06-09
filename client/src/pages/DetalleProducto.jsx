@@ -204,9 +204,9 @@ const DetalleProducto = () => {
 
                         {fotosUnicas.length > 1 && (
                             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                                {fotosUnicas.map((fotoUrl, idx) => (
+                                {fotosUnicas.map((fotoUrl) => (
                                     <button 
-                                        key={idx}
+                                        key={fotoUrl}
                                         onClick={() => setImgPrincipal(fotoUrl)}
                                         className={`aspect-square transition-all duration-300 rounded-2xl overflow-hidden ${imgPrincipal === fotoUrl ? 'ring-2 ring-brand-orange ring-offset-4 ring-offset-zinc-50 dark:ring-offset-[#111] scale-95' : 'opacity-40 hover:opacity-100 hover:scale-95'}`}
                                     >

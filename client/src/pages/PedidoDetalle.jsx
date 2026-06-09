@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard, Bitcoin, Copy, X, AlertTriangle, XCircle } from 'lucide-react';
+import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard, Bitcoin, Copy, X, AlertTriangle, XCircle, Landmark, Upload } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -39,6 +39,9 @@ export default function PedidoDetalle() {
     const [timeLeft, setTimeLeft] = useState(null);
     const [expired, setExpired] = useState(false);
     const timerRef = useRef(null);
+    const [proofFile, setProofFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [proofUploaded, setProofUploaded] = useState(false);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -173,7 +176,7 @@ export default function PedidoDetalle() {
         const token = localStorage.getItem('vntg_token');
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(`${API_URL}/api/crypto/payment/${orderId}`, {
+                const res = await fetch(`${API_URL}/api/order/payment-status/${orderId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -193,6 +196,35 @@ export default function PedidoDetalle() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    const handleUploadProof = async () => {
+        if (!proofFile) return;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const formData = new FormData();
+            formData.append('proof', proofFile);
+            formData.append('orderId', pedido.id);
+            const res = await fetch(`${API_URL}/api/orders/upload-proof`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+            if (res.ok) {
+                setProofUploaded(true);
+                setProofFile(null);
+            }
+        } catch (e) {
+            console.error("Upload error:", e);
+        }
+        setUploading(false);
+    };
+
+    const paymentInfo = pedido.crypto_info ? JSON.parse(pedido.crypto_info) : null;
+    const esTransfer = pedido.payment_method === 'transfer' && paymentInfo;
+    const esCrypto = pedido.payment_method === 'crypto' && paymentInfo;
+
+    const uploadedProof = paymentInfo?.proofUrl;
 
     return (
         <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 font-sans text-zinc-900 dark:text-white">
@@ -214,32 +246,127 @@ export default function PedidoDetalle() {
                         </h2>
 
                         {pedido.status === 'pending' && !pedido.payment_id ? (
-                            <div>
-                                <div className="flex items-center gap-4 p-6 bg-brand-orange/5 border border-brand-orange/20 rounded-2xl">
-                                    <Clock size={24} className="text-brand-orange shrink-0 animate-pulse" />
-                                    <div>
-                                        <p className="text-sm font-black italic uppercase text-brand-orange">Esperando confirmación de pago</p>
-                                        <p className="text-xs text-zinc-500 mt-1">El estado se actualizará automáticamente cuando se confirme la transacción.</p>
+                            esTransfer || esCrypto ? (
+                                <div>
+                                    <div className={`flex items-center gap-4 p-6 ${esTransfer ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-brand-orange/5 border-brand-orange/20'} border rounded-2xl`}>
+                                        {esTransfer ? <Landmark size={24} className="text-emerald-500 shrink-0" /> : <Bitcoin size={24} className="text-brand-orange shrink-0" />}
+                                        <div>
+                                            <p className={`text-sm font-black italic uppercase ${esTransfer ? 'text-emerald-500' : 'text-brand-orange'}`}>
+                                                {esTransfer ? 'Pendiente de pago por transferencia' : 'Pendiente de pago crypto'}
+                                            </p>
+                                            <p className="text-xs text-zinc-500 mt-1">Realizá el pago y subí el comprobante para que un administrador lo verifique.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Detalles bancarios o crypto */}
+                                    {esTransfer ? (
+                                        <div className="mt-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-5 space-y-2 border border-zinc-200 dark:border-zinc-700">
+                                            <p className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mb-3">Datos Bancarios</p>
+                                            <p className="text-sm"><span className="font-bold">Banco:</span> {paymentInfo.bank}</p>
+                                            <p className="text-sm"><span className="font-bold">Titular:</span> {paymentInfo.holder}</p>
+                                            <p className="text-sm"><span className="font-bold">CUIT:</span> {paymentInfo.cuit}</p>
+                                            <p className="text-sm"><span className="font-bold">Alias:</span> <span className="text-emerald-500 font-bold">{paymentInfo.alias}</span>
+                                                <button onClick={() => handleCopyAddress(paymentInfo.alias)} className="ml-2 p-1 inline-flex align-middle bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">
+                                                    {copied ? <CircleCheck size={12} /> : <Copy size={12} />}
+                                                </button>
+                                            </p>
+                                            <p className="text-sm"><span className="font-bold">CBU:</span> <span className="font-mono text-xs break-all">{paymentInfo.cbu}</span>
+                                                <button onClick={() => handleCopyAddress(paymentInfo.cbu)} className="ml-2 p-1 inline-flex align-middle bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">
+                                                    {copied ? <CircleCheck size={12} /> : <Copy size={12} />}
+                                                </button>
+                                            </p>
+                                            {paymentInfo.montoTransferir && (
+                                                <p className="text-sm mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                                                    <span className="font-bold">Monto a transferir:</span>{' '}
+                                                    <span className="text-lg font-black italic text-emerald-500">${Number(paymentInfo.montoTransferir).toLocaleString('es-AR')} ARS</span>
+                                                </p>
+                                            )}
+                                            {paymentInfo.descuentoTransfer > 0 && (
+                                                <p className="text-[10px] text-emerald-500 font-bold">Incluye 10% de descuento (-${Number(paymentInfo.descuentoTransfer).toLocaleString('es-AR')})</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="mt-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-5 space-y-2 border border-zinc-200 dark:border-zinc-700">
+                                            <p className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mb-3">Pago Crypto</p>
+                                            <p className="text-sm"><span className="font-bold">Moneda:</span> {paymentInfo.coinName || paymentInfo.coin}</p>
+                                            <p className="text-sm"><span className="font-bold">Monto:</span> <span className="text-lg font-black italic text-brand-orange">${Number(paymentInfo.monto).toLocaleString('es-AR')} ARS</span></p>
+                                            <p className="text-sm"><span className="font-bold">Dirección:</span></p>
+                                            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-700 rounded-xl p-3">
+                                                <code className="flex-1 text-[10px] font-mono break-all">{paymentInfo.address}</code>
+                                                <button onClick={() => handleCopyAddress(paymentInfo.address)} className="shrink-0 p-2 bg-brand-orange text-white rounded-lg hover:bg-orange-600 transition-all">
+                                                    {copied ? <CircleCheck size={14} /> : <Copy size={14} />}
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center justify-center rounded-2xl overflow-hidden mt-2">
+                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${paymentInfo.address}`} alt="QR" className="max-w-full h-auto" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Subir comprobante */}
+                                    {!uploadedProof && !proofUploaded ? (
+                                        <div className="mt-4">
+                                            <div className="bg-yellow-500/10 border border-dashed border-yellow-500/40 rounded-2xl p-5">
+                                                <p className="text-[9px] font-black uppercase text-zinc-500 mb-3">Subí tu comprobante de pago</p>
+                                                <label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
+                                                    <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                                                        <Upload size={24} className="text-yellow-600" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-zinc-500">
+                                                        {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
+                                                    </span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,.pdf"
+                                                        onChange={e => setProofFile(e.target.files[0])}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                            </div>
+                                            <button
+                                                onClick={handleUploadProof}
+                                                disabled={!proofFile || uploading}
+                                                className={`mt-3 w-full flex items-center justify-center gap-2 ${esTransfer ? 'bg-emerald-500' : 'bg-brand-orange'} text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50`}
+                                            >
+                                                {uploading ? 'Subiendo...' : 'Subir Comprobante'} <Upload size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-4 bg-green-500/10 border border-green-500/20 rounded-2xl p-5 text-center">
+                                            <CircleCheck size={24} className="text-green-500 mx-auto mb-2" />
+                                            <p className="text-sm font-bold text-green-600 dark:text-green-400">Comprobante subido correctamente</p>
+                                            <p className="text-xs text-zinc-500 mt-1">Un administrador verificará el pago y aprobará tu pedido.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex items-center gap-4 p-6 bg-brand-orange/5 border border-brand-orange/20 rounded-2xl">
+                                        <Clock size={24} className="text-brand-orange shrink-0 animate-pulse" />
+                                        <div>
+                                            <p className="text-sm font-black italic uppercase text-brand-orange">Esperando confirmación de pago</p>
+                                            <p className="text-xs text-zinc-500 mt-1">El estado se actualizará automáticamente cuando se confirme la transacción.</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex flex-col gap-3">
+                                        <button
+                                            onClick={() => setShowCryptoModal(true)}
+                                            className="w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95"
+                                        >
+                                            <Bitcoin size={20} />
+                                            Reintentar Pago Crypto
+                                        </button>
+                                        <button
+                                            onClick={handleRetryPayment}
+                                            disabled={retrying}
+                                            className="w-full flex items-center justify-center gap-2 bg-brand-blue text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-60"
+                                        >
+                                            {retrying ? <Loader className="animate-spin" size={20} /> : <CreditCard size={20} />}
+                                            {retrying ? "Generando link..." : "Reintentar Pago con Mercado Pago"}
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="mt-4 flex flex-col gap-3">
-                                    <button
-                                        onClick={() => setShowCryptoModal(true)}
-                                        className="w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95"
-                                    >
-                                        <Bitcoin size={20} />
-                                        Reintentar Pago Crypto
-                                    </button>
-                                    <button
-                                        onClick={handleRetryPayment}
-                                        disabled={retrying}
-                                        className="w-full flex items-center justify-center gap-2 bg-brand-blue text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-60"
-                                    >
-                                        {retrying ? <Loader className="animate-spin" size={20} /> : <CreditCard size={20} />}
-                                        {retrying ? "Generando link..." : "Reintentar Pago con Mercado Pago"}
-                                    </button>
-                                </div>
-                            </div>
+                            )
                         ) : pedido.status === 'cancelled' ? (
                             <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl">
                                 <div className="flex items-center gap-4">
@@ -425,26 +552,31 @@ export default function PedidoDetalle() {
                             </>
                         ) : (
                             <>
-                                <h3 className="text-xl font-black italic uppercase tracking-tighter mb-1">Pagar con Crypto</h3>
+                                <h3 className="text-xl font-black italic uppercase tracking-tighter mb-1">Pagar con {cryptoRetry.coinName || 'Crypto'}</h3>
                                 <p className="text-xs text-zinc-500 font-medium mb-6">Enviá el monto exacto a la dirección de abajo</p>
                                 <div className="space-y-4">
                                     <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                         <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
-                                        <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange break-all">{parseFloat(cryptoRetry.pay_amount).toFixed(6)} <span className="text-sm uppercase">{cryptoRetry.pay_currency}</span></p>
-                                        <p className="text-xs text-zinc-500 mt-1">USD {parseFloat(cryptoRetry.price_amount).toFixed(2)}{parseFloat(cryptoRetry.price_amount) > Math.ceil(Number(cryptoRetry.total_ars) / (cryptoRetry.tasa_ars || 1200)) && <span className="text-yellow-500 text-[10px] ml-1">(mín)</span>}</p>
-                                        <p className="text-[10px] text-zinc-500">≈ ${Number(cryptoRetry.total_ars).toLocaleString('es-AR')} ARS</p>
+                                        <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange">${Number(cryptoRetry.monto).toLocaleString('es-AR')} ARS</p>
+                                        <p className="text-xs text-zinc-500 mt-1">equivalente en {cryptoRetry.coinName || 'USDT'}</p>
+                                        {cryptoRetry.comision > 0 && (
+                                            <div className="mt-3 pt-3 border-t border-brand-orange/20 text-[10px] space-y-1">
+                                                <p className="text-zinc-500">Subtotal: <span className="font-bold text-zinc-700 dark:text-zinc-300">${Number(cryptoRetry.subtotal).toLocaleString('es-AR')} ARS</span></p>
+                                                <p className="text-zinc-500">Fee de red: <span className="font-bold text-brand-orange">+${Number(cryptoRetry.comision).toLocaleString('es-AR')} ARS</span></p>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black uppercase text-zinc-500 mb-2">Dirección de depósito</p>
                                         <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-2xl p-4">
-                                            <code className="flex-1 text-xs font-mono break-all">{cryptoRetry.pay_address}</code>
-                                            <button onClick={() => handleCopyAddress(cryptoRetry.pay_address)} className="shrink-0 p-2 bg-brand-orange text-white rounded-xl hover:bg-orange-600 transition-all active:scale-95">
+                                            <code className="flex-1 text-xs font-mono break-all">{cryptoRetry.address}</code>
+                                            <button onClick={() => handleCopyAddress(cryptoRetry.address)} className="shrink-0 p-2 bg-brand-orange text-white rounded-xl hover:bg-orange-600 transition-all active:scale-95">
                                                 {copied ? <CircleCheck size={16} /> : <Copy size={16} />}
                                             </button>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-center rounded-2xl overflow-hidden">
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoRetry.pay_address}`} alt="QR" className="max-w-full h-auto" />
+                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoRetry.address}`} alt="QR" className="max-w-full h-auto" />
                                     </div>
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
                                         {expired ? (
@@ -453,17 +585,9 @@ export default function PedidoDetalle() {
                                                 <span className="font-bold italic">Tiempo expirado. Cancelá y volvé a intentar.</span>
                                             </div>
                                         ) : (
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                                                    <Loader className="animate-spin shrink-0" size={14} />
-                                                    <span className="font-medium italic">Esperando el pago... Esto puede tomar unos minutos</span>
-                                                </div>
-                                                {timeLeft !== null && (
-                                                    <div className={`flex items-center justify-center gap-2 text-sm font-black uppercase tracking-widest ${timeLeft <= 120 ? 'text-red-500' : 'text-zinc-500'}`}>
-                                                        <Clock size={14} />
-                                                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
-                                                    </div>
-                                                )}
+                                            <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                <Loader className="animate-spin shrink-0" size={14} />
+                                                <span className="font-medium italic">Esperando que subas tu comprobante de pago</span>
                                             </div>
                                         )}
                                     </div>

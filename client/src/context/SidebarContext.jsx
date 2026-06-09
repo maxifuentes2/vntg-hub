@@ -1,26 +1,27 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useCallback, useMemo } from 'react';
 
 const SidebarContext = createContext();
 
 export const SidebarProvider = ({ children }) => {
-    // 'cart', 'wishlist', 'category' o null
-    const [activeSidebar, setActiveSidebar] = useState(null); 
+    const [activeSidebar, setActiveSidebar] = useState(null);
 
-    const openCart = () => setActiveSidebar('cart');
-    const openWishList = () => setActiveSidebar('wishlist');
-    const openCategory = () => setActiveSidebar('category'); // <-- Agregado
-    const closeAll = () => setActiveSidebar(null);
+    const openCart = useCallback(() => setActiveSidebar('cart'), []);
+    const openWishList = useCallback(() => setActiveSidebar('wishlist'), []);
+    const openCategory = useCallback(() => setActiveSidebar('category'), []);
+    const closeAll = useCallback(() => setActiveSidebar(null), []);
+
+    const value = useMemo(() => ({
+        isCartOpen: activeSidebar === 'cart',
+        isWishListOpen: activeSidebar === 'wishlist',
+        isCategoryOpen: activeSidebar === 'category',
+        openCart,
+        openWishList,
+        openCategory,
+        closeAll
+    }), [activeSidebar, openCart, openWishList, openCategory, closeAll]);
 
     return (
-        <SidebarContext.Provider value={{ 
-            isCartOpen: activeSidebar === 'cart',
-            isWishListOpen: activeSidebar === 'wishlist',
-            isCategoryOpen: activeSidebar === 'category', // <-- Agregado
-            openCart,
-            openWishList,
-            openCategory, // <-- Agregado
-            closeAll
-        }}>
+        <SidebarContext.Provider value={value}>
             {children}
         </SidebarContext.Provider>
     );

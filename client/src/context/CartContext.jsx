@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from './ToastContext';
 
 const CartContext = createContext();
@@ -231,13 +231,15 @@ export const CartProvider = ({ children }) => {
 
     const finalTotal = cartTotal + getShippingCost();
 
+    const value = useMemo(() => ({
+        cart, addToCart, removeFromCart, updateQuantity, clearCart,
+        cartTotal, shippingType, setShippingType, finalTotal, getShippingCost,
+        FREE_SHIPPING_THRESHOLD, COSTO_NORMAL, COSTO_PRIO, cartCount: cart.length, refreshCartPrices,
+        syncCartToServer
+    }), [cart, shippingType, shippingConfig, addToast]);
+
     return (
-        <CartContext.Provider value={{ 
-            cart, addToCart, removeFromCart, updateQuantity, clearCart, 
-            cartTotal, shippingType, setShippingType, finalTotal, getShippingCost,
-            FREE_SHIPPING_THRESHOLD, COSTO_NORMAL, COSTO_PRIO, cartCount: cart.length, refreshCartPrices,
-            syncCartToServer
-        }}>
+        <CartContext.Provider value={value}>
             {children}
         </CartContext.Provider>
     );

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from './ToastContext'; 
 
 const WishListContext = createContext();
@@ -26,11 +26,10 @@ export function WishListProvider({ children }) {
         }
     }, []);
 
-    const addToWishList = async (product) => {
+    const addToWishList = useCallback(async (product) => {
         const user = getActiveUser();
         const token = getToken();
 
-        // VALIDACIÓN MEJORADA: Chequeamos que exista usuario Y token
         if (!user || !token) {
             addToast(null, 'Debes iniciar sesión para guardar favoritos', 'error');
             return;
@@ -54,12 +53,7 @@ export function WishListProvider({ children }) {
                 setWishListItems((prevItems) => [...prevItems, product]);
                 addToast(product, product.stock === 0 ? 'Te avisaremos al reponer stock' : '¡Añadido a favoritos!', 'success');
             } else if (response.status === 401) {
-                // MANEJO DEL ERROR 401: Le avisamos al usuario en vez de fallar en silencio
                 addToast(null, 'Tu sesión expiró. Por favor, vuelve a iniciar sesión.', 'error');
-                
-                // Opcional: Podrías limpiar el localStorage acá si querés forzar el deslogueo
-                // localStorage.removeItem('vntg_user');
-                // localStorage.removeItem('vntg_token');
             } else {
                 addToast(null, 'Hubo un error al guardar el producto', 'error');
             }
@@ -67,13 +61,12 @@ export function WishListProvider({ children }) {
             console.error("Error al guardar en wishlist:", error);
             addToast(null, 'Error de conexión con el servidor', 'error');
         }
-    };
+    }, [wishListItems, addToast]);
 
-    const removeFromWishList = async (id) => {
+    const removeFromWishList = useCallback(async (id) => {
         const user = getActiveUser();
         const token = getToken();
         
-        // Buscamos el producto antes de borrarlo para la notificación
         const productoEliminado = wishListItems.find(item => String(item.id) === String(id));
 
         if (user && token) {
@@ -84,13 +77,12 @@ export function WishListProvider({ children }) {
         
         setWishListItems((prevItems) => prevItems.filter(item => String(item.id) !== String(id)));
         
-        // Disparamos la notificación de tipo 'info' (naranja)
         if (productoEliminado) {
             addToast(productoEliminado, 'Eliminado de favoritos', 'info');
         }
-    };
+    }, [wishListItems, addToast]);
 
-    const clearWishList = async () => {
+    const clearWishList = useCallback(async () => {
         const user = getActiveUser();
         const token = getToken();
         if (user && token) {
@@ -99,12 +91,16 @@ export function WishListProvider({ children }) {
             } catch (e) { console.error(e); }
         }
         setWishListItems([]);
-    };
+    }, []);
 
     const wishListCount = wishListItems.length;
 
+    const value = useMemo(() => ({
+        wishListItems, addToWishList, removeFromWishList, clearWishList, wishListCount
+    }), [wishListItems, addToWishList, removeFromWishList, clearWishList]);
+
     return (
-        <WishListContext.Provider value={{ wishListItems, addToWishList, removeFromWishList, clearWishList, wishListCount }}>
+        <WishListContext.Provider value={value}>
             {children}
         </WishListContext.Provider>
     );

@@ -227,7 +227,7 @@ export default function Login() {
                         </div>
 
                         <div className="flex justify-center">
-                            <GoogleLogin onSuccess={handleGoogleSuccess} theme="filled_black" shape="pill" />
+                            <GoogleLogin onSuccess={handleGoogleSuccess} theme="filled_black" shape="pill" ux_mode="redirect" redirect_uri={`${window.location.origin}/login`} />
                         </div>
 
                         <p className="mt-10 text-[11px] font-bold uppercase italic text-zinc-500">

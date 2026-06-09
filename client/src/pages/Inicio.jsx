@@ -163,24 +163,40 @@ const ScrambleText = ({ text, delay = 0, duration = 800 }) => {
 
     useEffect(() => {
         let frame = 0;
-        const totalFrames = (duration / 1000) * 60;
-        const timeout = setTimeout(() => {
-            const interval = setInterval(() => {
-                setDisplayText(text.split('').map((char, i) => {
-                    if (char === ' ') return ' ';
-                    const progress = frame / totalFrames;
-                    if (progress > i / text.length) return char;
-                    return chars[Math.floor(Math.random() * chars.length)];
-                }).join(''));
-                frame++;
-                if (frame >= totalFrames) {
-                    setDisplayText(text);
-                    clearInterval(interval);
-                }
-            }, 1000 / 60);
-            return () => clearInterval(interval);
-        }, delay);
-        return () => clearTimeout(timeout);
+        const totalFrames = Math.max(Math.floor((duration / 1000) * 20), 1);
+        let timeoutId, intervalId;
+
+        const startAnimation = () => {
+            frame = 0;
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                const tick = () => {
+                    setDisplayText(
+                        text.split('').map((char, i) => {
+                            if (char === ' ') return ' ';
+                            const progress = frame / totalFrames;
+                            if (progress > i / text.length) return char;
+                            return chars[Math.floor(Math.random() * chars.length)];
+                        }).join('')
+                    );
+                    frame++;
+                    if (frame >= totalFrames) {
+                        setDisplayText(text);
+                        return;
+                    }
+                    timeoutId = setTimeout(tick, 50);
+                };
+                tick();
+            }, delay);
+        };
+
+        startAnimation();
+        intervalId = setInterval(startAnimation, 10000);
+
+        return () => {
+            clearTimeout(timeoutId);
+            clearInterval(intervalId);
+        };
     }, [text, delay, duration]);
 
     return <span>{displayText}</span>;
@@ -190,7 +206,6 @@ export default function Inicio() {
     const [productos, setProductos] = useState([]);
     const [dbCategories, setDbCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [triggerKey, setTriggerKey] = useState(0);
     const { addToCart } = useCart();
     
     // ACA TRAEMOS LOS ITEMS Y LA FUNCIÓN DE REMOVER DEL CONTEXTO
@@ -201,14 +216,6 @@ export default function Inicio() {
     const scrollToContent = () => {
         firstCategoryRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
-
-    // Re-triggerear la animación cada 10 segundos
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTriggerKey(prev => prev + 1);
-        }, 10000);
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -325,16 +332,16 @@ export default function Inicio() {
                     <Reveal variant="fade-down" delay={0}>
                         <h1 className="text-4xl max-[400px]:text-3xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white flex items-center justify-center gap-4 subtle-glitch">
                             <span className="hover:animate-pulse transition-all">
-                                <ScrambleText key={`vntg-${triggerKey}`} text="VNTG" delay={200} />
+                                <ScrambleText text="VNTG" delay={200} />
                             </span>
                             <span className="text-brand-orange liquid-text">
-                                <ScrambleText key={`hub-${triggerKey}`} text="HUB" delay={600} />
+                                <ScrambleText text="HUB" delay={600} />
                             </span>
                         </h1>
                     </Reveal>
                     <Reveal variant="fade-up" delay={150}>
                         <p className="text-sm max-[400px]:text-xs md:text-xl font-bold italic liquid-text uppercase tracking-[0.4em] subtle-glitch">
-                            <ScrambleText key={`sub-${triggerKey}`} text="Coleccionismo de Alto Nivel" delay={1000} duration={1200} />
+                            <ScrambleText text="Coleccionismo de Alto Nivel" delay={1000} duration={1200} />
                         </p>
                     </Reveal>
                 </div>
