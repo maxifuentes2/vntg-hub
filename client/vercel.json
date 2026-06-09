@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "client",
   "rewrites": [
     {
       "source": "/(.*)",
