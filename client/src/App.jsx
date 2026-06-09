@@ -50,7 +50,6 @@ function ChatbotWrapper() {
 
 function GoogleOAuthHandler() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -59,7 +58,25 @@ function GoogleOAuthHandler() {
       const idToken = params.get('id_token');
       if (idToken) {
         window.history.replaceState({}, '', window.location.pathname);
-        navigate('/login', { state: { googleCredential: idToken }, replace: true });
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        fetch(`${API_URL}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: idToken })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              localStorage.setItem('vntg_user', JSON.stringify(data.user));
+              if (data.token) localStorage.setItem('vntg_token', data.token);
+              navigate('/', { replace: true });
+            } else {
+              navigate('/login', { state: { googleError: data.error || "Error al iniciar sesión con Google" }, replace: true });
+            }
+          })
+          .catch(() => {
+            navigate('/login', { state: { googleError: "Error de conexión. Inténtalo más tarde." }, replace: true });
+          });
       }
     }
   }, []);

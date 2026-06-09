@@ -27,32 +27,10 @@ export default function Login() {
         setCapsLock(e.getModifierState('CapsLock'));
     };
 
-    const handleGoogleSuccess = async (credentialResponse) => {
-        try {
-            const response = await fetch(`${API_URL}/api/auth/google`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: credentialResponse.credential })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                localStorage.setItem('vntg_user', JSON.stringify(data.user));
-                if (data.token) localStorage.setItem('vntg_token', data.token);
-                navigate('/');
-                window.location.reload();
-            } else {
-                setError(data.error || "Error al iniciar sesión con Google");
-            }
-        } catch (error) {
-            console.error("Error de red:", error);
-            setError("Error de conexión. Inténtalo más tarde.");
-        }
-    };
-
     useEffect(() => {
-        if (location.state?.googleCredential) {
+        if (location.state?.googleError) {
+            setError(location.state.googleError);
             window.history.replaceState({}, '', window.location.pathname);
-            handleGoogleSuccess({ credential: location.state.googleCredential });
         }
     }, [location.state]);
 
@@ -95,7 +73,6 @@ export default function Login() {
                     localStorage.setItem('vntg_user', JSON.stringify(data.user));
                     if (data.token) localStorage.setItem('vntg_token', data.token);
                     navigate('/');
-                    window.location.reload();
                 } else if (data.requireCode) {
                     // Si no, procedemos a la verificación por código
                     setStep(2); 
@@ -140,7 +117,6 @@ export default function Login() {
                 localStorage.setItem('vntg_user', JSON.stringify(data.user));
                 if (data.token) localStorage.setItem('vntg_token', data.token);
                 navigate('/');
-                window.location.reload();
             } else {
                 setError(data.error || "Código incorrecto o expirado");
             }
