@@ -81,7 +81,7 @@ export default function Navbar() {
                 localStorage.removeItem('vntg_user');
             }
         }
-    }, []);
+    }, [location.pathname]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
