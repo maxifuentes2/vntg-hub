@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-const ImapPoller = require("./imapPoller");
+const GmailPoller = require("./imapPoller");
 const crypto = require("./crypto");
 const shipping = require("./shipping");
 const multer = require("multer");
@@ -37,12 +37,12 @@ const BANK_ACCOUNT = {
 
 // Direcciones crypto estáticas para pago manual
 const CRYPTO_ADDRESSES = {
-    usdttrc20: process.env.CRYPTO_USDT_TRC20 || "TXYZ1234567890abcdef1234567890abcdef12",
-    usdc: process.env.CRYPTO_USDC || "0xABCDEF1234567890ABCDEF1234567890ABCDEF12",
-    btc: process.env.CRYPTO_BTC || "1ABCxyz1234567890abcdef1234567890abcdef123456",
-    eth: process.env.CRYPTO_ETH || "0x1234567890ABCDEF1234567890ABCDEF12345678",
-    ltc: process.env.CRYPTO_LTC || "LXYZ1234567890abcdef1234567890abcdef12",
-    sol: process.env.CRYPTO_SOL || "ABC1234567890abcdef1234567890abcdef1234567890abc",
+    usdttrc20: process.env.CRYPTO_USDT_TRC20 || "TKVYXdVh6rfkeYugiXFbduT3JsiP64ShjA",
+    usdc: process.env.CRYPTO_USDC || "0xd044e54a586fc65ed87204b747e19e9216a1b88c",
+    btc: process.env.CRYPTO_BTC || "3Mhrxf7iawv5Q41rZLuyS1RtqCnVE4Zkiy",
+    eth: process.env.CRYPTO_ETH || "0xd044e54a586fc65ed87204b747e19e9216a1b88c",
+    ltc: process.env.CRYPTO_LTC || "MQ4X5rkLChuNx8p81epTPa9S2vHYwmjtEm",
+    sol: process.env.CRYPTO_SOL || "E27cUefTLS2d5Sa35aCcHt7dF8MPf3ic6WsHTeHAgqwx",
 };
 
 // Tablas creadas manualmente en TiDB Cloud
@@ -2425,7 +2425,7 @@ app.post("/api/contact", async (req, res) => {
         );
 
         // No bloqueamos la respuesta si el email falla
-        sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje })
+        sendEmail("contact", "soportehubvntg@gmail.com", { nombre, email, mensaje })
             .catch(err => console.error("[contact] Error email:", err?.message));
 
         res.json({ message: "Mensaje recibido con éxito. Nos contactaremos pronto." });
@@ -2525,8 +2525,8 @@ setInterval(async () => {
 }, 60000);
 
 const PORT = process.env.PORT || 5000;
-// ─── IMAP Poller ───
-const imapPoller = new ImapPoller();
+// ─── Gmail API Poller ───
+const gmailPoller = new GmailPoller();
 
 app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`);
@@ -2538,5 +2538,5 @@ app.listen(PORT, "0.0.0.0", async () => {
         console.log('[db] Error cargando shipping_config:', e.message);
     }
 
-    imapPoller.start();
+    gmailPoller.start();
 });

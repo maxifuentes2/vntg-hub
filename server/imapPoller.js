@@ -1,118 +1,152 @@
-const { ImapFlow } = require('imapflow');
-const { simpleParser } = require('mailparser');
+const { google } = require('googleapis');
 const db = require('./db');
 
 const TICKET_PATTERN = /<vntg-ticket-(\d+)@vntg-hub\.vercel\.app>/;
 
-class ImapPoller {
-  constructor() {
-    this.client = null;
-    this.interval = null;
-  }
-
-  async connect() {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    if (!user || !pass) {
-      console.log('[imap] SMTP_USER/PASS no configurados, IMAP desactivado');
-      return false;
-    }
-
-    this.client = new ImapFlow({
-      host: 'imap.gmail.com',
-      port: 993,
-      secure: true,
-      auth: { user, pass },
-      logger: false,
-    });
-
-    this.client.on('error', (err) => {
-      console.error('[imap] Error en conexión IMAP:', err.message);
-    });
-
-    try {
-      await this.client.connect();
-      console.log('[imap] Conectado a Gmail IMAP');
-      return true;
-    } catch (err) {
-      console.error('[imap] Error de conexión:', err.message);
-      this.client = null;
-      return false;
-    }
-  }
-
-  async poll() {
-    if (!this.client || !this.client.connection?.connected) {
-      console.log('[imap] Reconectando...');
-      const ok = await this.connect();
-      if (!ok) return;
-    }
-
-    try {
-      const lock = await this.client.getMailboxLock('INBOX');
-      try {
-        const uids = await this.client.search({ seen: false });
-        if (uids.length === 0) return;
-
-        for (const uid of uids) {
-          try {
-            const msg = await this.client.fetchOne(uid, { source: true });
-            const parsed = await simpleParser(msg.source);
-
-            const inReplyTo = parsed.inReplyTo || '';
-            const match = inReplyTo.match(TICKET_PATTERN);
-
-            if (match) {
-              const ticketId = parseInt(match[1], 10);
-              const fromName = parsed.from?.name || parsed.from?.text || 'Usuario';
-              const fromEmail = parsed.from?.value?.[0]?.address || '';
-              const bodyText = parsed.text || parsed.html || '';
-              const cleanText = bodyText.replace(/<[^>]*>/g, '').trim().substring(0, 2000);
-
-              await db.query(
-                "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email')",
-                [fromName, fromEmail, cleanText || '(sin contenido)', ticketId]
-              );
-
-              console.log(`[imap] Reply email recibido para ticket #${ticketId} de ${fromEmail}`);
-            }
-          } catch (err) {
-            console.error('[imap] Error procesando email UID ' + uid + ':', err.message);
-          }
-        }
-
-        await this.client.messageFlagsAdd(uids, ['\\Seen']);
-        if (uids.length > 0) {
-          console.log(`[imap] ${uids.length} email(s) procesado(s)`);
-        }
-      } finally {
-        lock.release();
-      }
-    } catch (err) {
-      console.error('[imap] Error en poll:', err.message);
-    }
-  }
-
-  start() {
-    this.connect().then((ok) => {
-      if (ok) {
-        this.poll();
-        this.interval = setInterval(() => this.poll(), 30000);
-      }
-    }).catch((err) => {
-      console.error('[imap] Error en start:', err.message);
-    });
-  }
-
-  stop() {
-    if (this.interval) {
-      clearInterval(this.interval);
-      this.interval = null;
-    }
-    if (this.client) {
-      this.client.logout().catch(() => {});
-    }
-  }
+function decodeBase64(data) {
+    if (!data) return '';
+    const buf = Buffer.from(data.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+    return buf.toString('utf-8');
 }
 
-module.exports = ImapPoller;
+function getHeader(headers, name) {
+    const found = headers.find(h => h.name.toLowerCase() === name.toLowerCase());
+    return found ? found.value : '';
+}
+
+function extractBody(payload) {
+    if (payload.mimeType === 'text/plain' && payload.body?.data) {
+        return decodeBase64(payload.body.data);
+    }
+    if (payload.parts) {
+        for (const part of payload.parts) {
+            const text = extractBody(part);
+            if (text) return text;
+        }
+    }
+    return '';
+}
+
+class GmailPoller {
+    constructor() {
+        this.gmail = null;
+        this.interval = null;
+    }
+
+    async authenticate() {
+        const clientId = process.env.GMAIL_CLIENT_ID;
+        const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+        const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+
+        if (!clientId || !clientSecret || !refreshToken) {
+            console.log('[gmail] GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN no configurados, Gmail API desactivado');
+            return false;
+        }
+
+        try {
+            const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+            oauth2Client.setCredentials({ refresh_token: refreshToken });
+            this.gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+            // Verify connectivity by fetching profile
+            await this.gmail.users.getProfile({ userId: 'me' });
+            console.log('[gmail] Conectado a Gmail API');
+            return true;
+        } catch (err) {
+            console.error('[gmail] Error de autenticación:', err.message);
+            this.gmail = null;
+            return false;
+        }
+    }
+
+    async poll() {
+        if (!this.gmail) {
+            console.log('[gmail] Reautenticando...');
+            const ok = await this.authenticate();
+            if (!ok) return;
+        }
+
+        try {
+            const res = await this.gmail.users.messages.list({
+                userId: 'me',
+                q: 'is:unread',
+                maxResults: 10,
+            });
+
+            const messages = res.data.messages || [];
+            if (messages.length === 0) return;
+
+            const processedIds = [];
+
+            for (const msg of messages) {
+                try {
+                    const detail = await this.gmail.users.messages.get({
+                        userId: 'me',
+                        id: msg.id,
+                        format: 'full',
+                    });
+
+                    const payload = detail.data.payload;
+                    const headers = payload.headers || [];
+                    const inReplyTo = getHeader(headers, 'in-reply-to');
+                    const messageId = getHeader(headers, 'message-id');
+                    const from = getHeader(headers, 'from');
+                    const fromMatch = from.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
+                    const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : from;
+                    const fromEmail = fromMatch ? fromMatch[2] : from;
+
+                    const match = inReplyTo.match(TICKET_PATTERN);
+                    if (match) {
+                        const ticketId = parseInt(match[1], 10);
+                        const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
+
+                        await db.query(
+                            "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email')",
+                            [fromName, fromEmail, bodyText, ticketId]
+                        );
+
+                        console.log(`[gmail] Reply email recibido para ticket #${ticketId} de ${fromEmail}`);
+                    }
+
+                    processedIds.push(msg.id);
+                } catch (err) {
+                    console.error('[gmail] Error procesando mensaje ' + msg.id + ':', err.message);
+                }
+            }
+
+            // Mark as read by removing UNREAD label
+            if (processedIds.length > 0) {
+                await this.gmail.users.messages.batchModify({
+                    userId: 'me',
+                    requestBody: {
+                        ids: processedIds,
+                        removeLabelIds: ['UNREAD'],
+                    },
+                });
+                console.log(`[gmail] ${processedIds.length} email(s) procesado(s)`);
+            }
+        } catch (err) {
+            console.error('[gmail] Error en poll:', err.message);
+        }
+    }
+
+    start() {
+        this.authenticate().then((ok) => {
+            if (ok) {
+                this.poll();
+                this.interval = setInterval(() => this.poll(), 30000);
+            }
+        }).catch((err) => {
+            console.error('[gmail] Error en start:', err.message);
+        });
+    }
+
+    stop() {
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+        this.gmail = null;
+    }
+}
+
+module.exports = GmailPoller;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { QRCode } from 'qrcode.react';
 import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, Bitcoin, Clock, AlertTriangle, Pencil, X, Landmark, Upload } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -715,8 +716,8 @@ export default function Checkout() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center justify-center rounded-2xl overflow-hidden">
-                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${paymentModal.address}`} alt="QR" className="max-w-full h-auto" />
+                                            <div className="flex items-center justify-center rounded-2xl overflow-hidden bg-white p-4">
+                                                <QRCode value={paymentModal.address} size={200} level="M" />
                                             </div>
 
                                             {!paymentModal.proofUploaded ? (

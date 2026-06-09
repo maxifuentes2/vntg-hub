@@ -48,6 +48,25 @@ function ChatbotWrapper() {
   return <Chatbot />;
 }
 
+function GoogleOAuthHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('id_token=')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const idToken = params.get('id_token');
+      if (idToken) {
+        window.history.replaceState({}, '', window.location.pathname);
+        navigate('/login', { state: { googleCredential: idToken }, replace: true });
+      }
+    }
+  }, []);
+
+  return null;
+}
+
 function FloatingHomeButton() {
   const location = useLocation();
   if (location.pathname === '/' || location.pathname === '/admin' || location.pathname === '/soporte') return null;
@@ -84,6 +103,7 @@ function App() {
               {/* COMPONENTE LÓGICO DE SCROLL Y TÍTULO: Asegura que cada navegación empiece desde arriba y cambie el título */}
               <ScrollToTopOnNavigation />
               <RouteTitleManager />
+              <GoogleOAuthHandler />
 
               <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
 

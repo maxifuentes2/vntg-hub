@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { QRCode } from 'qrcode.react';
 import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard, Bitcoin, Copy, X, AlertTriangle, XCircle, Landmark, Upload } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { useCurrency } from '../context/CurrencyContext';
@@ -297,8 +298,8 @@ export default function PedidoDetalle() {
                                                     {copied ? <CircleCheck size={14} /> : <Copy size={14} />}
                                                 </button>
                                             </div>
-                                            <div className="flex items-center justify-center rounded-2xl overflow-hidden mt-2">
-                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${paymentInfo.address}`} alt="QR" className="max-w-full h-auto" />
+                                            <div className="flex items-center justify-center rounded-2xl overflow-hidden mt-2 bg-white p-2">
+                                                <QRCode value={paymentInfo.address} size={150} level="M" />
                                             </div>
                                         </div>
                                     )}
@@ -575,8 +576,8 @@ export default function PedidoDetalle() {
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-center rounded-2xl overflow-hidden">
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cryptoRetry.address}`} alt="QR" className="max-w-full h-auto" />
+                                    <div className="flex items-center justify-center rounded-2xl overflow-hidden bg-white p-4">
+                                        <QRCode value={cryptoRetry.address} size={200} level="M" />
                                     </div>
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-700">
                                         {expired ? (
