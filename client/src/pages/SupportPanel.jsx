@@ -5,14 +5,11 @@ import {
     MessageSquare, 
     Clock, 
     CircleCheck, 
-    Send, 
     Search, 
-    ListFilter,
     ChevronRight,
+    ChevronDown,
     Loader,
-    ArrowLeft,
     Trash2,
-    CircleX,
     House,
     Shield,
     RefreshCw,
@@ -28,11 +25,10 @@ export default function SupportPanel() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMsg, setSelectedMsg] = useState(null);
-    const [replyText, setReplyText] = useState('');
-    const [sendingReply, setSendingReply] = useState(false);
-    const [filter, setFilter] = useState('all'); // all, pending, replied, finished
+    const [filter, setFilter] = useState('all'); // all, pending, in_progress, finished
     const [searchTerm, setSearchTerm] = useState('');
-    const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
+    const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, ids: null });
+    const [selectedMsgs, setSelectedMsgs] = useState(new Set());
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -63,82 +59,98 @@ export default function SupportPanel() {
         }
     };
 
-    const handleSendReply = async (e) => {
-        e.preventDefault();
-        if (!replyText.trim() || !selectedMsg) return;
-
-        setSendingReply(true);
-        try {
-            const token = localStorage.getItem('vntg_token');
-            const res = await fetch(`${API_URL}/api/support/reply/${selectedMsg.id}`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ respuesta: replyText })
-            });
-
-            if (res.ok) {
-                setMessages(messages.map(m => 
-                    m.id === selectedMsg.id 
-                    ? { ...m, status: 'replied', respuesta: replyText } 
-                    : m
-                ));
-                setSelectedMsg({ ...selectedMsg, status: 'replied', respuesta: replyText });
-                setReplyText('');
-                addToast({ title: selectedMsg.nombre }, 'Respuesta enviada correctamente', 'success');
-            } else {
-                addToast({}, 'Error al enviar respuesta', 'error');
-            }
-        } catch (error) {
-            addToast({}, 'Error de conexión al enviar respuesta', 'error');
-            console.error("Error replying:", error);
-        } finally {
-            setSendingReply(false);
-        }
-    };
-
-    const handleFinishChat = async (msgId) => {
+    const handleUpdateMessageStatus = async (msgId, newStatus) => {
         try {
             const token = localStorage.getItem('vntg_token');
             const res = await fetch(`${API_URL}/api/support/messages/${msgId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ status: 'finished' })
+                body: JSON.stringify({ status: newStatus })
             });
             if (res.ok) {
-                setMessages(messages.map(m => m.id === msgId ? { ...m, status: 'finished' } : m));
-                if (selectedMsg?.id === msgId) setSelectedMsg({ ...selectedMsg, status: 'finished' });
-                addToast({}, 'Chat marcado como terminado', 'success');
+                setMessages(messages.map(m => m.id === msgId ? { ...m, status: newStatus } : m));
+                if (selectedMsg?.id === msgId) setSelectedMsg(prev => ({ ...prev, status: newStatus }));
+                addToast({}, 'Estado de mensaje actualizado', 'success');
+            } else {
+                addToast({}, 'Error al actualizar estado', 'error');
             }
         } catch (error) {
-            addToast({}, 'Error al finalizar chat', 'error');
+            console.error("Error updating status:", error);
+            addToast({}, 'Error de conexión', 'error');
         }
     };
 
     const handleDeleteMessage = (msgId) => {
-        setConfirmDelete({ isOpen: true, id: msgId });
+        setConfirmDelete({ isOpen: true, id: msgId, ids: null });
     };
 
     const executeDeleteMessage = async () => {
-        const msgId = confirmDelete.id;
-        if (!msgId) return;
+        const { id, ids } = confirmDelete;
+        const token = localStorage.getItem('vntg_token');
+        
         try {
-            const token = localStorage.getItem('vntg_token');
-            const res = await fetch(`${API_URL}/api/support/messages/${msgId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setMessages(messages.filter(m => m.id !== msgId));
-                if (selectedMsg?.id === msgId) setSelectedMsg(null);
-                setConfirmDelete({ isOpen: false, id: null });
-                addToast({}, 'Mensaje eliminado correctamente', 'success');
+            if (ids && ids.length > 0) {
+                // Bulk delete
+                const res = await fetch(`${API_URL}/api/support/messages/bulk-delete`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ ids })
+                });
+                if (res.ok) {
+                    setMessages(messages.filter(m => !ids.includes(m.id)));
+                    if (selectedMsg && ids.includes(selectedMsg.id)) setSelectedMsg(null);
+                    setSelectedMsgs(new Set());
+                    addToast({}, 'Mensajes eliminados correctamente', 'success');
+                } else {
+                    addToast({}, 'Error al eliminar mensajes', 'error');
+                }
+            } else if (id) {
+                // Single delete
+                const res = await fetch(`${API_URL}/api/support/messages/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setMessages(messages.filter(m => m.id !== id));
+                    if (selectedMsg?.id === id) setSelectedMsg(null);
+                    setSelectedMsgs(prev => {
+                        const next = new Set(prev);
+                        next.delete(id);
+                        return next;
+                    });
+                    addToast({}, 'Mensaje eliminado correctamente', 'success');
+                } else {
+                    addToast({}, 'Error al eliminar mensaje', 'error');
+                }
             }
         } catch (error) {
-            setConfirmDelete({ isOpen: false, id: null });
-            addToast({}, 'Error al eliminar mensaje', 'error');
+            console.error("Error deleting:", error);
+            addToast({}, 'Error de conexión', 'error');
+        } finally {
+            setConfirmDelete({ isOpen: false, id: null, ids: null });
+        }
+    };
+
+    const toggleMessageSelection = (msgId) => {
+        setSelectedMsgs(prev => {
+            const next = new Set(prev);
+            if (next.has(msgId)) {
+                next.delete(msgId);
+            } else {
+                next.add(msgId);
+            }
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedMsgs.size === filteredMessages.length && filteredMessages.length > 0) {
+            setSelectedMsgs(new Set());
+        } else {
+            setSelectedMsgs(new Set(filteredMessages.map(m => m.id)));
         }
     };
 
@@ -235,46 +247,93 @@ export default function SupportPanel() {
                                         />
                                     </div>
                                     <div className="flex gap-1 xs:gap-2">
-                                        {['all', 'pending', 'replied', 'finished'].map(f => (
+                                        {['all', 'pending', 'in_progress', 'finished'].map(f => (
                                             <button 
                                                 key={f}
                                                 onClick={() => setFilter(f)}
                                                 className={`flex-1 py-2 text-[8px] xs:text-[10px] font-black uppercase italic border transition-all rounded-lg ${filter === f ? 'bg-brand-blue text-white border-brand-blue shadow-md' : 'bg-transparent border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-blue'}`}
                                             >
-                                                {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : f === 'replied' ? 'Respondidos' : 'Terminados'}
+                                                {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : f === 'in_progress' ? 'En Progreso' : 'Finalizados'}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
+                                {/* Selección Múltiple Cabecera */}
+                                {filteredMessages.length > 0 && (
+                                    <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-xl shadow-sm flex items-center justify-between gap-4 border border-zinc-200 dark:border-zinc-800">
+                                        <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase italic tracking-wider text-zinc-500">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedMsgs.size === filteredMessages.length && filteredMessages.length > 0}
+                                                onChange={toggleSelectAll}
+                                                className="w-4 h-4 accent-brand-blue cursor-pointer"
+                                            />
+                                            Seleccionar todos
+                                        </label>
+                                        {selectedMsgs.size > 0 && (
+                                            <button
+                                                onClick={() => {
+                                                    setConfirmDelete({
+                                                        isOpen: true,
+                                                        id: null,
+                                                        ids: Array.from(selectedMsgs)
+                                                    });
+                                                }}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase italic tracking-widest rounded-xl border border-red-500/20 shadow-md"
+                                            >
+                                                <Trash2 size={14} /> Eliminar ({selectedMsgs.size})
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-4 max-h-[300px] lg:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                     {loading ? (
                                         [1, 2, 3].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-xl" />)
                                     ) : filteredMessages.length > 0 ? (
-                                        filteredMessages.map(msg => (
-                                            <div 
-                                                key={msg.id} 
-                                                onClick={() => setSelectedMsg(msg)}
-                                                className={`p-5 bg-zinc-50 dark:bg-brand-card border rounded-2xl cursor-pointer transition-all group relative overflow-hidden shadow-sm hover:shadow-md ${msg.status === 'finished' ? 'opacity-60 hover:opacity-100' : ''} ${selectedMsg?.id === msg.id ? 'border-brand-blue ring-1 ring-brand-blue/30' : 'border-zinc-200 dark:border-zinc-600 hover:border-brand-blue/50'}`}
-                                            >
-                                                {msg.status === 'pending' ? (
-                                                    <div className="absolute top-0 right-0 w-2 h-full bg-brand-orange"></div>
-                                                ) : msg.status === 'finished' ? (
-                                                    <div className="absolute top-0 right-0 w-2 h-full bg-zinc-400"></div>
-                                                ) : null}
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <p className="text-[10px] font-black text-brand-blue uppercase italic">{msg.email}</p>
-                                                    <div className="flex items-center gap-1.5">
-                                                        {msg.source === 'email' && (
-                                                            <span className="px-1.5 py-0.5 text-[8px] font-black uppercase italic rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500">Email</span>
-                                                        )}
-                                                        <p className="text-[9px] font-bold text-zinc-500">{new Date(msg.created_at).toLocaleDateString()}</p>
+                                        filteredMessages.map(msg => {
+                                            const isSelected = selectedMsgs.has(msg.id);
+                                            return (
+                                                <div 
+                                                    key={msg.id} 
+                                                    onClick={() => setSelectedMsg(msg)}
+                                                    className={`p-5 bg-zinc-50 dark:bg-brand-card border rounded-2xl cursor-pointer transition-all group relative overflow-hidden shadow-sm hover:shadow-md ${msg.status === 'finished' ? 'opacity-60 hover:opacity-100' : ''} ${selectedMsg?.id === msg.id ? 'border-brand-blue ring-1 ring-brand-blue/30' : 'border-zinc-200 dark:border-zinc-600 hover:border-brand-blue/50'} flex gap-3`}
+                                                >
+                                                    {msg.status === 'pending' ? (
+                                                        <div className="absolute top-0 right-0 w-2 h-full bg-yellow-500"></div>
+                                                    ) : msg.status === 'in_progress' ? (
+                                                        <div className="absolute top-0 right-0 w-2 h-full bg-brand-blue"></div>
+                                                    ) : msg.status === 'finished' ? (
+                                                        <div className="absolute top-0 right-0 w-2 h-full bg-green-500"></div>
+                                                    ) : null}
+
+                                                    {/* Checkbox para Selección Múltiple */}
+                                                    <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => toggleMessageSelection(msg.id)}
+                                                            className="w-4 h-4 accent-brand-blue cursor-pointer"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <p className="text-[10px] font-black text-brand-blue uppercase italic truncate mr-2">{msg.email}</p>
+                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                {msg.source === 'email' && (
+                                                                    <span className="px-1.5 py-0.5 text-[8px] font-black uppercase italic rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500">Email</span>
+                                                                )}
+                                                                <p className="text-[9px] font-bold text-zinc-500">{new Date(msg.created_at).toLocaleDateString()}</p>
+                                                            </div>
+                                                        </div>
+                                                        <h3 className="font-black italic uppercase text-sm mb-1 truncate">{msg.nombre}</h3>
+                                                        <p className="text-xs text-zinc-500 line-clamp-2 italic">{msg.mensaje}</p>
                                                     </div>
                                                 </div>
-                                                <h3 className="font-black italic uppercase text-sm mb-1 truncate">{msg.nombre}</h3>
-                                                <p className="text-xs text-zinc-500 line-clamp-2 italic">{msg.mensaje}</p>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <div className="text-center py-20 bg-zinc-50 dark:bg-brand-card border border-dashed border-zinc-200 dark:border-zinc-600 rounded-xl">
                                             <MessageSquare size={40} className="mx-auto text-zinc-300 mb-4" />
@@ -284,7 +343,7 @@ export default function SupportPanel() {
                                 </div>
                             </div>
 
-                            {/* Detalle y Respuesta */}
+                            {/* Detalle y Redirección de Respuesta */}
                             <div className="lg:col-span-7">
                                 {selectedMsg ? (
                                     <div className="bg-zinc-50 dark:bg-brand-card rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col h-full min-h-[600px]">
@@ -296,15 +355,17 @@ export default function SupportPanel() {
                                                     <h2 className="text-2xl font-black italic uppercase tracking-tighter">{selectedMsg.nombre}</h2>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    {selectedMsg.status !== 'finished' && (
-                                                        <button
-                                                            onClick={() => handleFinishChat(selectedMsg.id)}
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase italic rounded-lg bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white transition-all border border-zinc-500/20"
-                                                            title="Marcar como terminado"
-                                                        >
-                                                            <CircleX size={14} /> Terminar
-                                                        </button>
-                                                    )}
+                                                    {/* Selector de Estado */}
+                                                    <select
+                                                        value={selectedMsg.status}
+                                                        onChange={(e) => handleUpdateMessageStatus(selectedMsg.id, e.target.value)}
+                                                        className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg py-1.5 px-3 text-[10px] font-black uppercase italic text-zinc-900 dark:text-white outline-none focus:border-brand-blue cursor-pointer transition-all"
+                                                    >
+                                                        <option value="pending">Pendiente</option>
+                                                        <option value="in_progress">En Progreso</option>
+                                                        <option value="finished">Finalizado</option>
+                                                    </select>
+
                                                     <button
                                                         onClick={() => handleDeleteMessage(selectedMsg.id)}
                                                         className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase italic rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
@@ -312,9 +373,6 @@ export default function SupportPanel() {
                                                     >
                                                         <Trash2 size={14} /> Eliminar
                                                     </button>
-                                                    <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase italic ${selectedMsg.status === 'pending' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' : selectedMsg.status === 'replied' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-zinc-500/10 text-zinc-500 border border-zinc-500/20'}`}>
-                                                        {selectedMsg.status === 'pending' ? 'Pendiente' : selectedMsg.status === 'replied' ? 'Respondido' : 'Terminado'}
-                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -344,12 +402,6 @@ export default function SupportPanel() {
                                                                     <span className="text-[8px] text-zinc-400 ml-auto">{new Date(tm.created_at).toLocaleString()}</span>
                                                                 </div>
                                                                 <p className="text-xs font-medium leading-relaxed">{tm.mensaje}</p>
-                                                                {tm.respuesta && (
-                                                                    <div className="mt-2 pl-3 border-l-2 border-green-400">
-                                                                        <p className="text-[9px] font-black uppercase text-green-500">Respuesta</p>
-                                                                        <p className="text-xs italic text-zinc-500">{tm.respuesta}</p>
-                                                                    </div>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}
@@ -361,36 +413,17 @@ export default function SupportPanel() {
                                                 <p className="text-[10px] font-black uppercase text-brand-blue mb-2">Mensaje del Cliente</p>
                                                 <p className="text-sm font-medium leading-relaxed dark:text-zinc-200">{selectedMsg.mensaje}</p>
                                             </div>
-
-                                            {selectedMsg.status === 'replied' && (
-                                                <div className="bg-green-500/5 dark:bg-green-500/5 p-6 border-l-4 border-green-500 rounded-r-2xl shadow-inner">
-                                                    <p className="text-[10px] font-black uppercase text-green-500 mb-2">Nuestra Respuesta</p>
-                                                    <p className="text-sm font-medium leading-relaxed dark:text-zinc-200 italic">"{selectedMsg.respuesta}"</p>
-                                                </div>
-                                            )}
                                         </div>
 
-                                        {/* Formulario de Respuesta */}
-                                        {selectedMsg.status === 'pending' && (
-                                            <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-                                                <form onSubmit={handleSendReply} className="space-y-4">
-                                                    <p className="text-[10px] font-black uppercase text-zinc-500 italic">Escribir Respuesta</p>
-                                                    <textarea 
-                                                        value={replyText}
-                                                        onChange={(e) => setReplyText(e.target.value)}
-                                                        rows="5"
-                                                        placeholder="Hola! Gracias por contactarnos..."
-                                                        className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-5 text-sm font-medium outline-none focus:border-brand-blue transition-all resize-none rounded-2xl"
-                                                    ></textarea>
-                                                    <button 
-                                                        disabled={sendingReply || !replyText.trim()}
-                                                        className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all disabled:opacity-50 rounded-2xl shadow-lg active:scale-95"
-                                                    >
-                                                        {sendingReply ? <Loader className="animate-spin" /> : <><Send size={18} /> Enviar Respuesta</>}
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        )}
+                                        {/* Botón para Responder por Correo */}
+                                        <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+                                            <a 
+                                                href={`mailto:${selectedMsg.email}?subject=Re: Consulta VNTG Hub`}
+                                                className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
+                                            >
+                                                <Mail size={18} /> Responder por Correo
+                                            </a>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="h-full min-h-[600px] flex flex-col items-center justify-center bg-zinc-50 dark:bg-brand-card border border-dashed border-zinc-200 dark:border-zinc-600 rounded-2xl text-center p-12">
@@ -398,7 +431,7 @@ export default function SupportPanel() {
                                             <MessageSquare size={48} className="text-brand-blue" />
                                         </div>
                                         <h2 className="text-2xl font-black italic uppercase mb-2">Selecciona un mensaje</h2>
-                                        <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest max-w-xs">Elige una consulta de la lista para leerla y responderla.</p>
+                                        <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest max-w-xs">Elige una consulta de la lista para gestionarla.</p>
                                     </div>
                                 )}
                             </div>
@@ -414,16 +447,20 @@ export default function SupportPanel() {
                                 <div className="bg-brand-orange/10 p-4 rounded-full mb-6">
                                     <TriangleAlert className="text-brand-orange" size={40} />
                                 </div>
-                                <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">¿Eliminar Mensaje?</h3>
+                                <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 dark:text-white">
+                                    {confirmDelete.ids && confirmDelete.ids.length > 0 ? '¿Eliminar Mensajes?' : '¿Eliminar Mensaje?'}
+                                </h3>
                                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
-                                    Estás a punto de eliminar este mensaje permanentemente.
+                                    {confirmDelete.ids && confirmDelete.ids.length > 0 
+                                        ? `Estás a punto de eliminar ${confirmDelete.ids.length} mensajes permanentemente.` 
+                                        : 'Estás a punto de eliminar este mensaje permanentemente.'}
                                     <span className="block mt-3 text-zinc-600 dark:text-zinc-400">
                                         <strong className="text-red-500 not-italic">Esta acción no se puede deshacer.</strong>
                                     </span>
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                                     <button
-                                        onClick={() => setConfirmDelete({ isOpen: false, id: null })}
+                                        onClick={() => setConfirmDelete({ isOpen: false, id: null, ids: null })}
                                         className="px-6 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all border border-transparent rounded-xl"
                                     >
                                         Cancelar

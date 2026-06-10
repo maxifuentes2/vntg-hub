@@ -2666,6 +2666,20 @@ app.delete("/api/support/messages/:id", verifySupport, async (req, res) => {
     }
 });
 
+app.post("/api/support/messages/bulk-delete", verifySupport, async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "IDs requeridos" });
+    }
+    try {
+        await db.query("DELETE FROM support_messages WHERE id IN (?)", [ids]);
+        res.json({ message: "Mensajes eliminados con éxito" });
+    } catch (error) {
+        console.error("Error al eliminar mensajes en lote:", error);
+        res.status(500).json({ error: "Error al eliminar mensajes" });
+    }
+});
+
 // --- PURGA AFK ---
 setInterval(async () => {
     try {
