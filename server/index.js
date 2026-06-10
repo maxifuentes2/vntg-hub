@@ -19,6 +19,8 @@ const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
+if (process.env.SENDGRID_API_KEY) sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const GmailPoller = require("./imapPoller");
 
 const shipping = require("./shipping");
@@ -283,12 +285,22 @@ const getEmailSubject = (type, data) => {
 
 const sendEmail = async (type, to, data) => {
     const isSupport = type === "support_reply" || type === "contact";
-    const prefix = isSupport ? "SMTP_SUPPORT_" : "SMTP_";
     const fromKey = isSupport ? "EMAIL_SUPPORT_FROM" : "EMAIL_FROM";
-    const from = process.env[fromKey] || (isSupport ? '"VNTG Soporte" <soportehubvntg@gmail.com>' : '"VNTG Hub" <hubvntg@gmail.com>');
+    const from = process.env[fromKey] || (isSupport ? "VNTG Soporte <soportehubvntg@gmail.com>" : "VNTG Hub <hubvntg@gmail.com>");
     const subject = getEmailSubject(type, data);
     const html = buildEmailHtml(type, data);
 
+    if (process.env.SENDGRID_API_KEY) {
+        try {
+            await sgMail.send({ from, to, subject, html });
+            console.log(`[email] OK via SendGrid type="${type}" to="${to}"`);
+            return { sentVia: "sendgrid" };
+        } catch (err) {
+            console.error(`[email] Error SendGrid type="${type}" to="${to}":`, err.message);
+        }
+    }
+
+    const prefix = isSupport ? "SMTP_SUPPORT_" : "SMTP_";
     const transporter = createTransporter(prefix);
     if (!transporter) {
         console.error(`[email] SMTP${isSupport ? " soporte" : ""} no configurado. No se pudo enviar email type="${type}" to="${to}"`);
