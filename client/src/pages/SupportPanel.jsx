@@ -416,34 +416,25 @@ export default function SupportPanel() {
                                             </div>
                                         </div>
 
-                                        {/* Opciones para Responder */}
-                                        <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex flex-col gap-3">
-                                            <p className="text-[10px] font-black uppercase text-zinc-500 italic">Opciones de Respuesta</p>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                <a 
-                                                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${selectedMsg.email}&su=Re: Consulta VNTG Hub`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-2 hover:bg-orange-600 transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
-                                                >
-                                                    <Mail size={16} /> Gmail Web
-                                                </a>
-                                                <a 
-                                                    href={`mailto:${selectedMsg.email}?subject=Re: Consulta VNTG Hub`}
-                                                    className="bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-2 hover:bg-brand-blue/80 transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
-                                                >
-                                                    <Mail size={16} /> App Local
-                                                </a>
-                                                <button 
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(selectedMsg.email);
-                                                        addToast({}, 'Email copiado al portapapeles', 'success');
-                                                    }}
-                                                    className="bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white py-4 font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2"
-                                                >
-                                                    <Copy size={16} /> Copiar Email
-                                                </button>
-                                            </div>
+                                        {/* Botón para Responder por Correo */}
+                                        <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex flex-col sm:flex-row gap-3">
+                                            <a 
+                                                href={`https://mail.google.com/mail/?view=cm&fs=1&to=${selectedMsg.email}&su=Re: Consulta VNTG Hub`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex-1 bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
+                                            >
+                                                <Mail size={18} /> Responder por Correo
+                                            </a>
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(selectedMsg.email);
+                                                    addToast({}, 'Email copiado al portapapeles', 'success');
+                                                }}
+                                                className="px-6 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2"
+                                            >
+                                                <Copy size={16} /> Copiar Dirección
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
