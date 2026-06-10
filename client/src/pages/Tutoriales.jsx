@@ -296,9 +296,7 @@ export default function Tutoriales() {
                       <div
                         className="h-full bg-brand-orange relative"
                         style={{ width: `${progress[tutorial.id] || 0}%` }}
-                      >
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-brand-orange" />
-                      </div>
+                      />
                     </div>
 
                     {/* Controls overlay */}
