@@ -113,7 +113,7 @@ export default function Footer() {
                 </p>
                 <div className="flex gap-4 text-[10px] font-black uppercase italic text-zinc-400">
                     <span className="flex items-center gap-1">
-                        {MapPin && <MapPin size={10} />} Mendoza
+                        {MapPin && <MapPin size={10} />} Catamarca 147, Ciudad De Mendoza
                     </span>
                     <span className="flex items-center gap-1">
                         {Mail && <Mail size={10} />} soportehubvntg@gmail.com
