@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function RestablecerPassword() {
+    const { addToast } = useToast();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     
@@ -29,6 +31,7 @@ export default function RestablecerPassword() {
         setError('');
 
         if (newPassword !== confirmPassword) {
+            addToast({ title: 'Restablecer' }, 'Las contraseñas no coinciden', 'error');
             return setError("Las contraseñas no coinciden");
         }
 
@@ -42,12 +45,15 @@ export default function RestablecerPassword() {
             
             if (res.ok) {
                 setMensaje("Contraseña actualizada con éxito.");
+                addToast({ title: 'Restablecer' }, 'Contraseña actualizada con éxito', 'success');
                 setTimeout(() => navigate('/login'), 3000);
             } else {
                 setError(data.error || "El enlace expiró o es inválido.");
+                addToast({ title: 'Restablecer' }, data.error || 'El enlace expiró o es inválido.', 'error');
             }
         } catch (err) {
             setError("Error de red.");
+            addToast({ title: 'Restablecer' }, 'Error de red.', 'error');
         }
     };
 

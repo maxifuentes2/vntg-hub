@@ -83,10 +83,12 @@ export default function Login() {
                 }
             } else {
                 setError(data.error || "Error al iniciar sesión");
+                addToast({ title: 'Iniciar Sesión' }, data.error || 'Error al iniciar sesión', 'error');
             }
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
+            addToast({ title: 'Iniciar Sesión' }, 'Error de conexión. Inténtalo más tarde.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -121,10 +123,12 @@ export default function Login() {
                 navigate('/');
             } else {
                 setError(data.error || "Código incorrecto o expirado");
+                addToast({ title: 'Verificación' }, data.error || 'Código incorrecto o expirado', 'error');
             }
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
+            addToast({ title: 'Verificación' }, 'Error de conexión. Inténtalo más tarde.', 'error');
         } finally {
             setIsLoading(false);
         }

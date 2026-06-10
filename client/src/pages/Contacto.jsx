@@ -56,13 +56,16 @@ export default function Contacto() {
             if (response.ok) {
                 setEstadoEnviando('success');
                 setFormData({ nombre: '', email: '', mensaje: '' }); // Limpiamos el formulario
+                addToast({ title: 'Contacto' }, 'Mensaje enviado correctamente', 'success');
                 setTimeout(() => setEstadoEnviando('idle'), 3000);
             } else {
                 setEstadoEnviando('error');
+                addToast({ title: 'Contacto' }, 'Error al enviar el mensaje', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
             setEstadoEnviando('error');
+            addToast({ title: 'Contacto' }, 'Error de conexión con el servidor', 'error');
         }
     };
 

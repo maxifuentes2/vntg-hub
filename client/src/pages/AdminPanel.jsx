@@ -942,10 +942,11 @@ export default function AdminPanel() {
                                                                     });
                                                                     if (res.ok) {
                                                                         setPendingPayments(prev => prev.filter(o => o.id !== order.id));
+                                                                        addToast({ title: 'Verificar Pago' }, 'Pago verificado correctamente', 'success');
                                                                         fetchData();
                                                                     } else {
                                                                         const err = await res.json();
-                                                                        alert(err.error || 'Error al verificar');
+                                                                        addToast({ title: 'Verificar Pago' }, err.error || 'Error al verificar', 'error');
                                                                     }
                                                                 }}
                                                                 className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase italic hover:bg-emerald-600 transition-all shadow-lg active:scale-95"

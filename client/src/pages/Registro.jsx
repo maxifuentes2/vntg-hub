@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Registro() {
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -34,13 +36,16 @@ export default function Registro() {
             const data = await response.json();
 
             if (response.ok) {
+                addToast({ title: 'Registro' }, 'Cuenta creada con éxito. Iniciá sesión', 'success');
                 navigate('/login', { state: { registered: true } });
             } else {
                 setError(data.error || "Error al crear la cuenta");
+                addToast({ title: 'Registro' }, data.error || 'Error al crear la cuenta', 'error');
             }
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
+            addToast({ title: 'Registro' }, 'Error de conexión. Inténtalo más tarde.', 'error');
         }
     };
 

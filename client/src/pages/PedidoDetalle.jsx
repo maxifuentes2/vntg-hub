@@ -4,6 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, ExternalLink, Clock, Store, CreditCard, Bitcoin, Copy, X, AlertTriangle, XCircle, Landmark, Upload } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { useCurrency } from '../context/CurrencyContext';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -34,6 +35,7 @@ const estadosRetiro = [
 export default function PedidoDetalle() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { addToast } = useToast();
     const [pedido, setPedido] = useState(null);
     const [loading, setLoading] = useState(true);
     const { formatPrice, tasaUSD } = useCurrency();
@@ -157,11 +159,11 @@ export default function PedidoDetalle() {
             if (res.ok && data.init_point) {
                 window.location.href = data.init_point;
             } else {
-                alert(data.error || "Error al generar el pago");
+                addToast({ title: 'Pago' }, data.error || 'Error al generar el pago', 'error');
                 setRetrying(false);
             }
         } catch {
-            alert("Error de conexión");
+            addToast({ title: 'Pago' }, 'Error de conexión', 'error');
             setRetrying(false);
         }
     };
@@ -177,16 +179,16 @@ export default function PedidoDetalle() {
             });
             const data = await res.json();
             if (res.ok && data.crypto) {
-            setCryptoRetry(data.crypto);
-            setRetryingCrypto(false);
-            const interval = handleCryptoRetryPoll(pedido.id);
-            setCryptoRetry(prev => ({ ...prev, pollInterval: interval }));
-        } else {
-                alert(data.error || "Error al generar pago crypto");
+                setCryptoRetry(data.crypto);
+                setRetryingCrypto(false);
+                const interval = handleCryptoRetryPoll(pedido.id);
+                setCryptoRetry(prev => ({ ...prev, pollInterval: interval }));
+            } else {
+                addToast({ title: 'Pago Crypto' }, data.error || 'Error al generar pago crypto', 'error');
                 setRetryingCrypto(false);
             }
         } catch {
-            alert("Error de conexión");
+            addToast({ title: 'Pago Crypto' }, 'Error de conexión', 'error');
             setRetryingCrypto(false);
         }
     };
@@ -213,6 +215,7 @@ export default function PedidoDetalle() {
     const handleCopyAddress = (address) => {
         navigator.clipboard.writeText(address);
         setCopied(true);
+        addToast({ title: 'Copiado' }, 'Dirección copiada al portapapeles', 'success');
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -244,12 +247,15 @@ export default function PedidoDetalle() {
                 setProofUploaded(true);
                 setProofData({ titular: '', banco: '', nroOperacion: '' });
                 setFileError('');
+                addToast({ title: 'Comprobante' }, 'Comprobante enviado exitosamente para verificación', 'success');
             } else {
                 setFileError(data.error || "Error al enviar los datos");
+                addToast({ title: 'Comprobante' }, data.error || 'Error al enviar los datos', 'error');
             }
         } catch (e) {
             console.error("Upload error:", e);
             setFileError("Error al enviar los datos");
+            addToast({ title: 'Comprobante' }, 'Error al enviar los datos', 'error');
         }
         setUploading(false);
     };

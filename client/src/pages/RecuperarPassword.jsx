@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function RecuperarPassword() {
+    const { addToast } = useToast();
     const [email, setEmail] = useState('');
     const [mensaje, setMensaje] = useState('');
     const [error, setError] = useState('');
@@ -29,12 +31,15 @@ export default function RecuperarPassword() {
             
             if (res.ok) {
                 setMensaje("Revisa tu correo (incluyendo Spam) para el enlace de recuperación.");
+                addToast({ title: 'Recuperar' }, 'Correo de recuperación enviado con éxito', 'success');
                 setEmail('');
             } else {
                 setError(data.error || "Hubo un problema.");
+                addToast({ title: 'Recuperar' }, data.error || 'Hubo un problema.', 'error');
             }
         } catch (err) {
             setError("Error de conexión al servidor.");
+            addToast({ title: 'Recuperar' }, 'Error de conexión al servidor.', 'error');
         } finally {
             setLoading(false);
         }
