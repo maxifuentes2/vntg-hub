@@ -2102,10 +2102,10 @@ app.get("/api/admin/categories", verifyAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/categories", verifyAdmin, async (req, res) => {
-    const { name } = req.body;
+    const { name, banner_url } = req.body;
     try {
-        await db.query("INSERT INTO categories (name) VALUES (?)", [name]);
-        res.json({ message: "Categoría creada" });
+        const [result] = await db.query("INSERT INTO categories (name, banner_url) VALUES (?, ?)", [name, banner_url || null]);
+        res.json({ message: "Categoría creada", id: result.insertId });
     } catch (error) {
         console.error("Error al crear categoría:", error);
         res.status(500).json({ error: "Error al crear categoría" });
@@ -2114,12 +2114,13 @@ app.post("/api/admin/categories", verifyAdmin, async (req, res) => {
 
 app.put("/api/admin/categories/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, banner_url } = req.body;
     try {
-        await db.query("UPDATE categories SET name = ? WHERE id = ?", [
-            name,
-            id,
-        ]);
+        if (banner_url !== undefined) {
+            await db.query("UPDATE categories SET name = ?, banner_url = ? WHERE id = ?", [name, banner_url, id]);
+        } else {
+            await db.query("UPDATE categories SET name = ? WHERE id = ?", [name, id]);
+        }
         res.json({ message: "Categoría actualizada" });
     } catch (error) {
         console.error("Error al actualizar categoría:", error);
@@ -2135,6 +2136,18 @@ app.delete("/api/admin/categories/:id", verifyAdmin, async (req, res) => {
     } catch (error) {
         console.error("Error al eliminar categoría:", error);
         res.status(500).json({ error: "Error al eliminar categoría" });
+    }
+});
+
+// Eliminar banner de categoría
+app.delete("/api/admin/categories/:id/banner", verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("UPDATE categories SET banner_url = NULL WHERE id = ?", [id]);
+        res.json({ message: "Banner eliminado" });
+    } catch (error) {
+        console.error("Error al eliminar banner:", error);
+        res.status(500).json({ error: "Error al eliminar banner" });
     }
 });
 

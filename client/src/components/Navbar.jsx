@@ -319,7 +319,7 @@ export default function Navbar() {
                     <button onClick={openCart} className="relative p-2 max-[360px]:p-1.5 bg-brand-orange text-white rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all ml-1">
                         <ShoppingCart size={22} className="max-[360px]:size-5" />
                         {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-zinc-900 dark:bg-white text-white dark:text-brand-dark text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-orange">{cartCount}</span>
+                            <span className="absolute -top-1 -right-1 bg-white dark:bg-black text-black dark:text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-orange">{cartCount}</span>
                         )}
                     </button>
                 </div>
