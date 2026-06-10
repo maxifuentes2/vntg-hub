@@ -275,6 +275,7 @@ export default function Checkout() {
         const { titular, banco, nroOperacion } = proofData;
         if (!titular || !banco || !nroOperacion) {
             setFileError("Por favor, completá todos los campos.");
+            addToast({ title: 'Comprobante' }, 'Por favor, completá todos los campos.', 'error');
             return;
         }
         setUploading(true);
@@ -299,12 +300,15 @@ export default function Checkout() {
                 setPaymentModal(prev => ({ ...prev, proofUploaded: true }));
                 setProofData({ titular: '', banco: '', nroOperacion: '' });
                 setFileError('');
+                addToast({ title: 'Comprobante' }, 'Comprobante subido con éxito', 'success');
             } else {
                 setFileError(data.error || "Error al enviar los datos");
+                addToast({ title: 'Comprobante' }, data.error || 'Error al enviar los datos', 'error');
             }
         } catch (e) {
             console.error("Upload error:", e);
             setFileError("Error al enviar los datos");
+            addToast({ title: 'Comprobante' }, 'Error de conexión con el servidor', 'error');
         }
         setUploading(false);
     };
@@ -322,14 +326,17 @@ export default function Checkout() {
         // Validaciones en tiempo de envío por seguridad
         if (/\d/.test(shipping.nombre)) {
             setError("El nombre no puede contener números.");
+            addToast({ title: 'Error de validación' }, 'El nombre no puede contener números.', 'error');
             return;
         }
         if (/[a-zA-Z]/.test(shipping.telefono)) {
             setError("El teléfono no puede contener letras.");
+            addToast({ title: 'Error de validación' }, 'El teléfono no puede contener letras.', 'error');
             return;
         }
         if (/[^\d]/.test(shipping.dni)) {
             setError("El DNI/CUIT solo debe contener números.");
+            addToast({ title: 'Error de validación' }, 'El DNI/CUIT solo debe contener números.', 'error');
             return;
         }
 
@@ -401,14 +408,17 @@ export default function Checkout() {
                     window.location.href = data.init_point;
                 } else {
                     setError(data.error || "Error al procesar el pago");
+                    addToast({ title: 'Error de Pago' }, data.error || 'Error al procesar el pago', 'error');
                     setLoading(false);
                 }
             } else {
                 setError(data.error || "Error al procesar el pago");
+                addToast({ title: 'Error de Pago' }, data.error || 'Error al procesar el pago', 'error');
                 setLoading(false);
             }
         } catch (err) {
             setError("Error de conexión con el servidor");
+            addToast({ title: 'Error de Pago' }, 'Error de conexión con el servidor', 'error');
             setLoading(false);
         }
     };

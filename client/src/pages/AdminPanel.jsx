@@ -334,6 +334,8 @@ export default function AdminPanel() {
                 setCategoryForm(prev => ({ ...prev, banner_url: '' }));
                 addToast({}, 'Banner eliminado', 'success');
                 fetchData();
+            } else {
+                addToast({}, 'Error al eliminar banner', 'error');
             }
         } catch (error) {
             addToast({}, 'Error de conexión', 'error');
@@ -936,17 +938,21 @@ export default function AdminPanel() {
                                                             <button
                                                                 onClick={async () => {
                                                                     const token = localStorage.getItem('vntg_token');
-                                                                    const res = await fetch(`${API_URL}/api/admin/orders/${order.id}/verify-payment`, {
-                                                                        method: 'PUT',
-                                                                        headers: { 'Authorization': `Bearer ${token}` },
-                                                                    });
-                                                                    if (res.ok) {
-                                                                        setPendingPayments(prev => prev.filter(o => o.id !== order.id));
-                                                                        addToast({ title: 'Verificar Pago' }, 'Pago verificado correctamente', 'success');
-                                                                        fetchData();
-                                                                    } else {
-                                                                        const err = await res.json();
-                                                                        addToast({ title: 'Verificar Pago' }, err.error || 'Error al verificar', 'error');
+                                                                    try {
+                                                                        const res = await fetch(`${API_URL}/api/admin/orders/${order.id}/verify-payment`, {
+                                                                            method: 'PUT',
+                                                                            headers: { 'Authorization': `Bearer ${token}` },
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            setPendingPayments(prev => prev.filter(o => o.id !== order.id));
+                                                                            addToast({ title: 'Verificar Pago' }, 'Pago verificado correctamente', 'success');
+                                                                            fetchData();
+                                                                        } else {
+                                                                            const err = await res.json();
+                                                                            addToast({ title: 'Verificar Pago' }, err.error || 'Error al verificar', 'error');
+                                                                        }
+                                                                    } catch (err) {
+                                                                        addToast({ title: 'Verificar Pago' }, 'Error de conexión', 'error');
                                                                     }
                                                                 }}
                                                                 className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase italic hover:bg-emerald-600 transition-all shadow-lg active:scale-95"

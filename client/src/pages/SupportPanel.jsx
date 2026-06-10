@@ -52,9 +52,12 @@ export default function SupportPanel() {
             const data = await res.json();
             if (res.ok) {
                 setMessages(data);
+            } else {
+                addToast({ title: 'Soporte' }, 'Error al cargar los mensajes', 'error');
             }
         } catch (error) {
             console.error("Error fetching messages:", error);
+            addToast({ title: 'Soporte' }, 'Error de conexión al cargar mensajes', 'error');
         } finally {
             setLoading(false);
         }

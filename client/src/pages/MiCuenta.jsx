@@ -119,6 +119,19 @@ export default function MiCuenta() {
     };
 
     const saveEdit = async (field) => {
+        if (field === 'name' && /\d/.test(tempValue)) {
+            addToast(null, 'El nombre no puede contener números', 'error');
+            return;
+        }
+        if (field === 'phone' && /[a-zA-Z]/.test(tempValue)) {
+            addToast(null, 'El teléfono no puede contener letras', 'error');
+            return;
+        }
+        if (field === 'dni' && /[^\d]/.test(tempValue)) {
+            addToast(null, 'El DNI/CUIT solo puede contener números', 'error');
+            return;
+        }
+
         try {
             const updatedUser = { ...user, [field]: tempValue };
             
@@ -137,7 +150,7 @@ export default function MiCuenta() {
                 localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(updatedUser)));
                 setUser(updatedUser);
                 setEditField(null);
-                addToast(null, 'Perfil actualizado correctamente');
+                addToast(null, 'Perfil actualizado correctamente', 'success');
             } else {
                 addToast(null, "Error al actualizar los datos", "error");
             }
@@ -161,7 +174,18 @@ export default function MiCuenta() {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ categoryIds: newInterests })
-        }).catch(err => console.error("Error al guardar intereses en DB:", err));
+        })
+        .then(res => {
+            if (res.ok) {
+                addToast(null, 'Preferencias actualizadas', 'success');
+            } else {
+                addToast(null, 'Error al actualizar preferencias', 'error');
+            }
+        })
+        .catch(err => {
+            console.error("Error al guardar intereses en DB:", err);
+            addToast(null, 'Error de conexión al guardar preferencias', 'error');
+        });
     };
 
     const token = localStorage.getItem('vntg_token');
@@ -206,8 +230,36 @@ export default function MiCuenta() {
         provinciaInvalida;
 
     const handleSaveAddress = async () => {
-        if (isFormInvalid) {
-            addToast(null, 'Por favor, completa los campos correctamente', 'error');
+        if (!currentAddress?.address?.trim() || 
+            !currentAddress?.city?.trim() || 
+            !currentAddress?.province?.trim() || 
+            !currentAddress?.zip_code?.trim() || 
+            !currentAddress?.phone?.trim()) {
+            addToast(null, 'Todos los campos son obligatorios', 'error');
+            return;
+        }
+        if (cpInvalido) {
+            addToast(null, 'El código postal solo debe contener números', 'error');
+            return;
+        }
+        if (telefonoInvalido) {
+            addToast(null, 'El teléfono no puede contener letras ni símbolos únicamente', 'error');
+            return;
+        }
+        if (tagInvalido) {
+            addToast(null, 'La etiqueta no puede contener únicamente símbolos', 'error');
+            return;
+        }
+        if (direccionInvalida) {
+            addToast(null, 'La dirección no puede contener únicamente símbolos', 'error');
+            return;
+        }
+        if (ciudadInvalida) {
+            addToast(null, 'La ciudad no puede contener números ni únicamente símbolos', 'error');
+            return;
+        }
+        if (provinciaInvalida) {
+            addToast(null, 'La provincia no puede contener números ni únicamente símbolos', 'error');
             return;
         }
 
@@ -228,7 +280,7 @@ export default function MiCuenta() {
                     body: JSON.stringify(body)
                 });
                 if (!res.ok) throw new Error('Error al actualizar');
-                addToast(null, 'Dirección editada correctamente');
+                addToast(null, 'Dirección editada correctamente', 'success');
             } else {
                 const res = await fetch(`${API_URL}/api/addresses`, {
                     method: 'POST',
@@ -236,7 +288,7 @@ export default function MiCuenta() {
                     body: JSON.stringify(body)
                 });
                 if (!res.ok) throw new Error('Error al crear');
-                addToast(null, 'Dirección agregada correctamente');
+                addToast(null, 'Dirección agregada correctamente', 'success');
             }
             await fetchAddresses(token);
             setIsEditingAddress(false);
