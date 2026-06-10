@@ -21,6 +21,7 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const { google } = require("googleapis");
 const GmailPoller = require("./imapPoller");
 
 const shipping = require("./shipping");
@@ -283,6 +284,35 @@ const getEmailSubject = (type, data) => {
     return subjects[type] || "Notificación — VNTG Hub";
 };
 
+const getGmailClient = () => {
+    const gmailId = process.env.GMAIL_CLIENT_ID;
+    const gmailSecret = process.env.GMAIL_CLIENT_SECRET;
+    const gmailRefresh = process.env.GMAIL_REFRESH_TOKEN;
+    if (!gmailId || !gmailSecret || !gmailRefresh) return null;
+    const oauth = new OAuth2Client(gmailId, gmailSecret, "https://developers.google.com/oauthplayground");
+    oauth.setCredentials({ refresh_token: gmailRefresh });
+    return google.gmail({ version: "v1", auth: oauth });
+};
+
+const sendViaGmailAPI = async (from, to, subject, html) => {
+    const gmail = getGmailClient();
+    if (!gmail) return null;
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+    const messageParts = [
+        `From: ${from}`,
+        `To: ${to}`,
+        `Subject: ${utf8Subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        Buffer.from(html).toString('base64'),
+    ];
+    const raw = Buffer.from(messageParts.join('\r\n')).toString('base64url');
+    const { data } = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+    return data;
+};
+
 const sendEmail = async (type, to, data) => {
     const isSupport = type === "support_reply" || type === "contact";
     const prefix = isSupport ? "SMTP_SUPPORT_" : "SMTP_";
@@ -290,6 +320,16 @@ const sendEmail = async (type, to, data) => {
     const from = process.env[fromKey] || (isSupport ? '"VNTG Soporte" <soportehubvntg@gmail.com>' : '"VNTG Hub" <hubvntg@gmail.com>');
     const subject = getEmailSubject(type, data);
     const html = buildEmailHtml(type, data);
+
+    if (process.env.GMAIL_CLIENT_ID) {
+        try {
+            await sendViaGmailAPI(from, to, subject, html);
+            console.log(`[email] OK via Gmail API type="${type}" to="${to}"`);
+            return { sentVia: "gmail-api" };
+        } catch (err) {
+            console.error(`[email] Error Gmail API type="${type}" to="${to}":`, err.message);
+        }
+    }
 
     if (resend) {
         try {
