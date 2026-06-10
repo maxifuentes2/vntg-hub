@@ -1108,10 +1108,6 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         return res.status(400).json({ error: "Carrito vacío" });
     }
     try {
-        await db.query(
-            "UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'",
-            [req.user.id],
-        );
         // Generar ID único estilo número de orden (evitar colisiones)
         let orderId = generatePatenteId();
         let exists = true;
@@ -1340,7 +1336,6 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         return res.status(400).json({ error: "Carrito vacío" });
     }
     try {
-        await db.query("UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'", [req.user.id]);
         let orderId = generatePatenteId();
         let exists = true;
         while (exists) {
@@ -1470,7 +1465,6 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         return res.status(400).json({ error: "Carrito vacío" });
     }
     try {
-        await db.query("UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND status = 'pending'", [req.user.id]);
         let orderId = generatePatenteId();
         let exists = true;
         while (exists) {
