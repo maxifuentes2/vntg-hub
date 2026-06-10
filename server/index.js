@@ -68,6 +68,7 @@ const CRYPTO_ADDRESSES = {
 // Tablas creadas manualmente en TiDB Cloud
 
 const app = express();
+app.set('trust proxy', 1);
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const mpClient = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
@@ -79,16 +80,17 @@ const genAI = process.env.GEMINI_API_KEY
 // --- Configuración de nodemailer (fallback directo) ---
 const createTransporter = (prefix) => {
     const host = process.env[`${prefix}HOST`] || "smtp.gmail.com";
-    const port = parseInt(process.env[`${prefix}PORT`] || "587");
+    const port = parseInt(process.env[`${prefix}PORT`] || "465");
     const user = process.env[`${prefix}USER`];
     const pass = process.env[`${prefix}PASS`];
     if (!user || !pass) return null;
+    const secure = port === 465;
     return nodemailer.createTransport({
-        host, port, secure: false,
+        host, port, secure,
         auth: { user, pass },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
+        connectionTimeout: 20000,
+        greetingTimeout: 20000,
+        socketTimeout: 30000,
     });
 };
 
