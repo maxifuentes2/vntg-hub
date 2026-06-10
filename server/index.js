@@ -854,9 +854,9 @@ app.post("/api/auth/login/local", authLimiter, async (req, res) => {
             email,
         ]);
         if (!users[0] || !users[0].password)
-            return res.status(401).json({ error: "Credenciales" });
+            return res.status(401).json({ error: "Mail y/o contraseña incorrecta" });
         const valid = await bcrypt.compare(password, users[0].password);
-        if (!valid) return res.status(401).json({ error: "Credenciales" });
+        if (!valid) return res.status(401).json({ error: "Mail y/o contraseña incorrecta" });
 
         // --- LÓGICA DE DISPOSITIVO DE CONFIANZA ---
         if (deviceToken) {
