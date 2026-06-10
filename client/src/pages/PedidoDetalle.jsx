@@ -50,6 +50,25 @@ export default function PedidoDetalle() {
     const [proofFile, setProofFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [proofUploaded, setProofUploaded] = useState(false);
+    const [fileError, setFileError] = useState('');
+
+    const ALLOWED_EXTENSIONS_LIST = ['jpg','jpeg','png','gif','webp','bmp','heic','heif','svg','tiff','tif','pdf'];
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        const mimeOk = file.type.startsWith('image/') || file.type === 'application/pdf';
+        const extOk = ALLOWED_EXTENSIONS_LIST.includes(ext);
+        if (!mimeOk && !extOk) {
+            setFileError(`Formato no compatible: ${ext.toUpperCase()}. Usá JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF o PDF.`);
+            setProofFile(null);
+            e.target.value = '';
+            return;
+        }
+        setFileError('');
+        setProofFile(file);
+    };
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -110,6 +129,16 @@ export default function PedidoDetalle() {
             setExpired(false);
         }
     }, [cryptoRetry?.expires_at]);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (showCryptoModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [showCryptoModal]);
 
     useEffect(() => {
         if (!pedido || pedido.status !== 'pending') return;
@@ -337,13 +366,20 @@ export default function PedidoDetalle() {
                                                     <span className="text-xs font-bold text-zinc-500">
                                                         {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
                                                     </span>
+                                                    <p className="text-[9px] text-zinc-400 mt-1">JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF, PDF</p>
                                                     <input
                                                         type="file"
                                                         accept="image/*,.pdf"
-                                                        onChange={e => setProofFile(e.target.files[0])}
+                                                        onChange={handleFileChange}
                                                         className="hidden"
                                                     />
                                                 </label>
+                                                {fileError && (
+                                                    <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5">
+                                                        <AlertTriangle size={14} className="text-red-500 shrink-0" />
+                                                        <p className="text-[10px] font-bold text-red-500">{fileError}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={handleUploadProof}
