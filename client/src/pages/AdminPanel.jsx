@@ -17,6 +17,9 @@ export default function AdminPanel() {
     const [shippingConfig, setShippingConfig] = useState({ envio_normal: 9426.05, envio_prioritario: 17276.99, envio_gratis_desde: 200000 });
     const [savingShipping, setSavingShipping] = useState(false);
     const [pendingPayments, setPendingPayments] = useState([]);
+    
+    // NUEVO: Estado de carga copiado del panel de soporte
+    const [loading, setLoading] = useState(true);
 
     const getOrderShippingType = (order) => {
         try {
@@ -73,7 +76,7 @@ export default function AdminPanel() {
     const [categorySortOrder, setCategorySortOrder] = useState('none');
     const [editingItem, setEditingItem] = useState(null);
 
-    // NUEVO: Estado para el Modal de Confirmación Estético
+    // Estado para el Modal de Confirmación Estético
     const [confirmDelete, setConfirmDelete] = useState({
         isOpen: false,
         id: null,
@@ -103,46 +106,56 @@ export default function AdminPanel() {
         }
     }, [navigate]);
 
-    const fetchData = () => {
-        const token = localStorage.getItem('vntg_token');
-        if (!token) {
-            navigate('/login');
-            return;
-        }
-        const headers = { 'Authorization': `Bearer ${token}` };
-        const handleResponse = async (url, setter) => {
-            try {
-                const res = await fetch(url, { headers });
-                if (res.status === 401 || res.status === 403) {
-                    localStorage.removeItem('vntg_token');
-                    localStorage.removeItem('vntg_user');
-                    navigate('/login');
-                    return;
-                }
-                const data = await res.json();
-                if (Array.isArray(data)) setter(data);
-            } catch (err) {
-                console.error(err);
+    // Función modificada para soportar estado de "loading" igual que en SupportPanel
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('vntg_token');
+            if (!token) {
+                navigate('/login');
+                return;
             }
-        };
-        handleResponse(`${API_URL}/api/admin/products`, setProducts);
-        handleResponse(`${API_URL}/api/admin/categories`, setCategories);
-        handleResponse(`${API_URL}/api/admin/orders`, setOrders);
-        fetch(`${API_URL}/api/admin/orders`, { headers })
-            .then(r => r.ok ? r.json() : [])
-            .then(data => {
-                const arr = Array.isArray(data) ? data : [];
-                setPendingPayments(arr.filter(o =>
-                    o.status === 'pending' &&
-                    (o.payment_method === 'transfer' || o.payment_method === 'crypto') &&
-                    o.crypto_info && (() => { try { const info = JSON.parse(o.crypto_info); return info.proofUrl || info.proofData; } catch { return false; } })()
-                ));
-            })
-            .catch(() => {});
-        fetch(`${API_URL}/api/admin/shipping-config`, { headers })
-            .then(r => r.ok ? r.json() : null)
-            .then(d => { if (d) setShippingConfig(d); })
-            .catch(() => {});
+            const headers = { 'Authorization': `Bearer ${token}` };
+            
+            const handleResponse = async (url, setter) => {
+                try {
+                    const res = await fetch(url, { headers });
+                    if (res.status === 401 || res.status === 403) {
+                        localStorage.removeItem('vntg_token');
+                        localStorage.removeItem('vntg_user');
+                        navigate('/login');
+                        return;
+                    }
+                    const data = await res.json();
+                    if (Array.isArray(data)) setter(data);
+                } catch (err) {
+                    console.error(err);
+                }
+            };
+
+            await Promise.all([
+                handleResponse(`${API_URL}/api/admin/products`, setProducts),
+                handleResponse(`${API_URL}/api/admin/categories`, setCategories),
+                handleResponse(`${API_URL}/api/admin/orders`, setOrders),
+                fetch(`${API_URL}/api/admin/orders`, { headers })
+                    .then(r => r.ok ? r.json() : [])
+                    .then(data => {
+                        const arr = Array.isArray(data) ? data : [];
+                        setPendingPayments(arr.filter(o =>
+                            o.status === 'pending' &&
+                            (o.payment_method === 'transfer' || o.payment_method === 'crypto') &&
+                            o.crypto_info && (() => { try { const info = JSON.parse(o.crypto_info); return info.proofUrl || info.proofData; } catch { return false; } })()
+                        ));
+                    })
+                    .catch(() => {}),
+                fetch(`${API_URL}/api/admin/shipping-config`, { headers })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => { if (d) setShippingConfig(d); })
+                    .catch(() => {})
+            ]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // --- MANEJO DE PRODUCTOS ---
@@ -403,30 +416,30 @@ export default function AdminPanel() {
                                 >
                                     <Package size={14} /> <span className="max-[400px]:hidden">Productos</span><span className="hidden max-[400px]:inline">Prod.</span>
                                 </button>
-                                            <button
-                                                onClick={() => setActiveTab('categories')}
-                                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'categories' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
-                                            >
-                                                <Tag size={14} /> <span className="max-[400px]:hidden">Categorías</span><span className="hidden max-[400px]:inline">Cats.</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setActiveTab('orders')}
-                                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'orders' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
-                                            >
-                                                <ClipboardList size={14} /> <span className="max-[400px]:hidden">Órdenes</span><span className="hidden max-[400px]:inline">Ords.</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setActiveTab('shipping')}
-                                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'shipping' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
-                                            >
-                                                <Truck size={14} /> <span className="max-[400px]:hidden">Envíos</span><span className="hidden max-[400px]:inline">Env.</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setActiveTab('verificarPagos')}
-                                                className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'verificarPagos' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
-                                            >
-                                                <Landmark size={14} /> <span className="max-[400px]:hidden">Verificar Pagos</span><span className="hidden max-[400px]:inline">Pagos</span>
-                                            </button>
+                                <button
+                                    onClick={() => setActiveTab('categories')}
+                                    className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'categories' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                >
+                                    <Tag size={14} /> <span className="max-[400px]:hidden">Categorías</span><span className="hidden max-[400px]:inline">Cats.</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('orders')}
+                                    className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'orders' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                >
+                                    <ClipboardList size={14} /> <span className="max-[400px]:hidden">Órdenes</span><span className="hidden max-[400px]:inline">Ords.</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('shipping')}
+                                    className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'shipping' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                >
+                                    <Truck size={14} /> <span className="max-[400px]:hidden">Envíos</span><span className="hidden max-[400px]:inline">Env.</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('verificarPagos')}
+                                    className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all mt-1 w-full text-left max-[400px]:w-auto max-[400px]:mt-0 max-[400px]:shrink-0 ${activeTab === 'verificarPagos' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                >
+                                    <Landmark size={14} /> <span className="max-[400px]:hidden">Verificar Pagos</span><span className="hidden max-[400px]:inline">Pagos</span>
+                                </button>
                             </div>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:shrink-0">
                                 <button
@@ -464,7 +477,8 @@ export default function AdminPanel() {
                                         <Plus size={14} /> <span className="max-[400px]:hidden">Agregar</span> Categoría
                                     </button>
                                 )}
-                                <button onClick={fetchData} className="p-2 xs:p-3 bg-zinc-50 dark:bg-brand-card rounded-2xl text-brand-orange hover:rotate-180 transition-all duration-500 shadow-sm">
+                                {/* BOTÓN DE RECARGA CON LA MISMA CLASE DEL SOPORTE */}
+                                <button onClick={fetchData} className="p-3 bg-zinc-50 dark:bg-brand-card rounded-2xl text-brand-orange hover:rotate-180 transition-all duration-500 shadow-sm">
                                     <RefreshCw size={20} />
                                 </button>
                             </div>
@@ -504,45 +518,53 @@ export default function AdminPanel() {
                                                 </div>
                                                 <p className="text-[10px] text-zinc-500 font-bold uppercase italic sm:ml-auto self-center">{filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''}</p>
                                             </div>
-                                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                {filteredProducts.map(p => (
-                                    <div key={p.id} className="bg-zinc-50 dark:bg-brand-card flex group shadow-sm hover:shadow-md hover:border-brand-orange/30 transition-all duration-300 rounded-2xl overflow-hidden">
-                                        {p.images && (
-                                            <div className="m-2 w-14 h-14 shrink-0 self-center overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800">
-                                                <img src={p.images} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.display = 'none' }} />
-                                            </div>
-                                        )}
-                                        <div className="p-5 flex-1 min-w-0">
-                                            <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate mb-1">{p.title}</h3>
-                                            <p className="text-[10px] text-zinc-500 uppercase font-bold mb-3">ID: {p.id} | Cat: {p.categoryId}</p>
-
-                                            <div className="flex justify-between items-end">
-                                                <div>
-                                                    <div className="text-brand-orange font-black italic text-lg mb-1">{formatPrice(p.price)}</div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`h-2 w-2 rounded-full ${p.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                        <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-black uppercase">Stock: {p.stock}</p>
-                                                    </div>
+                                            
+                                            {/* ESQUELETO DE CARGA */}
+                                            {loading ? (
+                                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-32 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-2xl" />)}
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
-                                                        <Pen size={14} />
-                                                    </button>
-                                                    <button onClick={() => openConfirmDelete(p.id, p.title, 'product')} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </>);
-                    })()}
-                </>
-            )}
+                                            ) : (
+                                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                    {filteredProducts.map(p => (
+                                                        <div key={p.id} className="bg-zinc-50 dark:bg-brand-card flex group shadow-sm hover:shadow-md hover:border-brand-orange/30 transition-all duration-300 rounded-2xl overflow-hidden">
+                                                            {p.images && (
+                                                                <div className="m-2 w-14 h-14 shrink-0 self-center overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800">
+                                                                    <img src={p.images} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.display = 'none' }} />
+                                                                </div>
+                                                            )}
+                                                            <div className="p-5 flex-1 min-w-0">
+                                                                <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate mb-1">{p.title}</h3>
+                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-3">ID: {p.id} | Cat: {p.categoryId}</p>
 
-            {/* ─── VISTA CATEGORÍAS ─── */}
+                                                                <div className="flex justify-between items-end">
+                                                                    <div>
+                                                                        <div className="text-brand-orange font-black italic text-lg mb-1">{formatPrice(p.price)}</div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={`h-2 w-2 rounded-full ${p.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                                            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-black uppercase">Stock: {p.stock}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <button onClick={() => handleOpenProductModal(p)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
+                                                                            <Pen size={14} />
+                                                                        </button>
+                                                                        <button onClick={() => openConfirmDelete(p.id, p.title, 'product')} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>);
+                                })()}
+                            </>
+                        )}
+
+                        {/* ─── VISTA CATEGORÍAS ─── */}
                         {activeTab === 'categories' && (
                             <>
                                 {(() => {
@@ -561,38 +583,46 @@ export default function AdminPanel() {
                                                 </select>
                                                 <p className="text-[10px] text-zinc-500 font-bold uppercase italic">{sortedCategories.length} categoría{sortedCategories.length !== 1 ? 's' : ''}</p>
                                             </div>
-                                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                {sortedCategories.map(c => (
-                                    <div key={c.id} className="bg-zinc-50 dark:bg-brand-card flex justify-between items-start group rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                                        {c.banner_url && (
-                                            <div className="m-2 w-14 h-14 shrink-0 self-center overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800">
-                                                <img src={c.banner_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.display = 'none' }} />
-                                            </div>
-                                        )}
-                                        <div className="p-5 flex-1 min-w-0">
-                                            <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate">{c.name || c.id}</h3>
-                                            <p className="text-[10px] text-zinc-500 uppercase mt-1">ID: {c.id}</p>
-                                        </div>
-                                        <div className="flex gap-2 p-5 shrink-0">
-                                            <button onClick={() => handleViewCategoryProducts(c)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors" title="Ver productos">
-                                                <Eye size={16} />
-                                            </button>
-                                            <button onClick={() => handleOpenCategoryModal(c)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
-                                                <Pen size={16} />
-                                            </button>
-                                            <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </>);
-                    })()}
-                </>
-            )}
+                                            
+                                            {/* ESQUELETO DE CARGA */}
+                                            {loading ? (
+                                                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                    {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-2xl" />)}
+                                                </div>
+                                            ) : (
+                                                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                    {sortedCategories.map(c => (
+                                                        <div key={c.id} className="bg-zinc-50 dark:bg-brand-card flex justify-between items-start group rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                                            {c.banner_url && (
+                                                                <div className="m-2 w-14 h-14 shrink-0 self-center overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800">
+                                                                    <img src={c.banner_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.display = 'none' }} />
+                                                                </div>
+                                                            )}
+                                                            <div className="p-5 flex-1 min-w-0">
+                                                                <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase truncate">{c.name || c.id}</h3>
+                                                                <p className="text-[10px] text-zinc-500 uppercase mt-1">ID: {c.id}</p>
+                                                            </div>
+                                                            <div className="flex gap-2 p-5 shrink-0">
+                                                                <button onClick={() => handleViewCategoryProducts(c)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors" title="Ver productos">
+                                                                    <Eye size={16} />
+                                                                </button>
+                                                                <button onClick={() => handleOpenCategoryModal(c)} className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-brand-orange hover:text-white transition-colors">
+                                                                    <Pen size={16} />
+                                                                </button>
+                                                                <button onClick={() => openConfirmDelete(c.id, c.name || c.id, 'category')} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all">
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>);
+                                })()}
+                            </>
+                        )}
 
-            {/* ─── VISTA ÓRDENES ─── */}
+                        {/* ─── VISTA ÓRDENES ─── */}
                         {activeTab === 'orders' && (
                             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
                                 {/* COLUMNA PRINCIPAL */}
@@ -644,55 +674,60 @@ export default function AdminPanel() {
                                     </div>
 
                                     {/* LISTA DE ÓRDENES */}
-                                    <div className="space-y-4">
-                                        {filteredOrders.length > 0 && (
-                                            <div className="flex items-center justify-between gap-4">
-                                                <label className="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-zinc-500 uppercase italic">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedOrders.size === filteredOrders.length}
-                                                        onChange={toggleSelectAll}
-                                                        className="w-4 h-4 accent-brand-orange cursor-pointer"
-                                                    />
-                                                    Seleccionar todos
-                                                </label>
-                                                {selectedOrders.size > 0 && (
-                                                    <button
-                                                        onClick={() => {
-                                                            const ids = Array.from(selectedOrders);
-                                                            setConfirmDelete({
-                                                                isOpen: true,
-                                                                id: null,
-                                                                ids,
-                                                                title: `${ids.length} órdenes`,
-                                                                type: 'orders'
-                                                            });
-                                                        }}
-                                                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase italic tracking-wider"
-                                                    >
-                                                        <Trash2 size={14} /> Eliminar seleccionadas ({selectedOrders.size})
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-                                        {filteredOrders.length === 0 && (
-                                            <p className="text-center text-zinc-500 dark:text-zinc-400 italic py-10">No hay órdenes que coincidan con los filtros.</p>
-                                        )}
-                                        {filteredOrders.map(order => {
-                                            const statusOptions = getStatusOptions(order);
-                                            return (
-                                            <div key={order.id} className="bg-zinc-50 dark:bg-brand-card p-3 xs:p-5 flex flex-col md:flex-row justify-between gap-3 xs:gap-4 md:items-center rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="flex items-start gap-3 flex-1">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedOrders.has(order.id)}
-                                                        onChange={() => toggleOrderSelection(order.id)}
-                                                        className="w-4 h-4 accent-brand-orange cursor-pointer mt-1 shrink-0"
-                                                    />
-                                                    <div>
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">Orden: {order.id.slice(0, 8)}...</h3>
-                                                            <span className={`px-2 py-1 text-[9px] font-bold uppercase rounded ${order.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                                    {loading ? (
+                                        <div className="space-y-4">
+                                            {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-2xl" />)}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {filteredOrders.length > 0 && (
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <label className="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-zinc-500 uppercase italic">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedOrders.size === filteredOrders.length}
+                                                            onChange={toggleSelectAll}
+                                                            className="w-4 h-4 accent-brand-orange cursor-pointer"
+                                                        />
+                                                        Seleccionar todos
+                                                    </label>
+                                                    {selectedOrders.size > 0 && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const ids = Array.from(selectedOrders);
+                                                                setConfirmDelete({
+                                                                    isOpen: true,
+                                                                    id: null,
+                                                                    ids,
+                                                                    title: `${ids.length} órdenes`,
+                                                                    type: 'orders'
+                                                                });
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase italic tracking-wider"
+                                                        >
+                                                            <Trash2 size={14} /> Eliminar seleccionadas ({selectedOrders.size})
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {filteredOrders.length === 0 && (
+                                                <p className="text-center text-zinc-500 dark:text-zinc-400 italic py-10">No hay órdenes que coincidan con los filtros.</p>
+                                            )}
+                                            {filteredOrders.map(order => {
+                                                const statusOptions = getStatusOptions(order);
+                                                return (
+                                                <div key={order.id} className="bg-zinc-50 dark:bg-brand-card p-3 xs:p-5 flex flex-col md:flex-row justify-between gap-3 xs:gap-4 md:items-center rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="flex items-start gap-3 flex-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedOrders.has(order.id)}
+                                                            onChange={() => toggleOrderSelection(order.id)}
+                                                            className="w-4 h-4 accent-brand-orange cursor-pointer mt-1 shrink-0"
+                                                        />
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase">Orden: {order.id.slice(0, 8)}...</h3>
+                                                                <span className={`px-2 py-1 text-[9px] font-bold uppercase rounded ${order.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
                                                                     order.status === 'preparing' ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' :
                                                                         order.status === 'ready' ? 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20' :
                                                                             order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
@@ -700,59 +735,60 @@ export default function AdminPanel() {
                                                                                     order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
                                                                                         'bg-red-500/10 text-red-500 border border-red-500/20'
                                                                 }`}>
-                                                                {order.status === 'approved' ? 'Aprobado' :
-                                                                    order.status === 'preparing' ? 'En Preparación' :
-                                                                        order.status === 'ready' ? 'Listo para Retirar' :
-                                                                            order.status === 'shipped' ? 'Enviado' :
-                                                                                order.status === 'delivered' ? 'Entregado' :
-                                                                                    order.status === 'pending' ? 'Pendiente' : 'Cancelado'}
-                                                            </span>
+                                                                    {order.status === 'approved' ? 'Aprobado' :
+                                                                        order.status === 'preparing' ? 'En Preparación' :
+                                                                            order.status === 'ready' ? 'Listo para Retirar' :
+                                                                                order.status === 'shipped' ? 'Enviado' :
+                                                                                    order.status === 'delivered' ? 'Entregado' :
+                                                                                        order.status === 'pending' ? 'Pendiente' : 'Cancelado'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[11px] text-zinc-500">
+                                                                <strong className="dark:text-zinc-300">Cliente:</strong> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})
+                                                            </p>
+                                                            <p className="text-[11px] text-zinc-500 mt-1">
+                                                                <strong className="dark:text-zinc-300">Fecha:</strong> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)
+                                                            </p>
                                                         </div>
-                                                        <p className="text-[11px] text-zinc-500">
-                                                            <strong className="dark:text-zinc-300">Cliente:</strong> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})
-                                                        </p>
-                                                        <p className="text-[11px] text-zinc-500 mt-1">
-                                                            <strong className="dark:text-zinc-300">Fecha:</strong> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 xs:gap-6 ml-7 md:ml-0 max-[400px]:flex-wrap max-[400px]:w-full">
-                                                    <div className="text-right">
-                                                        <p className="text-[10px] font-bold text-zinc-500 uppercase">Total</p>
-                                                        <p className="text-brand-orange font-black italic text-lg">{formatPrice(order.total)}</p>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-1">
-                                                        <label className="text-[9px] font-bold text-zinc-500 uppercase">Cambiar Estado:</label>
-                                                        <div className="relative">
-                                                            <select
-                                                                value={order.status}
-                                                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                                                                className="appearance-none w-32 xs:w-36 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg p-2.5 pr-8 text-[11px] font-black uppercase italic text-zinc-900 dark:text-white outline-none focus:border-brand-orange cursor-pointer transition-colors"
-                                                            >
-                                                                {statusOptions.map(opt => (
-                                                                    <option key={opt.value} value={opt.value} className="bg-zinc-50 dark:bg-brand-card text-zinc-900 dark:text-white font-black italic">{opt.label}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-brand-orange">
-                                                                <ChevronDown size={14} />
+                                                    <div className="flex items-center gap-2 xs:gap-6 ml-7 md:ml-0 max-[400px]:flex-wrap max-[400px]:w-full">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Total</p>
+                                                            <p className="text-brand-orange font-black italic text-lg">{formatPrice(order.total)}</p>
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-1">
+                                                            <label className="text-[9px] font-bold text-zinc-500 uppercase">Cambiar Estado:</label>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={order.status}
+                                                                    onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                                                                    className="appearance-none w-32 xs:w-36 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg p-2.5 pr-8 text-[11px] font-black uppercase italic text-zinc-900 dark:text-white outline-none focus:border-brand-orange cursor-pointer transition-colors"
+                                                                >
+                                                                    {statusOptions.map(opt => (
+                                                                        <option key={opt.value} value={opt.value} className="bg-zinc-50 dark:bg-brand-card text-zinc-900 dark:text-white font-black italic">{opt.label}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-brand-orange">
+                                                                    <ChevronDown size={14} />
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    <button
-                                                        onClick={() => openConfirmDelete(order.id, `Orden ${order.id}`, 'order')}
-                                                        className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
-                                                        title="Eliminar orden permanentemente"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
+                                                        <button
+                                                            onClick={() => openConfirmDelete(order.id, `Orden ${order.id}`, 'order')}
+                                                            className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                                                            title="Eliminar orden permanentemente"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* COLUMNA LATERAL - RESUMEN / SOPORTE */}
@@ -809,36 +845,46 @@ export default function AdminPanel() {
                         )}
                         {activeTab === 'shipping' && (
                             <div className="max-w-lg space-y-6">
-                                <div className="bg-zinc-50 dark:bg-brand-card p-6 rounded-2xl shadow-sm space-y-4">
-                                    {[
-                                        { key: 'envio_normal', label: 'Envío Normal (ARS)', value: shippingConfig.envio_normal },
-                                        { key: 'envio_prioritario', label: 'Envío Prioritario (ARS)', value: shippingConfig.envio_prioritario },
-                                        { key: 'envio_gratis_desde', label: 'Envío Gratis desde (ARS)', value: shippingConfig.envio_gratis_desde },
-                                    ].map(field => (
-                                        <div key={field.key}>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1 block">{field.label}</label>
-                                            <input
-                                                type="number"
-                                                value={shippingConfig[field.key]}
-                                                onChange={e => setShippingConfig(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))}
-                                                className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-brand-orange transition-colors"
-                                            />
-                                        </div>
-                                    ))}
-                                    <button
-                                        onClick={handleSaveShipping}
-                                        disabled={savingShipping}
-                                        className="w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95 disabled:opacity-60"
-                                    >
-                                        {savingShipping ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
-                                        {savingShipping ? 'Guardando...' : 'Guardar Configuración'}
-                                    </button>
-                                </div>
+                                {loading ? (
+                                    <div className="bg-zinc-50 dark:bg-brand-card p-6 rounded-2xl shadow-sm space-y-4">
+                                        {[1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-xl" />)}
+                                    </div>
+                                ) : (
+                                    <div className="bg-zinc-50 dark:bg-brand-card p-6 rounded-2xl shadow-sm space-y-4">
+                                        {[
+                                            { key: 'envio_normal', label: 'Envío Normal (ARS)', value: shippingConfig.envio_normal },
+                                            { key: 'envio_prioritario', label: 'Envío Prioritario (ARS)', value: shippingConfig.envio_prioritario },
+                                            { key: 'envio_gratis_desde', label: 'Envío Gratis desde (ARS)', value: shippingConfig.envio_gratis_desde },
+                                        ].map(field => (
+                                            <div key={field.key}>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1 block">{field.label}</label>
+                                                <input
+                                                    type="number"
+                                                    value={shippingConfig[field.key]}
+                                                    onChange={e => setShippingConfig(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))}
+                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-brand-orange transition-colors"
+                                                />
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={handleSaveShipping}
+                                            disabled={savingShipping}
+                                            className="w-full flex items-center justify-center gap-2 bg-brand-orange text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-orange-600 transition-all shadow-lg active:scale-95 disabled:opacity-60"
+                                        >
+                                            {savingShipping ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
+                                            {savingShipping ? 'Guardando...' : 'Guardar Configuración'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                         {activeTab === 'verificarPagos' && (
                             <div className="space-y-6">
-                                {pendingPayments.length === 0 ? (
+                                {loading ? (
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map(i => <div key={i} className="h-32 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-2xl" />)}
+                                    </div>
+                                ) : pendingPayments.length === 0 ? (
                                     <div className="bg-zinc-50 dark:bg-brand-card p-10 rounded-2xl shadow-sm text-center">
                                         <CircleCheck size={48} className="text-green-500 mx-auto mb-4" />
                                         <p className="text-lg font-black italic uppercase text-green-500">No hay pagos pendientes</p>
