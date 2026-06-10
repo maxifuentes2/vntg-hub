@@ -19,6 +19,8 @@ const { v4: uuidv4 } = require("uuid");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const GmailPoller = require("./imapPoller");
 
 const shipping = require("./shipping");
@@ -80,7 +82,7 @@ const genAI = process.env.GEMINI_API_KEY
 // --- Configuración de nodemailer (fallback directo) ---
 const createTransporter = (prefix) => {
     const host = process.env[`${prefix}HOST`] || "smtp.gmail.com";
-    const port = parseInt(process.env[`${prefix}PORT`] || "465");
+    const port = parseInt(process.env[`${prefix}PORT`] || "587");
     const user = process.env[`${prefix}USER`];
     const pass = process.env[`${prefix}PASS`];
     if (!user || !pass) return null;
@@ -88,9 +90,9 @@ const createTransporter = (prefix) => {
     return nodemailer.createTransport({
         host, port, secure,
         auth: { user, pass },
-        connectionTimeout: 20000,
-        greetingTimeout: 20000,
-        socketTimeout: 30000,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
     });
 };
 
@@ -289,6 +291,20 @@ const sendEmail = async (type, to, data) => {
     const subject = getEmailSubject(type, data);
     const html = buildEmailHtml(type, data);
 
+    if (resend) {
+        try {
+            const { error } = await resend.emails.send({ from, to, subject, html });
+            if (error) {
+                console.error(`[email] Error Resend type="${type}" to="${to}":`, error);
+            } else {
+                console.log(`[email] OK via Resend type="${type}" to="${to}"`);
+                return { sentVia: "resend" };
+            }
+        } catch (err) {
+            console.error(`[email] Resend exception type="${type}" to="${to}":`, err.message);
+        }
+    }
+
     const transporter = createTransporter(prefix);
     if (!transporter) {
         console.error(`[email] SMTP${isSupport ? " soporte" : ""} no configurado. No se pudo enviar email type="${type}" to="${to}"`);
@@ -301,7 +317,7 @@ const sendEmail = async (type, to, data) => {
     }
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`[email] OK type="${type}" to="${to}"`);
+        console.log(`[email] OK via SMTP type="${type}" to="${to}"`);
         return { sentVia: "smtp" };
     } catch (err) {
         console.error(`[email] Error SMTP type="${type}" to="${to}":`, err.message);
