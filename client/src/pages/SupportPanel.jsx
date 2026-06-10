@@ -13,7 +13,8 @@ import {
     House,
     Shield,
     RefreshCw,
-    TriangleAlert
+    TriangleAlert,
+    Copy
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -416,13 +417,22 @@ export default function SupportPanel() {
                                         </div>
 
                                         {/* Botón para Responder por Correo */}
-                                        <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+                                        <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex flex-col sm:flex-row gap-3">
                                             <a 
                                                 href={`mailto:${selectedMsg.email}?subject=Re: Consulta VNTG Hub`}
-                                                className="w-full bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
+                                                className="flex-1 bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
                                             >
                                                 <Mail size={18} /> Responder por Correo
                                             </a>
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(selectedMsg.email);
+                                                    addToast({}, 'Email copiado al portapapeles', 'success');
+                                                }}
+                                                className="px-6 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2"
+                                            >
+                                                <Copy size={16} /> Copiar Dirección
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
