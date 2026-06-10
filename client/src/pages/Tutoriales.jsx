@@ -33,6 +33,20 @@ const tutoriales = [
     description: "Te mostramos cómo guardar tus direcciones de envío para que puedas realizar tus compras de forma rápida.",
     videoUrl: "https://res.cloudinary.com/dhg3jbifk/video/upload/v1780415234/DIRECCIONES_VNTG_mxpl4b.mp4",
     type: "video"
+  },
+    {
+    id: 5,
+    title: "Cómo usar diferentes medios de pago",
+    description: "Te mostramos cómo usar las diferentes formas de pago permitidas en nuestra página.",
+    videoUrl: "https://res.cloudinary.com/dfqedjx2l/video/upload/v1781123432/VNTG-HUB_PAGOS_vrbpe9.mp4",
+    type: "video"
+  },
+    {
+    id: 6,
+    title: "Cómo iniciar sesión/registrarse",
+    description: "Te mostramos cómo registrarte o iniciar sesión en nuestra página.",
+    videoUrl: "https://res.cloudinary.com/dfqedjx2l/video/upload/v1781123419/VNTG-HUB_INICIAR_SESION_giz51w.mp4",
+    type: "video"
   }
 ];
 
