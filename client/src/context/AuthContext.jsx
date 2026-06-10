@@ -5,7 +5,19 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const sanitizeUser = (u) => {
   if (!u) return null;
-  return { id: u.id, name: u.name, email: u.email, role: u.role };
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    points: u.points,
+    dni: u.dni,
+    address: u.address,
+    city: u.city,
+    province: u.province,
+    zip_code: u.zip_code,
+    phone: u.phone
+  };
 };
 
 export function AuthProvider({ children }) {

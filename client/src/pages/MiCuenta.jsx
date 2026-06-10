@@ -6,7 +6,19 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const sanitizeUser = (u) => u ? { id: u.id, name: u.name, email: u.email, role: u.role } : u;
+const sanitizeUser = (u) => u ? {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    points: u.points,
+    dni: u.dni,
+    address: u.address,
+    city: u.city,
+    province: u.province,
+    zip_code: u.zip_code,
+    phone: u.phone
+} : u;
 
 export default function MiCuenta() {
     const [user, setUser] = useState(null);

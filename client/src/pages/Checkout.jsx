@@ -8,7 +8,19 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const sanitizeUser = (u) => u ? { id: u.id, name: u.name, email: u.email, role: u.role } : u;
+const sanitizeUser = (u) => u ? {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    points: u.points,
+    dni: u.dni,
+    address: u.address,
+    city: u.city,
+    province: u.province,
+    zip_code: u.zip_code,
+    phone: u.phone
+} : u;
 
 const formatCrypto = (amount, coin) => {
     if (!amount || amount <= 0) return "0";
@@ -85,6 +97,17 @@ export default function Checkout() {
                 if (freshUser) {
                     setUser(freshUser);
                     localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(freshUser)));
+                    // Autorellenar DNI y datos de envío si aún no están cargados
+                    setShipping(prev => ({
+                        ...prev,
+                        nombre: prev.nombre || freshUser.name || '',
+                        direccion: prev.direccion || freshUser.address || '',
+                        ciudad: prev.ciudad || freshUser.city || '',
+                        provincia: prev.provincia || freshUser.province || '',
+                        codigoPostal: prev.codigoPostal || freshUser.zip_code || '',
+                        telefono: prev.telefono || freshUser.phone || '',
+                        dni: prev.dni || freshUser.dni || ''
+                    }));
                 }
             })
             .catch(console.error);
