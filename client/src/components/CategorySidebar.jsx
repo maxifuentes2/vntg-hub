@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     X, Tag, ChevronRight, LayoutGrid, CarFront, Film, 
-    BookOpen, Bot, Gamepad2, Package, Mail, MapPin, Info, ShieldCheck, Truck, ChevronDown, Trophy, House, Star
+    BookOpen, Bot, Gamepad2, Package, Mail, MapPin, Info, ShieldCheck, Truck, ChevronDown, Trophy, House, Star,
+    Palette, Layers
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
@@ -20,6 +21,8 @@ const getCategoryIcon = (categoryName) => {
     if (name.includes('juego') || name.includes('gamer')) return <Gamepad2 size={18} />;
     if (name.includes('caja') || name.includes('sellado')) return <Package size={18} />;
     if (name.includes('futbol') || name.includes('deporte')) return <Trophy size={18} />;
+    if (name.includes('arte')) return <Palette size={18} />;
+    if (name.includes('carta')) return <Layers size={18} />;
     return <Tag size={18} />;
 };
 
