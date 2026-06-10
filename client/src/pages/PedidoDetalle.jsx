@@ -576,9 +576,15 @@ export default function PedidoDetalle() {
                         </h2>
                         {esRetiro ? (
                             <div className="space-y-3">
-                                <div className="bg-brand-orange/5 border border-brand-orange/20 p-4 rounded-xl">
-                                    <Store size={20} className="text-brand-orange mb-2" />
-                                    <p className="text-sm font-bold">Pasá a retirar tu pedido por nuestro local cuando recibas la notificación de que está listo.</p>
+                                <div className="bg-brand-orange/5 border border-brand-orange/20 p-4 rounded-xl space-y-2">
+                                    <Store size={20} className="text-brand-orange" />
+                                    <p className="text-sm font-bold">Pasá a retirar tu pedido por nuestro showroom cuando recibas la notificación de que está listo.</p>
+                                    <div className="pt-2 border-t border-brand-orange/20">
+                                        <p className="text-[10px] font-black uppercase text-zinc-500 mb-0.5">Ubicación de Retiro</p>
+                                        <a href="https://maps.app.goo.gl/QpRpSouZWADp63GU7" target="_blank" rel="noopener noreferrer" className="text-xs font-black italic uppercase text-brand-blue hover:text-brand-orange hover:underline transition-colors block">
+                                            Catamarca 147, Mendoza Ciudad (UDA) ↗
+                                        </a>
+                                    </div>
                                 </div>
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Nombre:</span> {infoEnvio.nombre}</p>
                                 <p className="text-sm font-bold"><span className="text-zinc-500">Teléfono:</span> {infoEnvio.telefono}</p>

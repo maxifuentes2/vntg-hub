@@ -100,13 +100,17 @@ export default function Contacto() {
                                 <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase group-hover:text-green-500 transition-colors">+54 9 261 710-0686</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-6 group">
-                            <div className="bg-zinc-100 dark:bg-zinc-800 p-5  group-hover:border-brand-orange transition-colors rounded-xl shadow-sm"><MapPin size={28} className="text-brand-orange" /></div>
-                            <div>
-                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Showroom</p>
-                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase break-words sm:break-normal">Mendoza, ARG</p>
+                        <a href="https://maps.app.goo.gl/QpRpSouZWADp63GU7" target="_blank" rel="noopener noreferrer" className="flex items-center gap-6 group cursor-pointer select-none">
+                            <div className="bg-zinc-100 dark:bg-zinc-800 p-5 group-hover:bg-brand-orange/10 border border-transparent group-hover:border-brand-orange/20 transition-all rounded-xl shadow-sm">
+                                <MapPin size={28} className="text-brand-orange group-hover:scale-110 transition-transform" />
                             </div>
-                        </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-1.5">
+                                    Showroom <span className="text-[8px] text-brand-orange opacity-0 group-hover:opacity-100 transition-all duration-300 font-black uppercase tracking-normal">(Ver en mapa)</span>
+                                </p>
+                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase break-words sm:break-normal group-hover:text-brand-orange transition-colors">Catamarca 147, Mendoza Ciudad</p>
+                            </div>
+                        </a>
                     </div>
                 </div>
                 {/* Formulario conectado con los estados */}

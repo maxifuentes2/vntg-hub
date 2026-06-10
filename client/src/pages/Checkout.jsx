@@ -356,6 +356,14 @@ export default function Checkout() {
                 } catch {}
             }
 
+            const finalShipping = esRetiro ? {
+                ...shipping,
+                direccion: 'Catamarca 147',
+                ciudad: 'Mendoza Ciudad',
+                provincia: 'Mendoza',
+                codigoPostal: '5500',
+            } : shipping;
+
             const endpoint = paymentMethod === 'crypto' ? '/api/checkout-crypto' : paymentMethod === 'transfer' ? '/api/checkout-transfer' : '/api/checkout';
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
@@ -363,7 +371,7 @@ export default function Checkout() {
                 body: JSON.stringify({
                     user,
                     cart,
-                    shipping,
+                    shipping: finalShipping,
                     shippingType,
                     total: finalTotal,
                     puntosAUsar: puntosARestar,
@@ -555,6 +563,29 @@ export default function Checkout() {
                                 );
                             })}
                         </div>
+                        {esRetiro && (
+                            <div className="mt-4 bg-brand-orange/5 border border-brand-orange/20 p-5 rounded-2xl space-y-2.5 shadow-sm animate-reveal">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-brand-orange text-white p-2.5 rounded-xl shrink-0">
+                                        <House size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black italic uppercase text-xs leading-none text-brand-orange">Sucursal de Retiro</h3>
+                                        <a 
+                                            href="https://maps.app.goo.gl/QpRpSouZWADp63GU7" 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="text-sm font-black italic uppercase text-brand-blue hover:text-brand-orange hover:underline transition-colors block mt-1"
+                                        >
+                                            Catamarca 147, Mendoza Ciudad (UDA) ↗
+                                        </a>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase leading-relaxed">
+                                    Retirá tu pedido de forma gratuita de Lunes a Viernes una vez recibido el aviso de que está listo.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <form id="checkout-form" onSubmit={handleCheckout} className="space-y-4">
