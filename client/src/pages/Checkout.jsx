@@ -28,27 +28,9 @@ export default function Checkout() {
     const [paymentMethod, setPaymentMethod] = useState('mp');
     const [paymentModal, setPaymentModal] = useState(null);
     const [copied, setCopied] = useState(false);
-    const [proofFile, setProofFile] = useState(null);
+    const [proofData, setProofData] = useState({ titular: '', banco: '', nroOperacion: '' });
     const [uploading, setUploading] = useState(false);
     const [fileError, setFileError] = useState('');
-
-    const ALLOWED_EXTENSIONS_LIST = ['jpg','jpeg','png','gif','webp','bmp','heic','heif','svg','tiff','tif','pdf'];
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const ext = (file.name.split('.').pop() || '').toLowerCase();
-        const mimeOk = file.type.startsWith('image/') || file.type === 'application/pdf';
-        const extOk = ALLOWED_EXTENSIONS_LIST.includes(ext);
-        if (!mimeOk && !extOk) {
-            setFileError(`Formato no compatible: ${ext.toUpperCase()}. Usá JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF o PDF.`);
-            setProofFile(null);
-            e.target.value = '';
-            return;
-        }
-        setFileError('');
-        setProofFile(file);
-    };
 
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -266,25 +248,40 @@ export default function Checkout() {
     };
 
     const handleUploadProof = async () => {
-        if (!proofFile || !paymentModal?.orderId) return;
+        if (!paymentModal?.orderId) return;
+        const { titular, banco, nroOperacion } = proofData;
+        if (!titular || !banco || !nroOperacion) {
+            setFileError("Por favor, completá todos los campos.");
+            return;
+        }
         setUploading(true);
+        setFileError('');
         try {
             const token = localStorage.getItem('vntg_token');
-            const formData = new FormData();
-            formData.append('proof', proofFile);
-            formData.append('orderId', paymentModal.orderId);
             const res = await fetch(`${API_URL}/api/orders/upload-proof`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData,
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderId: paymentModal.orderId,
+                    titular,
+                    banco,
+                    nroOperacion
+                }),
             });
             const data = await res.json();
             if (res.ok) {
                 setPaymentModal(prev => ({ ...prev, proofUploaded: true }));
-                setProofFile(null);
+                setProofData({ titular: '', banco: '', nroOperacion: '' });
+                setFileError('');
+            } else {
+                setFileError(data.error || "Error al enviar los datos");
             }
         } catch (e) {
             console.error("Upload error:", e);
+            setFileError("Error al enviar los datos");
         }
         setUploading(false);
     };
@@ -391,7 +388,7 @@ export default function Checkout() {
         setPaymentModal(null);
         setTimeLeft(null);
         setExpired(false);
-        setProofFile(null);
+        setProofData({ titular: '', banco: '', nroOperacion: '' });
         setFileError('');
         setLoading(false);
         setCheckoutSent(false);
@@ -727,23 +724,42 @@ export default function Checkout() {
 
                                             {!paymentModal.proofUploaded ? (
                                                 <>
-                                                    <div className="bg-yellow-500/10 border border-dashed border-yellow-500/40 rounded-2xl p-5">
-                                                        <p className="text-[9px] font-black uppercase text-zinc-500 mb-3">Subí tu comprobante de pago</p>
-                                                        <label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
-                                                            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
-                                                                <Upload size={24} className="text-yellow-600" />
+                                                    <div className="space-y-4 bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5">
+                                                        <p className="text-[10px] font-black uppercase text-zinc-500 mb-2">Completá los datos de la transferencia</p>
+                                                        
+                                                        <div className="space-y-3 text-left">
+                                                            <div>
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">Titular de la cuenta</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Ej: Juan Pérez"
+                                                                    value={proofData.titular}
+                                                                    onChange={e => setProofData({ ...proofData, titular: e.target.value })}
+                                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold focus:border-emerald-500 outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all"
+                                                                />
                                                             </div>
-                                                            <span className="text-xs font-bold text-zinc-500">
-                                                                {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
-                                                            </span>
-                                                            <p className="text-[9px] text-zinc-400 mt-1">JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF, PDF</p>
-                                                            <input
-                                                                type="file"
-                                                                accept="image/*,.pdf"
-                                                                onChange={handleFileChange}
-                                                                className="hidden"
-                                                            />
-                                                        </label>
+                                                            <div>
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">Banco o Billetera</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Ej: Mercado Pago / Galicia"
+                                                                    value={proofData.banco}
+                                                                    onChange={e => setProofData({ ...proofData, banco: e.target.value })}
+                                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold focus:border-emerald-500 outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">Número de operación</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Ej: 123456789"
+                                                                    value={proofData.nroOperacion}
+                                                                    onChange={e => setProofData({ ...proofData, nroOperacion: e.target.value })}
+                                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold focus:border-emerald-500 outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all"
+                                                                />
+                                                            </div>
+                                                        </div>
+
                                                         {fileError && (
                                                             <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5">
                                                                 <AlertTriangle size={14} className="text-red-500 shrink-0" />
@@ -753,10 +769,10 @@ export default function Checkout() {
                                                     </div>
                                                     <button
                                                         onClick={handleUploadProof}
-                                                        disabled={!proofFile || uploading}
+                                                        disabled={uploading}
                                                         className="w-full py-4 bg-emerald-500 text-white font-black uppercase italic text-xs tracking-widest hover:bg-emerald-600 transition-all rounded-2xl disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
                                                     >
-                                                        {uploading ? 'Subiendo...' : 'Subir Comprobante'} <Upload size={16} />
+                                                        {uploading ? 'Enviando...' : 'Enviar Datos de Pago'}
                                                     </button>
                                                 </>
                                             ) : (
@@ -832,23 +848,42 @@ export default function Checkout() {
 
                                             {!paymentModal.proofUploaded ? (
                                                 <>
-                                                    <div className="bg-yellow-500/10 border border-dashed border-yellow-500/40 rounded-2xl p-5">
-                                                        <p className="text-[9px] font-black uppercase text-zinc-500 mb-3">Subí tu comprobante de pago</p>
-                                                        <label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
-                                                            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
-                                                                <Upload size={24} className="text-yellow-600" />
+                                                    <div className="space-y-4 bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5">
+                                                        <p className="text-[10px] font-black uppercase text-zinc-500 mb-2">Completá los datos del depósito</p>
+                                                        
+                                                        <div className="space-y-3 text-left">
+                                                            <div>
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">Nombre del remitente / Titular</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Ej: Juan Pérez"
+                                                                    value={proofData.titular}
+                                                                    onChange={e => setProofData({ ...proofData, titular: e.target.value })}
+                                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all"
+                                                                />
                                                             </div>
-                                                            <span className="text-xs font-bold text-zinc-500">
-                                                                {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
-                                                            </span>
-                                                            <p className="text-[9px] text-zinc-400 mt-1">JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF, PDF</p>
-                                                            <input
-                                                                type="file"
-                                                                accept="image/*,.pdf"
-                                                                onChange={handleFileChange}
-                                                                className="hidden"
-                                                            />
-                                                        </label>
+                                                            <div>
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">Billetera / Exchange de origen</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Ej: Binance / Lemon Cash"
+                                                                    value={proofData.banco}
+                                                                    onChange={e => setProofData({ ...proofData, banco: e.target.value })}
+                                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">TXID / Hash de transacción</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Ej: TXID de la transferencia"
+                                                                    value={proofData.nroOperacion}
+                                                                    onChange={e => setProofData({ ...proofData, nroOperacion: e.target.value })}
+                                                                    className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all"
+                                                                />
+                                                            </div>
+                                                        </div>
+
                                                         {fileError && (
                                                             <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5">
                                                                 <AlertTriangle size={14} className="text-red-500 shrink-0" />
@@ -858,10 +893,10 @@ export default function Checkout() {
                                                     </div>
                                                     <button
                                                         onClick={handleUploadProof}
-                                                        disabled={!proofFile || uploading}
+                                                        disabled={uploading}
                                                         className="w-full py-4 bg-brand-orange text-white font-black uppercase italic text-xs tracking-widest hover:bg-orange-600 transition-all rounded-2xl disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
                                                     >
-                                                        {uploading ? 'Subiendo...' : 'Subir Comprobante'} <Upload size={16} />
+                                                        {uploading ? 'Enviando...' : 'Enviar Datos de Pago'}
                                                     </button>
                                                 </>
                                             ) : (

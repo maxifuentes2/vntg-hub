@@ -1559,11 +1559,11 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
     }
 });
 
-// --- SUBIR COMPROBANTE DE PAGO ---
-app.post("/api/orders/upload-proof", verifyToken, upload.single("proof"), async (req, res) => {
-    const { orderId } = req.body;
+// --- ENVIAR DATOS DE COMPROBANTE DE PAGO ---
+app.post("/api/orders/upload-proof", verifyToken, async (req, res) => {
+    const { orderId, titular, banco, nroOperacion } = req.body;
     if (!orderId) return res.status(400).json({ error: "Falta orderId" });
-    if (!req.file) return res.status(400).json({ error: "Falta el archivo de comprobante" });
+    if (!titular || !banco || !nroOperacion) return res.status(400).json({ error: "Completá todos los campos: titular, banco y número de operación" });
 
     try {
         const [orders] = await db.query("SELECT * FROM orders WHERE id = ? AND user_id = ?", [orderId, req.user.id]);
@@ -1575,9 +1575,8 @@ app.post("/api/orders/upload-proof", verifyToken, upload.single("proof"), async 
             return res.status(400).json({ error: "Esta orden no requiere comprobante" });
         }
 
-        const proofUrl = `/uploads/${req.file.filename}`;
         const existingInfo = order.crypto_info ? JSON.parse(order.crypto_info) : {};
-        existingInfo.proofUrl = proofUrl;
+        existingInfo.proofData = { titular, banco, nroOperacion };
         existingInfo.proofUploadedAt = new Date().toISOString();
 
         await db.query("UPDATE orders SET crypto_info = ? WHERE id = ?", [JSON.stringify(existingInfo), orderId]);
@@ -1591,7 +1590,7 @@ app.post("/api/orders/upload-proof", verifyToken, upload.single("proof"), async 
                     status: "pending",
                     subject: "Comprobante recibido",
                     title: "Comprobante Recibido",
-                    message: `Hola ${userRow[0].name}, hemos recibido tu comprobante de pago para la orden #${orderId.slice(0, 8)}. Te avisaremos cuando el pago sea verificado por nuestro equipo.`,
+                    message: `Hola ${userRow[0].name}, hemos recibido los datos de tu comprobante de pago para la orden #${orderId.slice(0, 8)}. Te avisaremos cuando el pago sea verificado por nuestro equipo.`,
                     btnText: "Ver mi pedido",
                     btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
                 });
@@ -1600,10 +1599,10 @@ app.post("/api/orders/upload-proof", verifyToken, upload.single("proof"), async 
             console.error("Error al enviar email de comprobante:", e.message);
         }
 
-        res.json({ proofUrl, message: "Comprobante subido correctamente. Un administrador verificará el pago." });
+        res.json({ message: "Datos del comprobante enviados correctamente. Un administrador verificará el pago." });
     } catch (error) {
-        console.error("Error al subir comprobante:", error);
-        res.status(500).json({ error: "Error al subir comprobante" });
+        console.error("Error al guardar comprobante:", error);
+        res.status(500).json({ error: "Error al guardar comprobante" });
     }
 });
 

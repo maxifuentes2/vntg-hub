@@ -47,28 +47,10 @@ export default function PedidoDetalle() {
     const [timeLeft, setTimeLeft] = useState(null);
     const [expired, setExpired] = useState(false);
     const timerRef = useRef(null);
-    const [proofFile, setProofFile] = useState(null);
+    const [proofData, setProofData] = useState({ titular: '', banco: '', nroOperacion: '' });
     const [uploading, setUploading] = useState(false);
     const [proofUploaded, setProofUploaded] = useState(false);
     const [fileError, setFileError] = useState('');
-
-    const ALLOWED_EXTENSIONS_LIST = ['jpg','jpeg','png','gif','webp','bmp','heic','heif','svg','tiff','tif','pdf'];
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const ext = (file.name.split('.').pop() || '').toLowerCase();
-        const mimeOk = file.type.startsWith('image/') || file.type === 'application/pdf';
-        const extOk = ALLOWED_EXTENSIONS_LIST.includes(ext);
-        if (!mimeOk && !extOk) {
-            setFileError(`Formato no compatible: ${ext.toUpperCase()}. Usá JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF o PDF.`);
-            setProofFile(null);
-            e.target.value = '';
-            return;
-        }
-        setFileError('');
-        setProofFile(file);
-    };
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -235,24 +217,39 @@ export default function PedidoDetalle() {
     };
 
     const handleUploadProof = async () => {
-        if (!proofFile) return;
+        const { titular, banco, nroOperacion } = proofData;
+        if (!titular || !banco || !nroOperacion) {
+            setFileError("Por favor, completá todos los campos.");
+            return;
+        }
         setUploading(true);
+        setFileError('');
         try {
             const token = localStorage.getItem('vntg_token');
-            const formData = new FormData();
-            formData.append('proof', proofFile);
-            formData.append('orderId', pedido.id);
             const res = await fetch(`${API_URL}/api/orders/upload-proof`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData,
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderId: pedido.id,
+                    titular,
+                    banco,
+                    nroOperacion
+                }),
             });
+            const data = await res.json();
             if (res.ok) {
                 setProofUploaded(true);
-                setProofFile(null);
+                setProofData({ titular: '', banco: '', nroOperacion: '' });
+                setFileError('');
+            } else {
+                setFileError(data.error || "Error al enviar los datos");
             }
         } catch (e) {
             console.error("Upload error:", e);
+            setFileError("Error al enviar los datos");
         }
         setUploading(false);
     };
@@ -261,7 +258,7 @@ export default function PedidoDetalle() {
     const esTransfer = pedido.payment_method === 'transfer' && paymentInfo;
     const esCrypto = pedido.payment_method === 'crypto' && paymentInfo;
 
-    const uploadedProof = paymentInfo?.proofUrl;
+    const uploadedProof = paymentInfo?.proofData || paymentInfo?.proofUrl;
 
     return (
         <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 font-sans text-zinc-900 dark:text-white">
@@ -354,26 +351,52 @@ export default function PedidoDetalle() {
                                         </div>
                                     )}
 
-                                    {/* Subir comprobante */}
                                     {!uploadedProof && !proofUploaded ? (
                                         <div className="mt-4">
-                                            <div className="bg-yellow-500/10 border border-dashed border-yellow-500/40 rounded-2xl p-5">
-                                                <p className="text-[9px] font-black uppercase text-zinc-500 mb-3">Subí tu comprobante de pago</p>
-                                                <label className="flex flex-col items-center justify-center gap-2 cursor-pointer">
-                                                    <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center">
-                                                        <Upload size={24} className="text-yellow-600" />
+                                            <div className="space-y-4 bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5">
+                                                <p className="text-[10px] font-black uppercase text-zinc-500 mb-2">
+                                                    {esTransfer ? 'Completá los datos de la transferencia' : 'Completá los datos del depósito'}
+                                                </p>
+                                                
+                                                <div className="space-y-3 text-left">
+                                                    <div>
+                                                        <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">
+                                                            {esTransfer ? 'Titular de la cuenta' : 'Nombre del remitente / Titular'}
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Ej: Juan Pérez"
+                                                            value={proofData.titular}
+                                                            onChange={e => setProofData({ ...proofData, titular: e.target.value })}
+                                                            className={`w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all ${esTransfer ? 'focus:border-emerald-500' : 'focus:border-brand-orange'}`}
+                                                        />
                                                     </div>
-                                                    <span className="text-xs font-bold text-zinc-500">
-                                                        {proofFile ? proofFile.name : 'Hacé clic para seleccionar'}
-                                                    </span>
-                                                    <p className="text-[9px] text-zinc-400 mt-1">JPG, PNG, GIF, WEBP, BMP, HEIC, SVG, TIFF, PDF</p>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*,.pdf"
-                                                        onChange={handleFileChange}
-                                                        className="hidden"
-                                                    />
-                                                </label>
+                                                    <div>
+                                                        <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">
+                                                            {esTransfer ? 'Banco o Billetera' : 'Billetera / Exchange de origen'}
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder={esTransfer ? 'Ej: Mercado Pago / Galicia' : 'Ej: Binance / Lemon Cash'}
+                                                            value={proofData.banco}
+                                                            onChange={e => setProofData({ ...proofData, banco: e.target.value })}
+                                                            className={`w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all ${esTransfer ? 'focus:border-emerald-500' : 'focus:border-brand-orange'}`}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-black uppercase text-zinc-400 mb-1 block">
+                                                            {esTransfer ? 'Número de operación' : 'TXID / Hash de transacción'}
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder={esTransfer ? 'Ej: 123456789' : 'Ej: TXID de la transferencia'}
+                                                            value={proofData.nroOperacion}
+                                                            onChange={e => setProofData({ ...proofData, nroOperacion: e.target.value })}
+                                                            className={`w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-3.5 font-bold outline-none rounded-xl shadow-inner text-xs text-zinc-900 dark:text-white transition-all ${esTransfer ? 'focus:border-emerald-500' : 'focus:border-brand-orange'}`}
+                                                        />
+                                                    </div>
+                                                </div>
+
                                                 {fileError && (
                                                     <div className="mt-3 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5">
                                                         <AlertTriangle size={14} className="text-red-500 shrink-0" />
@@ -383,17 +406,44 @@ export default function PedidoDetalle() {
                                             </div>
                                             <button
                                                 onClick={handleUploadProof}
-                                                disabled={!proofFile || uploading}
-                                                className={`mt-3 w-full flex items-center justify-center gap-2 ${esTransfer ? 'bg-emerald-500' : 'bg-brand-orange'} text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50`}
+                                                disabled={uploading}
+                                                className={`mt-3 w-full flex items-center justify-center gap-2 ${esTransfer ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-brand-orange hover:bg-orange-600'} text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic transition-all shadow-lg active:scale-95 disabled:opacity-50`}
                                             >
-                                                {uploading ? 'Subiendo...' : 'Subir Comprobante'} <Upload size={16} />
+                                                {uploading ? 'Enviando...' : 'Enviar Datos de Pago'}
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="mt-4 bg-green-500/10 border border-green-500/20 rounded-2xl p-5 text-center">
-                                            <CircleCheck size={24} className="text-green-500 mx-auto mb-2" />
-                                            <p className="text-sm font-bold text-green-600 dark:text-green-400">Comprobante subido correctamente</p>
-                                            <p className="text-xs text-zinc-500 mt-1">Un administrador verificará el pago y aprobará tu pedido.</p>
+                                        <div className="mt-4 space-y-4">
+                                            <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-5 text-center">
+                                                <CircleCheck size={24} className="text-green-500 mx-auto mb-2" />
+                                                <p className="text-sm font-bold text-green-600 dark:text-green-400">Datos de pago enviados</p>
+                                                <p className="text-xs text-zinc-500 mt-1">Un administrador verificará el pago y aprobará tu pedido.</p>
+                                            </div>
+
+                                            {paymentInfo?.proofData && (
+                                                <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-xs space-y-1.5 border border-zinc-200 dark:border-zinc-700 text-left">
+                                                    <p className="text-[9px] uppercase font-black tracking-wider text-zinc-400">Datos enviados</p>
+                                                    <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">Titular:</span> {paymentInfo.proofData.titular}</p>
+                                                    <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">{esTransfer ? 'Banco/Billetera' : 'Billetera/Exchange'}:</span> {paymentInfo.proofData.banco}</p>
+                                                    <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">{esTransfer ? 'Nro. de Operación' : 'TXID / Hash'}:</span> {paymentInfo.proofData.nroOperacion}</p>
+                                                    {paymentInfo.proofUploadedAt && (
+                                                        <p className="text-[10px] text-zinc-500 italic mt-1">Enviado: {new Date(paymentInfo.proofUploadedAt).toLocaleString('es-AR')}</p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {paymentInfo?.proofUrl && (
+                                                <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-xs text-center border border-zinc-200 dark:border-zinc-700">
+                                                    <a
+                                                        href={`${API_URL}${paymentInfo.proofUrl}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs font-bold text-brand-orange hover:underline"
+                                                    >
+                                                        Ver comprobante adjunto (imagen)
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

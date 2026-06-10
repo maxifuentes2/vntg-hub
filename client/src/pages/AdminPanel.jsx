@@ -135,7 +135,7 @@ export default function AdminPanel() {
                 setPendingPayments(arr.filter(o =>
                     o.status === 'pending' &&
                     (o.payment_method === 'transfer' || o.payment_method === 'crypto') &&
-                    o.crypto_info && (() => { try { const info = JSON.parse(o.crypto_info); return info.proofUrl; } catch { return false; } })()
+                    o.crypto_info && (() => { try { const info = JSON.parse(o.crypto_info); return info.proofUrl || info.proofData; } catch { return false; } })()
                 ));
             })
             .catch(() => {});
@@ -864,6 +864,17 @@ export default function AdminPanel() {
                                                             <p className="text-xs text-zinc-500"><span className="font-bold">Cliente:</span> {order.user_name || 'N/A'} ({order.user_email || 'N/A'})</p>
                                                             <p className="text-xs text-zinc-500"><span className="font-bold">Total:</span> <span className="font-black italic text-brand-orange">{formatPrice(order.total)}</span></p>
                                                             <p className="text-xs text-zinc-500"><span className="font-bold">Fecha:</span> {new Date(order.created_at).toLocaleString('es-AR')}</p>
+                                                            {cryptoInfo.proofData && (
+                                                                <div className="mt-3 bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-xs space-y-1.5 border border-zinc-200 dark:border-zinc-700 text-left">
+                                                                    <p className="text-[9px] uppercase font-black tracking-wider text-zinc-400">Datos de Pago</p>
+                                                                    <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">Titular:</span> {cryptoInfo.proofData.titular}</p>
+                                                                    <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">{esTransfer ? 'Banco/Billetera' : 'Billetera/Exchange'}:</span> {cryptoInfo.proofData.banco}</p>
+                                                                    <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">{esTransfer ? 'Nro. de Operación' : 'TXID / Hash'}:</span> {cryptoInfo.proofData.nroOperacion}</p>
+                                                                    {cryptoInfo.proofUploadedAt && (
+                                                                        <p className="text-[10px] text-zinc-500 italic mt-1">Enviado: {new Date(cryptoInfo.proofUploadedAt).toLocaleString('es-AR')}</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className="flex flex-col gap-2 sm:items-end">
                                                             {proofUrl && (
