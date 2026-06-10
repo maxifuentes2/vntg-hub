@@ -76,7 +76,6 @@ export default function Checkout() {
         const token = localStorage.getItem('vntg_token');
         if (!token) return;
 
-        // Traer datos frescos del usuario (incluyendo puntos actualizados)
         fetch(`${API_URL}/api/user`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -170,6 +169,13 @@ export default function Checkout() {
 
     const handleSaveAddress = async (e) => {
         e.preventDefault();
+        
+        // Validación en el modal
+        if (/[a-zA-Z]/.test(editingAddress.phone || '')) {
+            addToast({}, 'El teléfono no puede contener letras', 'error');
+            return;
+        }
+
         try {
             const token = localStorage.getItem('vntg_token');
             const res = await fetch(`${API_URL}/api/addresses/${editingAddress.id}`, {
@@ -263,6 +269,21 @@ export default function Checkout() {
 
     const handleCheckout = async (e) => {
         e.preventDefault();
+        
+        // Validaciones en tiempo de envío por seguridad
+        if (/\d/.test(shipping.nombre)) {
+            setError("El nombre no puede contener números.");
+            return;
+        }
+        if (/[a-zA-Z]/.test(shipping.telefono)) {
+            setError("El teléfono no puede contener letras.");
+            return;
+        }
+        if (/[^\d]/.test(shipping.dni)) {
+            setError("El DNI/CUIT solo debe contener números.");
+            return;
+        }
+
         setLoading(true);
         setError('');
         setCheckoutSent(true);
@@ -273,7 +294,6 @@ export default function Checkout() {
 
             const token = localStorage.getItem('vntg_token');
             
-            // Guardar DNI en la cuenta si cambió
             if (token && shipping.dni && shipping.dni !== (user.dni || '')) {
                 try {
                     await fetch(`${API_URL}/api/auth/update-profile`, {
@@ -357,6 +377,11 @@ export default function Checkout() {
 
     const esRetiro = shippingType === 'retiro';
     const costoEnvio = getShippingCost();
+    
+    // Variables para las alertas visuales en vivo
+    const nombreTieneNumeros = /\d/.test(shipping.nombre);
+    const telefonoTieneLetras = /[a-zA-Z]/.test(shipping.telefono);
+    const dniInvalido = /[^\d]/.test(shipping.dni);
 
     const TagIcon = (tag) => {
         const key = (tag || '').toLowerCase();
@@ -475,14 +500,21 @@ export default function Checkout() {
                     </div>
 
                     <form id="checkout-form" onSubmit={handleCheckout} className="space-y-4">
-                        <input
-                            type="text"
-                            placeholder="NOMBRE COMPLETO"
-                            value={shipping.nombre}
-                            onChange={e => setShipping({ ...shipping, nombre: e.target.value })}
-                            required
-                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 font-bold italic focus:border-brand-orange outline-none capitalize rounded-xl shadow-inner"
-                        />
+                        
+                        <div>
+                            <input
+                                type="text"
+                                placeholder="NOMBRE COMPLETO"
+                                value={shipping.nombre}
+                                onChange={e => setShipping({ ...shipping, nombre: e.target.value })}
+                                required
+                                className={`w-full bg-zinc-50 dark:bg-zinc-800 border p-4 font-bold italic focus:border-brand-orange outline-none capitalize rounded-xl shadow-inner transition-colors ${nombreTieneNumeros ? 'border-red-500 dark:border-red-500' : 'border-zinc-200 dark:border-zinc-600'}`}
+                            />
+                            {nombreTieneNumeros && (
+                                <p className="text-red-500 text-[10px] font-bold uppercase ml-2 mt-1">El nombre no puede contener números</p>
+                            )}
+                        </div>
+
                         {!esRetiro && (addresses.length === 0 || showManualForm || !selectedAddressId) && (
                             <div className="space-y-4">
                                 <div className="flex max-[360px]:flex-col gap-4">
@@ -495,22 +527,37 @@ export default function Checkout() {
                                 </div>
                             </div>
                         )}
-                        <input
-                            type="tel"
-                            placeholder="TELÉFONO"
-                            value={shipping.telefono}
-                            onChange={e => setShipping({ ...shipping, telefono: e.target.value })}
-                            required
-                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
-                        />
-                        <input
-                            type="text"
-                            placeholder="DNI / CUIT (facturación)"
-                            value={shipping.dni}
-                            onChange={e => setShipping({ ...shipping, dni: e.target.value })}
-                            required
-                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner"
-                        />
+                        
+                        <div>
+                            <input
+                                type="text"
+                                placeholder="TELÉFONO"
+                                value={shipping.telefono}
+                                onChange={e => setShipping({ ...shipping, telefono: e.target.value.slice(0, 20) })}
+                                maxLength={20}
+                                required
+                                className={`w-full bg-zinc-50 dark:bg-zinc-800 border p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner transition-colors ${telefonoTieneLetras && shipping.telefono.length > 0 ? 'border-red-500 dark:border-red-500' : 'border-zinc-200 dark:border-zinc-600'}`}
+                            />
+                            {telefonoTieneLetras && shipping.telefono.length > 0 && (
+                                <p className="text-red-500 text-[10px] font-bold uppercase ml-2 mt-1">El teléfono no puede contener letras</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="DNI / CUIT (facturación)"
+                                value={shipping.dni}
+                                onChange={e => setShipping({ ...shipping, dni: e.target.value.slice(0, 11) })}
+                                maxLength={11}
+                                required
+                                className={`w-full bg-zinc-50 dark:bg-zinc-800 border p-4 max-[360px]:p-3 font-bold focus:border-brand-orange outline-none rounded-xl shadow-inner transition-colors ${dniInvalido && shipping.dni.length > 0 ? 'border-red-500 dark:border-red-500' : 'border-zinc-200 dark:border-zinc-600'}`}
+                            />
+                            {dniInvalido && shipping.dni.length > 0 && (
+                                <p className="text-red-500 text-[10px] font-bold uppercase ml-2 mt-1">El DNI/CUIT solo debe contener números</p>
+                            )}
+                        </div>
 
                         {puntosDisponibles > 0 && (
                             <div className="mt-6 p-5 bg-brand-orange/10 border border-brand-orange/30 rounded-xl shadow-sm">
@@ -592,8 +639,8 @@ export default function Checkout() {
 
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="w-full mt-4 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 rounded-2xl shadow-xl shadow-brand-orange/20 active:scale-95"
+                            disabled={loading || nombreTieneNumeros || telefonoTieneLetras || (dniInvalido && shipping.dni.length > 0)}
+                            className="w-full mt-4 bg-brand-orange text-white py-5 font-black uppercase italic tracking-widest hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl shadow-xl shadow-brand-orange/20 active:scale-95"
                         >
                             {loading ? 'Procesando...' : (totalAbonar <= 0 ? 'Confirmar Pedido Gratis' : paymentMethod === 'crypto' ? 'Pagar con Crypto' : paymentMethod === 'transfer' ? 'Transferir' : 'Pagar con Mercado Pago')} {paymentMethod === 'crypto' ? <Bitcoin size={20} /> : paymentMethod === 'transfer' ? <Landmark size={20} /> : <ShieldCheck size={20} />}
                         </button>
@@ -862,7 +909,21 @@ export default function Checkout() {
                             </div>
                             <div className="flex max-[360px]:flex-col gap-4">
                                 <input type="text" placeholder="CP" value={editingAddress.zip_code || ''} onChange={e => setEditingAddress({ ...editingAddress, zip_code: e.target.value })} required className="w-1/3 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
-                                <input type="tel" placeholder="TELÉFONO" value={editingAddress.phone || ''} onChange={e => setEditingAddress({ ...editingAddress, phone: e.target.value })} required className="w-2/3 max-[360px]:w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner" />
+                                
+                                <div className="w-2/3 max-[360px]:w-full">
+                                    <input
+                                        type="text"
+                                        placeholder="TELÉFONO"
+                                        value={editingAddress.phone || ''}
+                                        onChange={e => setEditingAddress({ ...editingAddress, phone: e.target.value.slice(0, 20) })}
+                                        maxLength={20}
+                                        required
+                                        className={`w-full bg-zinc-50 dark:bg-zinc-800 border p-4 max-[360px]:p-3 font-bold italic text-sm focus:border-brand-orange outline-none rounded-xl shadow-inner transition-colors ${/[a-zA-Z]/.test(editingAddress.phone || '') ? 'border-red-500 dark:border-red-500' : 'border-zinc-200 dark:border-zinc-600'}`}
+                                    />
+                                    {/[a-zA-Z]/.test(editingAddress.phone || '') && (
+                                        <p className="text-red-500 text-[10px] font-bold uppercase ml-2 mt-1">El teléfono no puede contener letras</p>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={() => setEditingAddress(null)} className="flex-1 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl">Cancelar</button>
