@@ -408,6 +408,8 @@ export default function Checkout() {
     const closePaymentModal = () => {
         if (paymentModal?.pollInterval) clearInterval(paymentModal.pollInterval);
         clearInterval(timerRef.current);
+        const orderId = paymentModal?.orderId;
+        const proofUploaded = paymentModal?.proofUploaded;
         setPaymentModal(null);
         setTimeLeft(null);
         setExpired(false);
@@ -415,6 +417,11 @@ export default function Checkout() {
         setFileError('');
         setLoading(false);
         setCheckoutSent(false);
+
+        if (proofUploaded && orderId) {
+            clearCart();
+            navigate(`/pedido/${orderId}`);
+        }
     };
 
     if (!user) {
