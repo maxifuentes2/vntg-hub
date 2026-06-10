@@ -1,7 +1,16 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const crypto = require("crypto");
+const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
 const BASE_URL = process.env.BASE_URL || "https://vntg-hub.onrender.com";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error("[FATAL] JWT_SECRET no está configurado en el entorno");
+    process.exit(1);
+}
+const JWT_EXPIRES = process.env.JWT_EXPIRES || "1d";
 const db = require("./db");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { OAuth2Client } = require("google-auth-library");
@@ -21,10 +30,21 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, path.join(__dirname, "uploads")),
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
-        cb(null, `proof_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`);
+        cb(null, `proof_${Date.now()}_${crypto.randomBytes(4).toString("hex")}${ext}`);
     },
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|webp|gif)$/i;
+        if (allowed.test(path.extname(file.originalname))) {
+            cb(null, true);
+        } else {
+            cb(new Error("Solo se permiten imágenes (jpg, jpeg, png, webp, gif)"));
+        }
+    }
+});
 
 // Datos bancarios para transferencia
 const BANK_ACCOUNT = {
@@ -73,11 +93,11 @@ const createTransporter = (prefix) => {
 };
 
 const HEADER = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:16px 16px 0 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px 16px 0 0;border-bottom:1px solid #eee">
         <tr>
             <td align="center" style="padding:32px 24px 24px">
                 <a href="https://vntg-hub.vercel.app" style="text-decoration:none">
-                    <img src="https://vntg-hub.vercel.app/logo-texto-transparente.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+                    <img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
                 </a>
             </td>
         </tr>
@@ -110,12 +130,12 @@ const FOOTER_SOCIAL = `
     </table>`;
 
 const FOOTER = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:0 0 16px 16px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:0 0 16px 16px;border-top:1px solid #eee">
         <tr>
             <td align="center" style="padding:4px 24px 20px">
                 ${FOOTER_SOCIAL}
-                <p style="color:#666;font-size:11px;margin:14px 0 0;font-family:Arial,sans-serif">VNTG Hub &mdash; Coleccionables Vintage</p>
-                <p style="color:#444;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Este correo fue enviado automáticamente. No respondas a este mensaje.</p>
+                <p style="color:#999;font-size:11px;margin:14px 0 0;font-family:Arial,sans-serif">VNTG Hub &mdash; Coleccionables Vintage</p>
+                <p style="color:#bbb;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Este correo fue enviado automáticamente. No respondas a este mensaje.</p>
             </td>
         </tr>
     </table>`;
@@ -142,6 +162,11 @@ const BTN = (text, url, bg = "#f97316") => `
         <tr>
             <td align="center" style="border-radius:8px;background:${bg};padding:0">
                 <a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;background:${bg};color:#ffffff;text-decoration:none;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.3px;mso-hide:all">${text}</a>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="padding-top:10px">
+                <a href="${url}" target="_blank" style="color:#999;font-size:11px;font-family:Arial,sans-serif;text-decoration:underline">${url}</a>
             </td>
         </tr>
     </table>`;
@@ -282,6 +307,54 @@ const sendEmail = async (type, to, data) => {
     }
 };
 
+// --- SEGURIDAD: Rate limiting ---
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "Demasiados intentos. Intentá de nuevo en 15 minutos." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const chatLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    message: { error: "Demasiados mensajes. Esperá un momento." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const contactLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 3,
+    message: { error: "Demasiados mensajes de contacto. Intentá de nuevo más tarde." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const lookupLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: "Demasiadas consultas. Esperá un momento." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// --- Helper para cookie httpOnly JWT ---
+const isLocalhost = (origin) => origin && (origin.includes("localhost") || origin.includes("192.168.") || origin.includes("127.0.0.1"));
+const setAuthCookie = (res, token) => {
+    if (!token) {
+        res.clearCookie("vntg_token", { httpOnly: true, secure: false, sameSite: "lax", path: "/" });
+        return;
+    }
+    const origin = res.req?.headers?.origin || "";
+    const secure = !isLocalhost(origin);
+    res.cookie("vntg_token", token, {
+        httpOnly: true,
+        secure,
+        sameSite: secure ? "none" : "lax",
+        path: "/",
+        maxAge: 24 * 60 * 60 * 1000,
+    });
+};
+
 app.use(
     cors({
         origin: ["http://localhost:5173", "https://vntg-hub.vercel.app", /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/],
@@ -292,6 +365,7 @@ app.use(
 );
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- SEGURIDAD: Cabeceras HTTP ---
@@ -300,6 +374,7 @@ app.use((req, res, next) => {
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "0");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:");
     next();
 });
 
@@ -318,11 +393,10 @@ const slugify = (text) => {
 
 // --- MIDDLEWARE: Verificación de JWT para usuarios autenticados ---
 const verifyToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: "No autorizado" });
-    const token = authHeader.split(" ")[1];
+    const token = req.cookies?.vntg_token || req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "No autorizado" });
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "vntg_secret_key");
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {
@@ -728,7 +802,7 @@ app.delete("/api/addresses/:id", verifyToken, async (req, res) => {
 
 // --- AUTENTICACIÓN ---
 
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", authLimiter, async (req, res) => {
     const { name, email, password, dni } = req.body;
 
     try {
@@ -759,7 +833,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 });
 
-app.post("/api/auth/login/local", async (req, res) => {
+app.post("/api/auth/login/local", authLimiter, async (req, res) => {
     const { email, password, deviceToken } = req.body;
     try {
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [
@@ -787,9 +861,10 @@ app.post("/api/auth/login/local", async (req, res) => {
                 } = users[0];
                 const token = jwt.sign(
                     { id: users[0].id, email: users[0].email, role: users[0].role || 'user' },
-                    process.env.JWT_SECRET || "vntg_secret_key",
-                    { expiresIn: "7d" },
+                    JWT_SECRET,
+                    { expiresIn: JWT_EXPIRES },
                 );
+                setAuthCookie(res, token);
                 return res.json({
                     message: "Inicio rápido",
                     user: userSinPass,
@@ -800,7 +875,7 @@ app.post("/api/auth/login/local", async (req, res) => {
         }
 
         // Si no hay token o no es válido, procedemos con el código de siempre
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = crypto.randomInt(100000, 999999).toString();
         await db.query(
             "UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?",
             [code, users[0].id],
@@ -813,7 +888,7 @@ app.post("/api/auth/login/local", async (req, res) => {
     }
 });
 
-app.post("/api/auth/verify-code", async (req, res) => {
+app.post("/api/auth/verify-code", authLimiter, async (req, res) => {
     const { email, code, rememberDevice } = req.body;
     try {
         const [rows] = await db.query(
@@ -846,9 +921,10 @@ app.post("/api/auth/verify-code", async (req, res) => {
         } = user;
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role || 'user' },
-            process.env.JWT_SECRET || "vntg_secret_key",
-            { expiresIn: "7d" },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES },
         );
+        setAuthCookie(res, token);
 
         res.json({
             message: "Éxito",
@@ -861,7 +937,7 @@ app.post("/api/auth/verify-code", async (req, res) => {
     }
 });
 
-app.post("/api/auth/google", async (req, res) => {
+app.post("/api/auth/google", authLimiter, async (req, res) => {
     const { token } = req.body;
     try {
         const ticket = await client.verifyIdToken({
@@ -890,9 +966,10 @@ app.post("/api/auth/google", async (req, res) => {
         const { password, ...userSinPass } = user;
         const jwtToken = jwt.sign(
             { id: user.id, email: user.email, role: user.role || 'user' },
-            process.env.JWT_SECRET || "vntg_secret_key",
-            { expiresIn: "7d" },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES },
         );
+        setAuthCookie(res, jwtToken);
         res.json({ user: userSinPass, token: jwtToken });
     } catch (error) {
         console.error("Error en Google Auth:", error);
@@ -900,8 +977,14 @@ app.post("/api/auth/google", async (req, res) => {
     }
 });
 
+// --- CERRAR SESIÓN (limpiar cookie) ---
+app.post("/api/auth/logout", (req, res) => {
+    setAuthCookie(res, null);
+    res.json({ message: "Sesión cerrada" });
+});
+
 // --- RESTABLECER CONTRASEÑA ---
-app.post("/api/auth/forgot-password", async (req, res) => {
+app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email requerido" });
     try {
@@ -925,7 +1008,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
     }
 });
 
-app.post("/api/auth/reset-password", async (req, res) => {
+app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
     const { email, token, newPassword } = req.body;
     if (!email || !token || !newPassword) return res.status(400).json({ error: "Email, token y contraseña requeridos" });
     if (newPassword.length < 6) return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
@@ -1000,13 +1083,13 @@ app.get("/api/orders/:userId", verifyToken, async (req, res) => {
 const generatePatenteId = () => {
     const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin O, I para evitar confusiones
     const digits = "23456789"; // sin 0, 1 para evitar confusiones
-    const rand = (chars) => chars[Math.floor(Math.random() * chars.length)];
+    const rand = (chars) => chars[crypto.randomInt(chars.length)];
     return `${rand(letters)}${rand(letters)}${rand(digits)}${rand(digits)}${rand(digits)}${rand(letters)}${rand(letters)}`;
 };
 
 // --- CHECKOUT (protegido con JWT) ---
 app.post("/api/checkout", verifyToken, async (req, res) => {
-    const { cart, shipping, shippingType, puntosAUsar } = req.body;
+    const { cart, shipping: shippingData, shippingType, puntosAUsar } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
@@ -1064,7 +1147,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
 
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
-            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType })],
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType })],
         );
         for (let item of cart) {
             await db.query(
@@ -1141,6 +1224,16 @@ app.get("/api/crypto/min-amounts", async (req, res) => {
     res.json({ mins });
 });
 
+app.get("/api/crypto/prices", async (req, res) => {
+    const prices = await getCryptoPrices();
+    const coinAliases = { usdttrc20: "USDT (TRC20)", usdc: "USDC", btc: "Bitcoin", eth: "Ethereum", ltc: "Litecoin", sol: "Solana" };
+    const result = {};
+    for (const [key, name] of Object.entries(coinAliases)) {
+        result[key] = { name, precioUsd: prices[key] || 0 };
+    }
+    res.json({ prices: result });
+});
+
 const getTasaUsd = async () => {
     try {
         const res = await fetch("https://dolarapi.com/v1/dolares/oficial");
@@ -1196,9 +1289,39 @@ const getNetworkFeeArs = async (coin) => {
     }
 };
 
+const COINGECKO_IDS = {
+    btc: "bitcoin",
+    eth: "ethereum",
+    usdttrc20: "tether",
+    usdc: "usd-coin",
+    ltc: "litecoin",
+    sol: "solana",
+};
+
+const getCryptoPrices = async () => {
+    try {
+        const ids = Object.values(COINGECKO_IDS).join(",");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`, {
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!res.ok) return {};
+        const data = await res.json();
+        const prices = {};
+        for (const [key, id] of Object.entries(COINGECKO_IDS)) {
+            prices[key] = data[id]?.usd || 0;
+        }
+        return prices;
+    } catch {
+        return {};
+    }
+};
+
 // --- CHECKOUT CRYPTO ---
 app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
-    const { cart, shipping, shippingType, puntosAUsar, payCurrency } = req.body;
+    const { cart, shipping: shippingData, shippingType, puntosAUsar, payCurrency } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
@@ -1218,17 +1341,27 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
             if (prod.length === 0) continue;
             subtotal += Number(prod[0].price) * (item.cantidad || 1);
         }
+
+        let shippingCost = 0;
+        if (shippingType && shippingType !== "retiro") {
+            const cfg = await shipping.loadConfig(db);
+            if (subtotal < cfg.ENVIO_GRATIS_DESDE) {
+                if (shippingType === "normal") shippingCost = cfg.COSTO_NORMAL;
+                else if (shippingType === "prioritario") shippingCost = cfg.COSTO_PRIORITARIO;
+            }
+        }
+
         let descuento = 0;
         let puntosARestar = 0;
         if (puntosAUsar > 0) {
             const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
             const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
             const valorPorPunto = 10;
-            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil(subtotal / valorPorPunto));
+            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil((subtotal + shippingCost) / valorPorPunto));
             descuento = puntosValidos * valorPorPunto;
             puntosARestar = puntosValidos;
         }
-        const totalFinal = subtotal - descuento;
+        const totalFinal = subtotal + shippingCost - descuento;
         const coin = payCurrency || "usdttrc20";
         const comision = await getNetworkFeeArs(coin);
         const totalConComision = totalFinal + comision;
@@ -1239,7 +1372,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
 
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'crypto')",
-            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shipping, shippingType })],
+            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shippingData, shippingType })],
         );
         for (let item of cart) {
             const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
@@ -1263,6 +1396,18 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         };
         const cryptoAddress = CRYPTO_ADDRESSES[coin] || CRYPTO_ADDRESSES.usdttrc20;
 
+        const tasa = await getTasaUsd();
+        const cryptoPrices = await getCryptoPrices();
+        let precioUsd = cryptoPrices[coin] || 0;
+        if ((coin === "usdttrc20" || coin === "usdc") && precioUsd === 0) precioUsd = 1;
+
+        let cryptoAmount = 0, cryptoSubtotal = 0, cryptoComision = 0;
+        if (precioUsd > 0 && tasa > 0) {
+            cryptoSubtotal = totalFinal / tasa / precioUsd;
+            cryptoComision = comision / tasa / precioUsd;
+            cryptoAmount = cryptoSubtotal + cryptoComision;
+        }
+
         const cryptoInfo = JSON.stringify({
             method: "crypto",
             coin,
@@ -1271,6 +1416,10 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
             monto: totalConComision,
             subtotal: totalFinal,
             comision,
+            cryptoAmount,
+            cryptoSubtotal,
+            cryptoComision,
+            precioUsd,
             created_at: new Date().toISOString(),
         });
 
@@ -1287,18 +1436,22 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
                 monto: totalConComision,
                 subtotal: totalFinal,
                 comision,
+                cryptoAmount,
+                cryptoSubtotal,
+                cryptoComision,
+                precioUsd,
                 expires_at: orderRow[0]?.expires_at,
             },
         });
     } catch (error) {
         console.error("Error en checkout crypto:", error);
-        res.status(500).json({ error: error.message || "Error al procesar pago crypto" });
+        res.status(500).json({ error: "Error al procesar pago crypto" });
     }
 });
 
 // --- CHECKOUT TRANSFERENCIA BANCARIA ---
 app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
-    const { cart, shipping, shippingType, puntosAUsar } = req.body;
+    const { cart, shipping: shippingData, shippingType, puntosAUsar } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
@@ -1319,7 +1472,18 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
             subtotal += Number(prod[0].price) * (item.cantidad || 1);
         }
 
-        // 10% de descuento por pago por transferencia
+        let shippingCost = 0;
+        if (shippingType && shippingType !== "retiro") {
+            const cfg = await shipping.loadConfig(db);
+            if (subtotal < cfg.ENVIO_GRATIS_DESDE) {
+                if (shippingType === "normal") shippingCost = cfg.COSTO_NORMAL;
+                else if (shippingType === "prioritario") shippingCost = cfg.COSTO_PRIORITARIO;
+            }
+        }
+
+        const subtotalConEnvio = subtotal + shippingCost;
+
+        // 10% de descuento por pago por transferencia (sobre productos)
         const descuentoTransfer = Math.round(subtotal * 0.10);
         let descuentoPuntos = 0;
         let puntosARestar = 0;
@@ -1327,11 +1491,11 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
             const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
             const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
             const valorPorPunto = 10;
-            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil((subtotal - descuentoTransfer) / valorPorPunto));
+            const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil((subtotalConEnvio - descuentoTransfer) / valorPorPunto));
             descuentoPuntos = puntosValidos * valorPorPunto;
             puntosARestar = puntosValidos;
         }
-        const totalFinal = subtotal - descuentoTransfer - descuentoPuntos;
+        const totalFinal = subtotalConEnvio - descuentoTransfer - descuentoPuntos;
 
         if (puntosARestar > 0) {
             await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
@@ -1350,7 +1514,7 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
 
         await db.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, crypto_info) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'transfer', ?)",
-            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shipping, shippingType }), paymentInfo],
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), paymentInfo],
         );
         for (let item of cart) {
             const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
@@ -1377,7 +1541,7 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         });
     } catch (error) {
         console.error("Error en checkout transfer:", error);
-        res.status(500).json({ error: error.message || "Error al procesar pago por transferencia" });
+        res.status(500).json({ error: "Error al procesar pago por transferencia" });
     }
 });
 
@@ -1557,6 +1721,18 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
         const comision = await getNetworkFeeArs(coin);
         const totalConComision = Number(order.total) + comision;
 
+        const tasa = await getTasaUsd();
+        const cryptoPrices = await getCryptoPrices();
+        let precioUsd = cryptoPrices[coin] || 0;
+        if ((coin === "usdttrc20" || coin === "usdc") && precioUsd === 0) precioUsd = 1;
+
+        let cryptoAmount = 0, cryptoSubtotal = 0, cryptoComision = 0;
+        if (precioUsd > 0 && tasa > 0) {
+            cryptoSubtotal = Number(order.total) / tasa / precioUsd;
+            cryptoComision = comision / tasa / precioUsd;
+            cryptoAmount = cryptoSubtotal + cryptoComision;
+        }
+
         const cryptoInfo = JSON.stringify({
             method: "crypto",
             coin,
@@ -1565,6 +1741,10 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
             monto: totalConComision,
             subtotal: Number(order.total),
             comision,
+            cryptoAmount,
+            cryptoSubtotal,
+            cryptoComision,
+            precioUsd,
             created_at: new Date().toISOString(),
         });
 
@@ -1583,6 +1763,10 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
                 monto: totalConComision,
                 subtotal: Number(order.total),
                 comision,
+                cryptoAmount,
+                cryptoSubtotal,
+                cryptoComision,
+                precioUsd,
                 expires_at: orderRow[0]?.expires_at,
             },
         });
@@ -1699,7 +1883,7 @@ const verifyAdmin = (req, res, next) => {
     try {
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET || "vntg_secret_key",
+            JWT_SECRET,
         );
         if (decoded.role !== 'admin') {
             return res.status(403).json({ error: "No eres administrador" });
@@ -1762,7 +1946,7 @@ const verifySupport = (req, res, next) => {
     try {
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET || "vntg_secret_key",
+            JWT_SECRET,
         );
         const isSupport = decoded.role === 'support';
         const isAdmin = decoded.role === 'admin';
@@ -2121,12 +2305,12 @@ app.put("/api/admin/shipping-config", verifyAdmin, async (req, res) => {
 // ==========================================
 
 // --- LOOKUP DE ORDEN POR ID (para chatbot / consulta pública) ---
-app.post("/api/orders/lookup", async (req, res) => {
+app.post("/api/orders/lookup", lookupLimiter, async (req, res) => {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "Número de orden requerido" });
 
     try {
-        const [orders] = await db.query("SELECT * FROM orders WHERE id = ?", [orderId]);
+        const [orders] = await db.query("SELECT id, status, total, created_at, payment_method FROM orders WHERE id = ?", [orderId]);
         if (orders.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
 
         const [items] = await db.query(`
@@ -2147,11 +2331,22 @@ app.post("/api/orders/lookup", async (req, res) => {
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", chatLimiter, async (req, res) => {
     const { message, history, fullHistory, userId, userEmail } = req.body;
     if (!message) return res.status(400).json({ error: "Mensaje vacío" });
 
     try {
+        // Verificar que si se envía userId, corresponda al JWT
+        let authedUserId = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && userId) {
+            try {
+                const token = authHeader.split(" ")[1];
+                const decoded = jwt.verify(token, JWT_SECRET);
+                if (decoded.id === userId) authedUserId = userId;
+            } catch { /* token inválido, tratar como guest */ }
+        }
+
         const [productos] = await db.query(
             "SELECT title, franchise, price, stock FROM products WHERE stock > 0",
         );
@@ -2164,10 +2359,10 @@ app.post("/api/chat", async (req, res) => {
 
         let orderContext =
             "El usuario actual no ha iniciado sesión o es un invitado. No tienes acceso a su historial de compras.";
-        if (userId) {
+        if (authedUserId) {
             const [orders] = await db.query(
                 "SELECT id, status, total, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 5",
-                [userId],
+                [authedUserId],
             );
             if (orders.length > 0) {
                 orderContext =
@@ -2363,7 +2558,7 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
-app.post("/api/contact", async (req, res) => {
+app.post("/api/contact", contactLimiter, async (req, res) => {
     const { nombre, email, mensaje } = req.body;
 
     if (!nombre || !email || !mensaje) {

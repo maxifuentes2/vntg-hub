@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
     const { login } = useAuth();
+    const { addToast } = useToast();
     const navigate = useNavigate();
     const location = useLocation();
     const justRegistered = location.state?.registered;
@@ -72,6 +74,7 @@ export default function Login() {
             if (response.ok) {
                 if (data.skipCode) {
                     login(data.user, data.token);
+                    addToast({ title: 'Sesión Iniciada' }, `Bienvenid@ ${(data.user.name || '').split(' ')[0] || data.user.email}`, 'success');
                     navigate('/');
                 } else if (data.requireCode) {
                     // Si no, procedemos a la verificación por código
@@ -114,6 +117,7 @@ export default function Login() {
                     localStorage.setItem('vntg_device_token', data.deviceToken);
                 }
                 login(data.user, data.token);
+                addToast({ title: 'Sesión Iniciada' }, `Bienvenid@ ${(data.user.name || '').split(' ')[0] || data.user.email}`, 'success');
                 navigate('/');
             } else {
                 setError(data.error || "Código incorrecto o expirado");

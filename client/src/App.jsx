@@ -34,10 +34,10 @@ import CategorySidebar from './components/CategorySidebar';
 // IMPORTACIONES DE CONTEXTOS
 import { CartProvider } from './context/CartContext';
 import { WishListProvider } from './context/WishListContext';
-import { ToastProvider } from './context/ToastContext'; 
+import { ToastProvider, useToast } from './context/ToastContext'; 
 import { SidebarProvider } from './context/SidebarContext'; 
 import { CurrencyProvider } from './context/CurrencyContext'; 
-import { AuthProvider, useAuth } from './context/AuthContext'; 
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // IMPORTACIONES DE AUTENTICACIÓN Y CHECKOUT
 import Checkout from './pages/Checkout';
@@ -49,9 +49,52 @@ function ChatbotWrapper() {
   return <Chatbot />;
 }
 
+function TokenGuard() {
+  const { logout } = useAuth();
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  useEffect(() => {
+    const checkToken = () => {
+      const token = localStorage.getItem('vntg_token');
+      if (!token) return;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 < Date.now()) {
+          logout();
+        }
+      } catch {
+        logout();
+      }
+    };
+    checkToken();
+    window.addEventListener('focus', checkToken);
+    return () => window.removeEventListener('focus', checkToken);
+  }, [logout]);
+
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const [url, opts = {}] = args;
+      // Add credentials: 'include' for API calls so httpOnly cookie is sent
+      if (typeof url === 'string' && (url.startsWith(API_URL) || url.startsWith('/api'))) {
+        opts.credentials = opts.credentials || 'include';
+      }
+      const res = await originalFetch(url, opts);
+      if (res.status === 401 && localStorage.getItem('vntg_token')) {
+        logout();
+      }
+      return res;
+    };
+    return () => { window.fetch = originalFetch; };
+  }, [logout]);
+
+  return null;
+}
+
 function GoogleOAuthHandler() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -70,6 +113,7 @@ function GoogleOAuthHandler() {
           .then(data => {
             if (data.user) {
               login(data.user, data.token);
+              addToast({ title: 'Sesión Iniciada' }, `Bienvenid@ ${(data.user.name || '').split(' ')[0] || data.user.email}`, 'success');
               navigate('/', { replace: true });
             } else {
               navigate('/login', { state: { googleError: data.error || "Error al iniciar sesión con Google" }, replace: true });
@@ -123,6 +167,7 @@ function App() {
               <ScrollToTopOnNavigation />
               <RouteTitleManager />
               <GoogleOAuthHandler />
+              <TokenGuard />
 
               <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-brand-dark text-zinc-900 dark:text-white transition-colors duration-300">
 

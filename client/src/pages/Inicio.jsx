@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import { useCurrency } from '../context/CurrencyContext';
 import Reveal from '../components/Reveal';
+import TypewriterText from '../components/TypewriterText';
 import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -330,18 +331,18 @@ export default function Inicio() {
 
                 <div className="relative z-10 text-center px-4">
                     <Reveal variant="fade-down" delay={0}>
-                        <h1 className="text-4xl max-[400px]:text-3xl md:text-9xl font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white flex items-center justify-center gap-4 subtle-glitch">
-                            <span className="hover:animate-pulse transition-all">
+                        <h1 className="text-[clamp(3.2rem,14vw,10rem)] font-black italic uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white flex items-center justify-center gap-1 min-[380px]:gap-3 sm:gap-4 subtle-glitch">
+                            <span className="text-[#003e9b] hover:animate-pulse transition-all glow-blue">
                                 <ScrambleText text="VNTG" delay={200} />
                             </span>
-                            <span className="text-brand-orange liquid-text">
+                            <span className="text-[#ff5a00] glow-orange">
                                 <ScrambleText text="HUB" delay={600} />
                             </span>
                         </h1>
                     </Reveal>
                     <Reveal variant="fade-up" delay={150}>
-                        <p className="text-sm max-[400px]:text-xs md:text-xl font-bold italic liquid-text uppercase tracking-[0.4em] subtle-glitch">
-                            <ScrambleText text="Coleccionismo de Alto Nivel" delay={1000} duration={1200} />
+                        <p className="text-[clamp(0.85rem,3.5vw,2.5rem)] font-bold italic text-[#ff5a00] uppercase tracking-[0.15em] min-[380px]:tracking-[0.2em] sm:tracking-[0.3em] glow-subtitle">
+                            <TypewriterText phrases={["Coleccionismo de Alto Nivel", "Tu tienda de confianza", "Objetos con Historia"]} speed={70} deleteSpeed={35} pause={3000} />
                         </p>
                     </Reveal>
                 </div>
@@ -359,12 +360,6 @@ export default function Inicio() {
             </section>
 
             <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes liquid-flow {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-
                 @keyframes glitch-subtle {
                     0%, 90%, 100% { transform: translate(0); opacity: 1; }
                     91% { transform: translate(-2px, 1px) skewX(1deg); opacity: 0.8; }
@@ -375,21 +370,14 @@ export default function Inicio() {
                 .subtle-glitch {
                     animation: glitch-subtle 8s infinite;
                 }
-
-                .liquid-text {
-                    background: linear-gradient(
-                        -45deg, 
-                        #ff5a00, 
-                        #ff8c00, 
-                        #ffc107, 
-                        #ff5a00
-                    );
-                    background-size: 300% 300%;
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    animation: liquid-flow 6s ease infinite;
-                    display: inline-block;
-                    padding-right: 0.05em;
+                .glow-blue {
+                    text-shadow: 0 0 20px rgba(0,62,155,0.35), 0 0 50px rgba(0,62,155,0.12);
+                }
+                .glow-orange {
+                    text-shadow: 0 0 20px rgba(255,90,0,0.35), 0 0 50px rgba(255,90,0,0.12);
+                }
+                .glow-subtitle {
+                    text-shadow: 0 0 12px rgba(255,90,0,0.25), 0 0 30px rgba(255,90,0,0.08);
                 }
                 div.hide-scrollbar {
                     scrollbar-width: none !important;

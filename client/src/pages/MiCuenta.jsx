@@ -6,6 +6,8 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const sanitizeUser = (u) => u ? { id: u.id, name: u.name, email: u.email, role: u.role } : u;
+
 export default function MiCuenta() {
     const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
@@ -120,7 +122,7 @@ export default function MiCuenta() {
             });
             
             if (res.ok) {
-                localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
+                localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(updatedUser)));
                 setUser(updatedUser);
                 setEditField(null);
                 addToast(null, 'Perfil actualizado correctamente');

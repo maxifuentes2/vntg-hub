@@ -138,9 +138,13 @@ export default function Chatbot() {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
 
+      const headers = { "Content-Type": "application/json" };
+      const token = localStorage.getItem('vntg_token');
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ message: userMsg, history: historyForGemini, fullHistory, userId, userEmail }),
         signal: controller.signal,
       });

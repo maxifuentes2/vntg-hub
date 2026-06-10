@@ -8,6 +8,15 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const sanitizeUser = (u) => u ? { id: u.id, name: u.name, email: u.email, role: u.role } : u;
+
+const formatCrypto = (amount, coin) => {
+    if (!amount || amount <= 0) return "0";
+    const decimals = { btc: 8, eth: 6, usdttrc20: 2, usdc: 2, ltc: 4, sol: 4 };
+    const d = decimals[coin] || 6;
+    return Number(amount).toFixed(d);
+};
+
 export default function Checkout() {
     const { cart, finalTotal, shippingType, setShippingType, getShippingCost, COSTO_NORMAL, COSTO_PRIO, clearCart, refreshCartPrices, cartTotal, FREE_SHIPPING_THRESHOLD } = useCart();
     const navigate = useNavigate();
@@ -75,7 +84,7 @@ export default function Checkout() {
             .then(freshUser => {
                 if (freshUser) {
                     setUser(freshUser);
-                    localStorage.setItem('vntg_user', JSON.stringify(freshUser));
+                    localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(freshUser)));
                 }
             })
             .catch(console.error);
@@ -199,7 +208,9 @@ export default function Checkout() {
     const puntosMaximos = Math.min(puntosDisponibles, puntosNecesarios);
     const puntosARestar = usePoints ? puntosMaximos : 0;
     const descuentoAplicado = puntosARestar * valorPorPunto;
-    const totalAbonar = Math.max(0, finalTotal - descuentoAplicado);
+
+    const descuentoTransferAmount = paymentMethod === 'transfer' ? Math.round(cartTotal * 0.10) : 0;
+    const totalAbonar = Math.max(0, finalTotal - descuentoAplicado - descuentoTransferAmount);
 
     const handlePollStatus = (orderId) => {
         const token = localStorage.getItem('vntg_token');
@@ -271,7 +282,7 @@ export default function Checkout() {
                         body: JSON.stringify({ field: 'dni', value: shipping.dni }),
                     });
                     const updatedUser = { ...user, dni: shipping.dni };
-                    localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
+                    localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(updatedUser)));
                     setUser(updatedUser);
                 } catch {}
             }
@@ -298,7 +309,7 @@ export default function Checkout() {
             if (res.ok) {
                 if (puntosARestar > 0) {
                     const updatedUser = { ...user, points: Math.max(0, puntosDisponibles - puntosARestar) };
-                    localStorage.setItem('vntg_user', JSON.stringify(updatedUser));
+                    localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(updatedUser)));
                 }
                 if (data.totalCero) {
                     clearCart();
@@ -696,12 +707,27 @@ export default function Checkout() {
                                         <div className="space-y-4">
                                             <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                                 <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
-                                                <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange">${Number(paymentModal.monto).toLocaleString('es-AR')} ARS</p>
-                                                <p className="text-xs text-zinc-500 mt-1">equivalente en {paymentModal.coinName || 'USDT'}</p>
+                                                <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange">
+                                                    {paymentModal.cryptoAmount ? `${formatCrypto(paymentModal.cryptoAmount, paymentModal.coin)} ${paymentModal.coinName || 'USDT'}` : `$${Number(paymentModal.monto).toLocaleString('es-AR')} ARS`}
+                                                </p>
+                                                {paymentModal.cryptoAmount ? (
+                                                    <p className="text-xs text-zinc-500 mt-1">≈ ${Number(paymentModal.monto).toLocaleString('es-AR')} ARS</p>
+                                                ) : (
+                                                    <p className="text-xs text-zinc-500 mt-1">equivalente en {paymentModal.coinName || 'USDT'}</p>
+                                                )}
                                                 {paymentModal.comision > 0 && (
                                                     <div className="mt-3 pt-3 border-t border-brand-orange/20 text-[10px] space-y-1">
-                                                        <p className="text-zinc-500">Subtotal: <span className="font-bold text-zinc-700 dark:text-zinc-300">${Number(paymentModal.subtotal).toLocaleString('es-AR')} ARS</span></p>
-                                                        <p className="text-zinc-500">Fee de red: <span className="font-bold text-brand-orange">+${Number(paymentModal.comision).toLocaleString('es-AR')} ARS</span></p>
+                                                        {paymentModal.cryptoSubtotal ? (
+                                                            <>
+                                                                <p className="text-zinc-500">Precio base: <span className="font-bold text-zinc-700 dark:text-zinc-300">{formatCrypto(paymentModal.cryptoSubtotal, paymentModal.coin)} {paymentModal.coinName || 'USDT'}</span></p>
+                                                                <p className="text-zinc-500">Comisión: <span className="font-bold text-brand-orange">+{formatCrypto(paymentModal.cryptoComision, paymentModal.coin)} {paymentModal.coinName || 'USDT'}</span></p>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-zinc-500">Subtotal: <span className="font-bold text-zinc-700 dark:text-zinc-300">${Number(paymentModal.subtotal).toLocaleString('es-AR')} ARS</span></p>
+                                                                <p className="text-zinc-500">Fee de red: <span className="font-bold text-brand-orange">+${Number(paymentModal.comision).toLocaleString('es-AR')} ARS</span></p>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -801,10 +827,10 @@ export default function Checkout() {
                                 <span>-{formatPrice(descuentoAplicado)}</span>
                             </div>
                         )}
-                        {paymentMethod === 'transfer' && (
+                        {paymentMethod === 'transfer' && descuentoTransferAmount > 0 && (
                             <div className="flex justify-between text-xs font-black uppercase text-emerald-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                                 <span>Descuento por transferencia (10%)</span>
-                                <span>-{formatPrice(Math.round(finalTotal * 0.10))}</span>
+                                <span>-{formatPrice(descuentoTransferAmount)}</span>
                             </div>
                         )}
                     </div>

@@ -12,6 +12,7 @@ import {
     Settings,
     Heart,
     Shield,
+    ChevronDown,
     X
 } from 'lucide-react'; 
 import { useCart } from '../context/CartContext';
@@ -19,6 +20,7 @@ import { useWishList } from '../context/WishListContext';
 import { useSidebar } from '../context/SidebarContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -27,17 +29,20 @@ export default function Navbar() {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
     const { user, logout: authLogout } = useAuth();
     const userMenuRef = useRef(null);
     const userButtonRef = useRef(null);
     const userDropdownRef = useRef(null);
+    const currencyMenuRef = useRef(null);
     const searchRef = useRef(null);
     
     // Conexión con el estado global de los sidebars
     const { openCart, openWishList, openCategory } = useSidebar();
     const { wishListCount } = useWishList();
     const { cartCount, cart, syncCartToServer } = useCart();
-    const { currency, toggleCurrency } = useCurrency();
+    const { currency, toggleCurrency, setCurrency } = useCurrency();
+    const { addToast } = useToast();
     const navigate = useNavigate(); 
     const location = useLocation();
 
@@ -76,6 +81,9 @@ export default function Navbar() {
         const handleClickOutside = (event) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
                 setIsUserMenuOpen(false);
+            }
+            if (currencyMenuRef.current && !currencyMenuRef.current.contains(event.target)) {
+                setIsCurrencyOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -119,6 +127,7 @@ export default function Navbar() {
         await syncCartToServer(cart);
         localStorage.removeItem('vntg_interests');
         authLogout();
+        addToast({ title: 'Sesión Cerrada' }, 'Hasta luego', 'info');
         setIsUserMenuOpen(false);
         navigate('/');
     };
@@ -226,12 +235,31 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2 max-[360px]:gap-0.5">
-                    <button onClick={toggleCurrency} className="px-2.5 py-1.5 max-[360px]:px-1.5 max-[360px]:py-1 text-[11px] max-[360px]:text-[10px] font-black uppercase italic tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors group">
-                        <span className={`flex items-center gap-1.5 ${currency === 'USD' ? 'text-brand-orange' : 'text-zinc-500 group-hover:text-brand-orange'}`}>
-                            <img src={currency === 'USD' ? '/us.png' : '/ar.png'} alt="" className="w-4 h-4 rounded-sm object-cover" />
-                            {currency}
-                        </span>
-                    </button>
+                    <div className="relative" ref={currencyMenuRef}>
+                        <button onClick={() => setIsCurrencyOpen(!isCurrencyOpen)} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors group">
+                            <span className="flex items-center gap-1 text-zinc-500 group-hover:text-brand-orange">
+                                <img src={currency === 'USD' ? '/us.png' : '/ar.png'} alt="" className="w-4 h-4 rounded-sm object-cover" />
+                                <ChevronDown size={12} className={`transition-transform duration-200 ${isCurrencyOpen ? 'rotate-180' : ''}`} />
+                            </span>
+                        </button>
+                        <div className={`absolute right-0 mt-3 w-48 bg-white dark:bg-brand-card shadow-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 rounded-2xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top-right transform ${isCurrencyOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'}`}>
+                            <p className="px-5 pt-4 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">Seleccioná la moneda</p>
+                            <button
+                                onClick={() => { setCurrency('USD'); setIsCurrencyOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-5 py-3.5 text-sm font-black uppercase italic transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 ${currency === 'USD' ? 'text-brand-orange bg-brand-orange/5' : 'text-zinc-600 dark:text-zinc-400'}`}
+                            >
+                                <img src="/us.png" alt="" className="w-5 h-5 rounded-sm object-cover" />
+                                USD
+                            </button>
+                            <button
+                                onClick={() => { setCurrency('ARS'); setIsCurrencyOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-5 py-3.5 text-sm font-black uppercase italic transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 ${currency === 'ARS' ? 'text-brand-orange bg-brand-orange/5' : 'text-zinc-600 dark:text-zinc-400'}`}
+                            >
+                                <img src="/ar.png" alt="" className="w-5 h-5 rounded-sm object-cover" />
+                                ARS
+                            </button>
+                        </div>
+                    </div>
 
                     <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 max-[360px]:p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors dark:text-white group">
                         {theme === 'dark' ? (

@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const sanitizeUser = (u) => {
+  if (!u) return null;
+  return { id: u.id, name: u.name, email: u.email, role: u.role };
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -13,7 +19,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('vntg_user', JSON.stringify(user));
+      localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(user)));
     } else {
       localStorage.removeItem('vntg_user');
     }
@@ -32,7 +38,13 @@ export function AuthProvider({ children }) {
     setToken(jwtToken);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch { /* ignore */ }
     setUser(null);
     setToken(null);
   };

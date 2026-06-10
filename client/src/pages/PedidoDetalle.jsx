@@ -7,6 +7,13 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const formatCrypto = (amount, coin) => {
+    if (!amount || amount <= 0) return "0";
+    const decimals = { btc: 8, eth: 6, usdttrc20: 2, usdc: 2, ltc: 4, sol: 4 };
+    const d = decimals[coin] || 6;
+    return Number(amount).toFixed(d);
+};
+
 const estadosEnvio = [
     { key: 'pending', label: 'Pendiente', icon: Clock, bg: 'bg-yellow-500' },
     { key: 'approved', label: 'Aprobado', icon: CircleCheck, bg: 'bg-green-500' },
@@ -290,7 +297,21 @@ export default function PedidoDetalle() {
                                         <div className="mt-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-5 space-y-2 border border-zinc-200 dark:border-zinc-700">
                                             <p className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mb-3">Pago Crypto</p>
                                             <p className="text-sm"><span className="font-bold">Moneda:</span> {paymentInfo.coinName || paymentInfo.coin}</p>
-                                            <p className="text-sm"><span className="font-bold">Monto:</span> <span className="text-lg font-black italic text-brand-orange">${Number(paymentInfo.monto).toLocaleString('es-AR')} ARS</span></p>
+                                            {paymentInfo.cryptoAmount ? (
+                                                <p className="text-sm"><span className="font-bold">Monto a enviar:</span> <span className="text-lg font-black italic text-brand-orange">{formatCrypto(paymentInfo.cryptoAmount, paymentInfo.coin)} {paymentInfo.coinName || 'USDT'}</span></p>
+                                            ) : (
+                                                <p className="text-sm"><span className="font-bold">Monto:</span> <span className="text-lg font-black italic text-brand-orange">${Number(paymentInfo.monto).toLocaleString('es-AR')} ARS</span></p>
+                                            )}
+                                            {paymentInfo.cryptoSubtotal ? (
+                                                <div className="text-[10px] space-y-0.5 text-zinc-500">
+                                                    <p>Precio base: <span className="font-bold text-zinc-700 dark:text-zinc-300">{formatCrypto(paymentInfo.cryptoSubtotal, paymentInfo.coin)} {paymentInfo.coinName || 'USDT'}</span></p>
+                                                    <p>Comisión: <span className="font-bold text-brand-orange">+{formatCrypto(paymentInfo.cryptoComision, paymentInfo.coin)} {paymentInfo.coinName || 'USDT'}</span></p>
+                                                </div>
+                                            ) : paymentInfo.comision > 0 ? (
+                                                <div className="text-[10px] space-y-0.5 text-zinc-500">
+                                                    <p>Fee de red: <span className="font-bold text-brand-orange">+${Number(paymentInfo.comision).toLocaleString('es-AR')} ARS</span></p>
+                                                </div>
+                                            ) : null}
                                             <p className="text-sm"><span className="font-bold">Dirección:</span></p>
                                             <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-700 rounded-xl p-3">
                                                 <code className="flex-1 text-[10px] font-mono break-all">{paymentInfo.address}</code>
@@ -558,12 +579,27 @@ export default function PedidoDetalle() {
                                 <div className="space-y-4">
                                     <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 text-center">
                                         <p className="text-[9px] font-black uppercase text-zinc-500 mb-1">Monto a enviar</p>
-                                        <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange">${Number(cryptoRetry.monto).toLocaleString('es-AR')} ARS</p>
-                                        <p className="text-xs text-zinc-500 mt-1">equivalente en {cryptoRetry.coinName || 'USDT'}</p>
+                                        <p className="text-3xl max-[360px]:text-xl font-black italic text-brand-orange">
+                                            {cryptoRetry.cryptoAmount ? `${formatCrypto(cryptoRetry.cryptoAmount, cryptoRetry.coin)} ${cryptoRetry.coinName || 'USDT'}` : `$${Number(cryptoRetry.monto).toLocaleString('es-AR')} ARS`}
+                                        </p>
+                                        {cryptoRetry.cryptoAmount ? (
+                                            <p className="text-xs text-zinc-500 mt-1">≈ ${Number(cryptoRetry.monto).toLocaleString('es-AR')} ARS</p>
+                                        ) : (
+                                            <p className="text-xs text-zinc-500 mt-1">equivalente en {cryptoRetry.coinName || 'USDT'}</p>
+                                        )}
                                         {cryptoRetry.comision > 0 && (
                                             <div className="mt-3 pt-3 border-t border-brand-orange/20 text-[10px] space-y-1">
-                                                <p className="text-zinc-500">Subtotal: <span className="font-bold text-zinc-700 dark:text-zinc-300">${Number(cryptoRetry.subtotal).toLocaleString('es-AR')} ARS</span></p>
-                                                <p className="text-zinc-500">Fee de red: <span className="font-bold text-brand-orange">+${Number(cryptoRetry.comision).toLocaleString('es-AR')} ARS</span></p>
+                                                {cryptoRetry.cryptoSubtotal ? (
+                                                    <>
+                                                        <p className="text-zinc-500">Precio base: <span className="font-bold text-zinc-700 dark:text-zinc-300">{formatCrypto(cryptoRetry.cryptoSubtotal, cryptoRetry.coin)} {cryptoRetry.coinName || 'USDT'}</span></p>
+                                                        <p className="text-zinc-500">Comisión: <span className="font-bold text-brand-orange">+{formatCrypto(cryptoRetry.cryptoComision, cryptoRetry.coin)} {cryptoRetry.coinName || 'USDT'}</span></p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-zinc-500">Subtotal: <span className="font-bold text-zinc-700 dark:text-zinc-300">${Number(cryptoRetry.subtotal).toLocaleString('es-AR')} ARS</span></p>
+                                                        <p className="text-zinc-500">Fee de red: <span className="font-bold text-brand-orange">+${Number(cryptoRetry.comision).toLocaleString('es-AR')} ARS</span></p>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>
