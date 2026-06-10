@@ -293,7 +293,8 @@ const sendEmail = async (type, to, data) => {
 
     if (resend) {
         try {
-            const { error } = await resend.emails.send({ from, to, subject, html });
+            const resendFrom = process.env.RESEND_FROM || '"VNTG Hub" <onboarding@resend.dev>';
+            const { error } = await resend.emails.send({ from: resendFrom, to, subject, html });
             if (error) {
                 console.error(`[email] Error Resend type="${type}" to="${to}":`, error);
             } else {
