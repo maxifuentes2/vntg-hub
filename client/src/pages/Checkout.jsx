@@ -416,11 +416,12 @@ export default function Checkout() {
         setProofData({ titular: '', banco: '', nroOperacion: '' });
         setFileError('');
         setLoading(false);
-        setCheckoutSent(false);
 
         if (proofUploaded && orderId) {
             clearCart();
             navigate(`/pedido/${orderId}`);
+        } else {
+            setCheckoutSent(false);
         }
     };
 
