@@ -21,7 +21,6 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const sgMail = require("@sendgrid/mail");
 if (process.env.SENDGRID_API_KEY) sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-const { google } = require("googleapis");
 const GmailPoller = require("./imapPoller");
 
 const shipping = require("./shipping");
@@ -289,9 +288,20 @@ const sendViaGmailAPI = async (from, to, subject, html) => {
     const gmailSecret = process.env.GMAIL_CLIENT_SECRET;
     const gmailRefresh = process.env.GMAIL_REFRESH_TOKEN;
     if (!gmailId || !gmailSecret || !gmailRefresh) return null;
-    const oauth = new OAuth2Client(gmailId, gmailSecret, "https://developers.google.com/oauthplayground");
-    oauth.setCredentials({ refresh_token: gmailRefresh });
-    const gmail = google.gmail({ version: "v1", auth: oauth });
+
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+            client_id: gmailId,
+            client_secret: gmailSecret,
+            refresh_token: gmailRefresh,
+            grant_type: "refresh_token",
+        }),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error || "No access token");
+
     const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
     const messageParts = [
         `From: ${from}`,
@@ -304,7 +314,19 @@ const sendViaGmailAPI = async (from, to, subject, html) => {
         Buffer.from(html).toString('base64'),
     ];
     const raw = Buffer.from(messageParts.join('\r\n')).toString('base64url');
-    await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+
+    const sendRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ raw }),
+    });
+    if (!sendRes.ok) {
+        const errBody = await sendRes.text();
+        throw new Error(`${sendRes.status} ${errBody}`);
+    }
 };
 
 const sendEmail = async (type, to, data) => {
