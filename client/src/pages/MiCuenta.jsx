@@ -164,7 +164,41 @@ export default function MiCuenta() {
         setIsEditingAddress(true);
     };
 
+    // FUNCIÓN DE VALIDACIÓN PARA SÍMBOLOS
+    const hasOnlySymbols = (str) => {
+        if (!str) return false;
+        return str.length > 0 && !/[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/.test(str);
+    };
+
+    // VARIABLES DE ESTADO VISUAL PARA DIRECCIONES
+    const cpInvalido = /[^\d]/.test(currentAddress?.zip_code || '');
+    const telefonoInvalido = /[a-zA-Z]/.test(currentAddress?.phone || '') || hasOnlySymbols(currentAddress?.phone);
+    const tagInvalido = hasOnlySymbols(currentAddress?.tag);
+    const direccionInvalida = hasOnlySymbols(currentAddress?.address);
+    const ciudadTieneNumeros = /\d/.test(currentAddress?.city || '');
+    const provinciaTieneNumeros = /\d/.test(currentAddress?.province || '');
+    const ciudadInvalida = hasOnlySymbols(currentAddress?.city) || ciudadTieneNumeros;
+    const provinciaInvalida = hasOnlySymbols(currentAddress?.province) || provinciaTieneNumeros;
+
+    const isFormInvalid = 
+        !currentAddress?.address?.trim() || 
+        !currentAddress?.city?.trim() || 
+        !currentAddress?.province?.trim() || 
+        !currentAddress?.zip_code?.trim() || 
+        !currentAddress?.phone?.trim() ||
+        cpInvalido || 
+        telefonoInvalido || 
+        tagInvalido ||
+        direccionInvalida ||
+        ciudadInvalida ||
+        provinciaInvalida;
+
     const handleSaveAddress = async () => {
+        if (isFormInvalid) {
+            addToast(null, 'Por favor, completa los campos correctamente', 'error');
+            return;
+        }
+
         const body = {
             tag: currentAddress.tag,
             address: currentAddress.address,
@@ -241,28 +275,77 @@ export default function MiCuenta() {
 
     if (!user) return null;
 
-    const UserDataField = ({ label, field, value }) => (
-         <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center group">
-            <div>
-                <p className="text-[9px] font-black uppercase text-zinc-500">{label}</p>
-                 {editField === field ? (
-                    <input autoFocus value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="w-full bg-transparent text-sm font-bold border-b border-brand-orange outline-none py-1 dark:text-white" />
-                ) : (
-                    <p className="text-sm font-bold italic">{value}</p>
-                )}
+    // COMPONENTE DE CAMPOS DEL PERFIL CON VALIDACIÓN
+    const UserDataField = ({ label, field, value }) => {
+        let isInvalid = false;
+        let errorMessage = '';
+
+        if (editField === field) {
+            if (field === 'name') {
+                if (/\d/.test(tempValue)) {
+                    isInvalid = true;
+                    errorMessage = 'El nombre no puede contener números';
+                }
+            } else if (field === 'email') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(tempValue) && tempValue.length > 0) {
+                    isInvalid = true;
+                    errorMessage = 'Ingresa un correo válido (ej: @gmail.com)';
+                }
+            } else if (field === 'dni') {
+                if (tempValue.length > 0 && tempValue.length < 7) {
+                    isInvalid = true;
+                    errorMessage = 'El DNI/CUIT debe tener entre 7 y 11 números';
+                }
+            }
+        }
+
+        const handleTempChange = (e) => {
+            let val = e.target.value;
+            // Para el DNI, borramos las letras al instante y limitamos a 11
+            if (field === 'dni') {
+                val = val.replace(/\D/g, '').slice(0, 11);
+            }
+            setTempValue(val);
+        };
+
+        return (
+            <div className="p-4 bg-zinc-100 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center group">
+                <div className="w-full mr-4">
+                    <p className="text-[9px] font-black uppercase text-zinc-500">{label}</p>
+                    {editField === field ? (
+                        <>
+                            <input 
+                                autoFocus 
+                                value={tempValue} 
+                                onChange={handleTempChange} 
+                                className={`w-full bg-transparent text-sm font-bold border-b outline-none py-1 dark:text-white transition-colors ${isInvalid ? 'border-red-500 text-red-500' : 'border-brand-orange'}`} 
+                            />
+                            {isInvalid && <p className="text-red-500 text-[9px] font-bold uppercase mt-1">{errorMessage}</p>}
+                        </>
+                    ) : (
+                        <p className="text-sm font-bold italic">{value}</p>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    {editField === field ? (
+                        <>
+                            <button 
+                                onClick={() => saveEdit(field)} 
+                                disabled={isInvalid || !tempValue} 
+                                className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <Check size={16}/>
+                            </button>
+                            <button onClick={cancelEdit} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><X size={16}/></button>
+                        </>
+                    ) : (
+                        <button onClick={() => startEdit(field, value)} className="p-2 text-zinc-400 group-hover:text-brand-orange opacity-0 group-hover:opacity-100 transition-all"><Pencil size={14}/></button>
+                    )}
+                </div>
             </div>
-             <div className="flex items-center gap-2">
-                {editField === field ? (
-                    <>
-                        <button onClick={() => saveEdit(field)} className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg"><Check size={16}/></button>
-                        <button onClick={cancelEdit} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><X size={16}/></button>
-                    </>
-                ) : (
-                    <button onClick={() => startEdit(field, value)} className="p-2 text-zinc-400 group-hover:text-brand-orange opacity-0 group-hover:opacity-100 transition-all"><Pencil size={14}/></button>
-                )}
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="bg-zinc-50 dark:bg-brand-dark min-h-screen pt-32 pb-20 px-4 font-sans text-zinc-900 dark:text-white">
@@ -301,7 +384,7 @@ export default function MiCuenta() {
                     </div>
                 </section>
 
-                {/* NUEVA SECCIÓN LIBRETA DE DIRECCIONES */}
+                {/* SECCIÓN LIBRETA DE DIRECCIONES */}
                 <section>
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xs font-black uppercase italic tracking-[0.3em] text-zinc-500 flex items-center gap-3">
@@ -318,32 +401,87 @@ export default function MiCuenta() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Etiqueta (Ej. Casa, Trabajo)</label>
-                                    <input value={currentAddress.tag} onChange={e => setCurrentAddress({...currentAddress, tag: e.target.value})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" placeholder="Mi Casa" />
+                                    <input 
+                                        value={currentAddress.tag} 
+                                        onChange={e => setCurrentAddress({...currentAddress, tag: e.target.value})} 
+                                        className={`w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border transition-colors focus:outline-none ${tagInvalido ? 'border-red-500 focus:border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-brand-orange'}`} 
+                                        placeholder="Mi Casa" 
+                                    />
+                                    {tagInvalido && <p className="text-red-500 text-[9px] font-bold uppercase mt-1">Ingresa un nombre válido</p>}
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Calle y Número</label>
-                                    <input value={currentAddress.address} onChange={e => setCurrentAddress({...currentAddress, address: e.target.value})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input 
+                                        value={currentAddress.address} 
+                                        onChange={e => setCurrentAddress({...currentAddress, address: e.target.value})} 
+                                        className={`w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border transition-colors focus:outline-none ${direccionInvalida ? 'border-red-500 focus:border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-brand-orange'}`} 
+                                    />
+                                    {direccionInvalida && <p className="text-red-500 text-[9px] font-bold uppercase mt-1">Ingresa una dirección válida</p>}
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Ciudad</label>
-                                    <input value={currentAddress.city} onChange={e => setCurrentAddress({...currentAddress, city: e.target.value})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input 
+                                        value={currentAddress.city} 
+                                        onChange={e => setCurrentAddress({...currentAddress, city: e.target.value})} 
+                                        className={`w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border transition-colors focus:outline-none ${ciudadInvalida && currentAddress.city.length > 0 ? 'border-red-500 focus:border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-brand-orange'}`} 
+                                    />
+                                    {ciudadInvalida && currentAddress.city.length > 0 && (
+                                        <p className="text-red-500 text-[9px] font-bold uppercase mt-1">
+                                            {ciudadTieneNumeros ? 'Sin números (ej: usa "Nueve" en vez de 9)' : 'Ingresa una ciudad válida'}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Provincia</label>
-                                    <input value={currentAddress.province} onChange={e => setCurrentAddress({...currentAddress, province: e.target.value})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input 
+                                        value={currentAddress.province} 
+                                        onChange={e => setCurrentAddress({...currentAddress, province: e.target.value})} 
+                                        className={`w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border transition-colors focus:outline-none ${provinciaInvalida && currentAddress.province.length > 0 ? 'border-red-500 focus:border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-brand-orange'}`} 
+                                    />
+                                    {provinciaInvalida && currentAddress.province.length > 0 && (
+                                        <p className="text-red-500 text-[9px] font-bold uppercase mt-1">
+                                            {provinciaTieneNumeros ? 'La provincia no puede contener números' : 'Ingresa una provincia válida'}
+                                        </p>
+                                    )}
                                 </div>
+                                
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Código Postal</label>
-                                    <input value={currentAddress.zip_code} onChange={e => setCurrentAddress({...currentAddress, zip_code: e.target.value.replace(/\D/g, '')})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input 
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={currentAddress.zip_code} 
+                                        onChange={e => setCurrentAddress({...currentAddress, zip_code: e.target.value.slice(0, 8)})} 
+                                        className={`w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border transition-colors focus:outline-none ${cpInvalido && currentAddress.zip_code.length > 0 ? 'border-red-500 focus:border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-brand-orange'}`} 
+                                    />
+                                    {cpInvalido && currentAddress.zip_code.length > 0 && (
+                                        <p className="text-red-500 text-[9px] font-bold uppercase mt-1">Solo se permiten números</p>
+                                    )}
                                 </div>
+                                
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-zinc-500 block mb-1">Teléfono</label>
-                                    <input value={currentAddress.phone} onChange={e => setCurrentAddress({...currentAddress, phone: e.target.value.replace(/\D/g, '')})} className="w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border border-zinc-200 dark:border-zinc-800" />
+                                    <input 
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={currentAddress.phone} 
+                                        onChange={e => setCurrentAddress({...currentAddress, phone: e.target.value.slice(0, 20)})} 
+                                        className={`w-full bg-zinc-100 dark:bg-black p-2 rounded text-sm dark:text-white border transition-colors focus:outline-none ${telefonoInvalido && currentAddress.phone.length > 0 ? 'border-red-500 focus:border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-brand-orange'}`} 
+                                    />
+                                    {telefonoInvalido && currentAddress.phone.length > 0 && (
+                                        <p className="text-red-500 text-[9px] font-bold uppercase mt-1">Ingresa un teléfono válido</p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex gap-4 mt-6">
-                                <button onClick={handleSaveAddress} className="bg-brand-orange text-white px-6 py-2 rounded text-xs font-black uppercase italic hover:bg-orange-600 transition-colors">Guardar Dirección</button>
-                                <button onClick={() => setIsEditingAddress(false)} className="text-zinc-500 hover:text-white text-xs font-black uppercase italic transition-colors">Cancelar</button>
+                                <button 
+                                    onClick={handleSaveAddress} 
+                                    disabled={isFormInvalid}
+                                    className="bg-brand-orange text-white px-6 py-2 rounded text-xs font-black uppercase italic transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 active:scale-95"
+                                >
+                                    Guardar Dirección
+                                </button>
+                                <button onClick={() => setIsEditingAddress(false)} className="text-zinc-500 hover:text-brand-orange dark:hover:text-white text-xs font-black uppercase italic transition-colors">Cancelar</button>
                             </div>
                         </div>
                     ) : (
