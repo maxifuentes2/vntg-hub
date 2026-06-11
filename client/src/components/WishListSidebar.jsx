@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Heart, HeartCrack, Trash2, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useWishList } from '../context/WishListContext'; 
 import { useCart } from '../context/CartContext'; 
 import { useCurrency } from '../context/CurrencyContext'; 
 import { useSidebar } from '../context/SidebarContext';
-import { slugify } from '../utils/slugify'; // <-- Importante
+import { slugify } from '../utils/slugify';
 import SidebarWrapper from './SidebarWrapper';
 
-export default function WishListSidebar() { // <-- Sin props
-    const { isWishListOpen, closeAll } = useSidebar(); // <-- Obtenemos el estado global
+export default function WishListSidebar() {
+    const { isWishListOpen, closeAll } = useSidebar();
     const { wishListItems, removeFromWishList, clearWishList } = useWishList();
     const { addToCart } = useCart();
     const { formatPrice } = useCurrency();
     const [confirmClear, setConfirmClear] = useState(false);
+    
+    // Agregamos useNavigate y useLocation
+    const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         if (!confirmClear) return;
@@ -50,7 +54,20 @@ export default function WishListSidebar() { // <-- Sin props
                     <HeartCrack size={48} className="text-zinc-300 dark:text-zinc-600 mb-4" />
                     <h3 className="text-lg font-bold mb-2">Tu lista está vacía</h3>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">Aún no has guardado ningún tesoro.</p>
-                    <button onClick={closeAll} className="bg-brand-orange text-white px-6 py-2 rounded-xl font-bold uppercase italic hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20">Seguir Explorando</button>
+                    <button 
+                        onClick={() => {
+                            closeAll(); // Cierra el panel lateral
+                            // Verifica si ya estás en el home
+                            if (location.pathname === '/') {
+                                window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube suavemente
+                            } else {
+                                navigate('/'); // Viaja al home
+                            }
+                        }} 
+                        className="bg-brand-orange text-white px-6 py-2 rounded-xl font-bold uppercase italic hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20"
+                    >
+                        Seguir Explorando
+                    </button>
                 </div>
             ) : (
                 <>
