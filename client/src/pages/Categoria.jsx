@@ -43,7 +43,7 @@ const Categoria = () => {
     const { slug } = useParams();
     const location = useLocation(); 
     const { addToCart } = useCart(); 
-    const { addToWishList } = useWishList();
+    const { addToWishList, wishListItems, removeFromWishList } = useWishList();
     const { formatPrice } = useCurrency();
     
     const [categoryId, setCategoryId] = useState(null);
@@ -255,12 +255,17 @@ const Categoria = () => {
                                 <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
                                     <p className="text-xl max-[400px]:text-lg font-black italic">{formatPrice(item.price)}</p>
                                     <div className="flex items-center gap-4">
-                                        <button 
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToWishList(item); }} 
-                                            className="text-zinc-400 hover:text-brand-orange transition-colors p-2"
-                                        >
-                                            <Heart size={24} />
-                                        </button>
+                                        {(() => {
+                                            const isWished = wishListItems.some(w => String(w.id) === String(item.id));
+                                            return (
+                                                <button 
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); isWished ? removeFromWishList(item.id) : addToWishList(item); }} 
+                                                    className={`transition-colors p-2 ${isWished ? 'text-brand-orange' : 'text-zinc-400 hover:text-brand-orange'}`}
+                                                >
+                                                    <Heart size={24} fill={isWished ? "currentColor" : "none"} />
+                                                </button>
+                                            );
+                                        })()}
                                         <button 
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item); }} 
                                             disabled={item.stock === 0}
