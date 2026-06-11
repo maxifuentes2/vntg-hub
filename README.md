@@ -42,7 +42,7 @@ Plataforma completa con catálogo, carrito, wishlist, autenticación, pagos (Mer
 ### Medios de Pago
 - **Mercado Pago** — Tarjetas de crédito/débito, efectivo y transferencia
 - **Criptomonedas** — USDT (TRC20), USDC, BTC, ETH, LTC, SOL con direcciones estáticas, QR y verificación manual
-- **Transferencia bancaria** — Subida de comprobante (imagen)
+- **Transferencia bancaria** — Envío de datos del comprobante (titular, banco y nro. de operación) en texto plano para verificación manual
 
 ### Chatbot con IA
 - Asistente conversacional vía Groq API (Llama 3) con fetch directo
@@ -122,7 +122,6 @@ Plataforma completa con catálogo, carrito, wishlist, autenticación, pagos (Mer
 | Google APIs | 173 | Gmail API (poller soporte) |
 | Nodemailer | 8 | Envío de emails |
 | SendGrid | 8 | Email transaccional (fallback) |
-| Multer | 2 | Subida de comprobantes |
 | cookie-parser | 1 | Cookies |
 | cors | 2 | CORS |
 | dotenv | 17 | Variables de entorno |
@@ -418,8 +417,8 @@ Todas las rutas en `server/index.js` (Express 5, CommonJS).
 - Verificación manual por el admin
 
 ### Transferencia Bancaria
-- Subida de comprobante (imagen) por el usuario
-- Verificación manual por el admin
+- Envío de datos del comprobante (titular, banco y nro. de operación) en texto plano por el usuario
+- Verificación manual por el admin desde el panel de administración
 
 ---
 
@@ -534,7 +533,7 @@ Las siguientes dependencias están en `package.json` pero no se usan en el códi
 
 **Cliente:** `@clerk/clerk-react`, `@mercadopago/sdk-react`, `@tailwindcss/vite`, `axios`, `mercadopago` (server SDK), `next-themes`, `uuid`
 
-**Servidor:** `express-rate-limit` (importado pero sin usar), `groq-sdk` (se usa fetch directo), `mailparser`
+**Servidor:** `express-rate-limit` (importado pero sin usar), `groq-sdk` (se usa fetch directo), `mailparser`, `multer` (configurado pero sin usar)
 
 ---
 
