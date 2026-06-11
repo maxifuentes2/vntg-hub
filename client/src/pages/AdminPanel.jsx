@@ -200,6 +200,7 @@ export default function AdminPanel() {
                 addToast({ title: productForm.title }, editingItem ? 'Producto actualizado' : 'Producto creado', 'success');
                 setIsProductModalOpen(false);
                 fetchData();
+                window.dispatchEvent(new CustomEvent('vntg-categories-update'));
             } else {
                 addToast({}, 'Error al guardar producto', 'error');
             }
@@ -271,6 +272,9 @@ export default function AdminPanel() {
                 addToast({ title }, `${label} eliminado correctamente`, 'success');
                 setConfirmDelete({ isOpen: false, id: null, ids: null, title: '', type: '' });
                 fetchData();
+                if (type === 'product' || type === 'category') {
+                    window.dispatchEvent(new CustomEvent('vntg-categories-update'));
+                }
             } else {
                 addToast({}, `Error al eliminar ${label}`, 'error');
             }
@@ -313,6 +317,7 @@ export default function AdminPanel() {
                 addToast({ title: categoryForm.name || 'Categoría' }, categoryForm.id ? 'Categoría actualizada' : 'Categoría creada', 'success');
                 setIsCategoryModalOpen(false);
                 fetchData();
+                window.dispatchEvent(new CustomEvent('vntg-categories-update'));
             } else {
                 addToast({}, 'Error al guardar categoría', 'error');
             }

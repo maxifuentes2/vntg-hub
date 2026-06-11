@@ -87,7 +87,7 @@ const Categoria = () => {
                 const resCats = await fetch(`${API_URL}/api/categories`);
                 const cats = await resCats.json();
                 
-                let resolvedId = slug;
+                let resolvedId = null;
                 if (slug !== 'all' && slug !== 'recomendados') {
                     const catActual = cats.find(c => c.slug === slug || slugify(c.name) === slug);
                     if (catActual) {
@@ -100,6 +100,12 @@ const Categoria = () => {
                     setCategoriaInfo(null);
                 }
                 setCategoryId(resolvedId);
+
+                if (slug !== 'all' && slug !== 'recomendados' && resolvedId == null) {
+                    setProductos([]);
+                    setLoading(false);
+                    return;
+                }
 
                 let url = `${API_URL}/api/products?minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
                 if (slug !== 'all' && slug !== 'recomendados') {

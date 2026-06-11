@@ -582,7 +582,7 @@ app.get("/api/products/:id", async (req, res) => {
 app.get("/api/categories", async (req, res) => {
     try {
         const [rows] = await db.query(
-            "SELECT DISTINCT c.* FROM categories c INNER JOIN products p ON c.id = p.categoryId",
+            "SELECT * FROM categories",
         );
         // Agregar campo slug derivado del nombre
         const withSlug = rows.map((c) => ({ ...c, slug: slugify(c.name) }));

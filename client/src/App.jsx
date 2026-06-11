@@ -147,12 +147,25 @@ function App() {
   const [categories, setCategories] = useState([]); 
 
   // Carga de categorías para el CategorySidebar
-  useEffect(() => {
+  const loadCategories = () => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     fetch(`${API_URL}/api/categories`)
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => console.error("Error cargando categorías en App:", err));
+  };
+
+  useEffect(() => {
+    loadCategories();
+    const onUpdate = () => loadCategories();
+    window.addEventListener('vntg-categories-update', onUpdate);
+    window.addEventListener('popstate', onUpdate);
+    window.addEventListener('focus', onUpdate);
+    return () => {
+      window.removeEventListener('vntg-categories-update', onUpdate);
+      window.removeEventListener('popstate', onUpdate);
+      window.removeEventListener('focus', onUpdate);
+    };
   }, []);
 
   return (
