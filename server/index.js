@@ -464,12 +464,14 @@ app.get("/api/products", async (req, res) => {
         // Normalizar: quitar acentos y pasar a minúsculas
         const normalizedQ = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         
-        // Diccionario local de sinónimos para rapidez y fiabilidad extrema
+        // Diccionario local de sinónimos para enriquecer la búsqueda
+        // IMPORTANTE: Solo incluir términos específicos del dominio, evitar palabras
+        // demasiado genéricas que aparezcan en descripciones de productos no relacionados
         const synonymMap = {
-            "peliculas": ["cine", "movie", "film", "hollywood", "estreno", "pantalla"],
-            "pelicula": ["cine", "movie", "film", "hollywood", "estreno", "pantalla"],
-            "autos": ["coche", "vehiculo", "car", "escala", "motor", "ruedas"],
-            "auto": ["coche", "vehiculo", "car", "escala", "motor", "ruedas"],
+            "peliculas": ["cine", "film", "hollywood", "estreno"],
+            "pelicula": ["cine", "film", "hollywood", "estreno"],
+            "autos": ["coche", "vehiculo", "automovil"],
+            "auto": ["coche", "vehiculo", "automovil"],
             "figuras": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys", "funko"],
             "figura": ["figura", "coleccionable", "statue", "action figure", "muñeco", "toys", "funko"],
             "comics": ["historieta", "dc", "marvel", "manga", "lectura"],
@@ -514,12 +516,13 @@ app.get("/api/products", async (req, res) => {
             keywordConditions.push("(LOWER(p.title) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.franchise) LIKE ? OR LOWER(c.name) LIKE ?)");
             params.push(`%${normalizedQ}%`, `%${normalizedQ}%`, `%${normalizedQ}%`, `%${normalizedQ}%`);
 
-            // 2. Coincidencia de palabras clave en TODOS los campos técnicos
+            // 2. Coincidencia de palabras clave expandidas solo en campos relevantes
+            // (título, franquicia, categoría) para evitar falsos positivos con términos genéricos
             keywords.forEach(word => {
                 if (word.length < 3) return;
-                keywordConditions.push("(LOWER(p.title) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.franchise) LIKE ? OR LOWER(p.escala) LIKE ? OR LOWER(p.fabricante) LIKE ? OR LOWER(p.anio) LIKE ? OR LOWER(p.material) LIKE ? OR LOWER(c.name) LIKE ?)");
+                keywordConditions.push("(LOWER(p.title) LIKE ? OR LOWER(p.franchise) LIKE ? OR LOWER(c.name) LIKE ?)");
                 const searchTerm = `%${word}%`;
-                params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+                params.push(searchTerm, searchTerm, searchTerm);
             });
 
             sql += keywordConditions.join(" OR ");
