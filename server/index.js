@@ -579,6 +579,27 @@ app.get("/api/products/:id", async (req, res) => {
     }
 });
 
+// Debug endpoint para diagnosticar problemas de categorías
+app.get("/api/debug-categories", async (req, res) => {
+    try {
+        const [categories] = await db.query("SELECT * FROM categories");
+        const [products] = await db.query("SELECT id, title, categoryId FROM products ORDER BY id DESC LIMIT 50");
+        const [mismatches] = await db.query(
+            `SELECT p.id, p.title, p.categoryId
+             FROM products p
+             LEFT JOIN categories c ON p.categoryId = c.id
+             WHERE p.categoryId IS NOT NULL AND c.id IS NULL
+             LIMIT 20`
+        );
+        const [zeros] = await db.query(
+            `SELECT id, title, categoryId FROM products WHERE categoryId IS NULL OR categoryId = 0 OR categoryId = ''`
+        );
+        res.json({ categories, products, mismatches, zeros });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get("/api/categories", async (req, res) => {
     try {
         const [rows] = await db.query(

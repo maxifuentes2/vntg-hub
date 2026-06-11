@@ -107,12 +107,16 @@ const Categoria = () => {
                     return;
                 }
 
-                let url = `${API_URL}/api/products?minPrice=${precioMinFinal}&maxPrice=${precioMaxFinal}`;
+                let url = `${API_URL}/api/products`;
+                const queryParts = [];
+                if (precioMinFinal > 0) queryParts.push(`minPrice=${precioMinFinal}`);
+                if (precioMaxFinal < 1000000) queryParts.push(`maxPrice=${precioMaxFinal}`);
                 if (slug !== 'all' && slug !== 'recomendados') {
-                    url += `&categoryId=${resolvedId}`;
+                    queryParts.push(`categoryId=${resolvedId}`);
                 }
-                if (franquiciasSeleccionadas.length > 0) url += `&franchise=${franquiciasSeleccionadas.join(',')}`;
-                if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
+                if (franquiciasSeleccionadas.length > 0) queryParts.push(`franchise=${franquiciasSeleccionadas.join(',')}`);
+                if (searchQuery) queryParts.push(`q=${encodeURIComponent(searchQuery)}`);
+                if (queryParts.length > 0) url += '?' + queryParts.join('&');
 
                 const res = await fetch(url);
                 const data = await res.json();
