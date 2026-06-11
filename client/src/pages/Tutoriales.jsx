@@ -241,8 +241,8 @@ export default function Tutoriales() {
           <div className="inline-flex items-center justify-center p-4 bg-brand-orange/10 dark:bg-brand-orange/5 rounded-3xl mb-8 border border-brand-orange/20 shadow-[0_0_30px_rgba(249,115,22,0.15)]">
             <Play size={40} className="text-brand-orange animate-pulse" />
           </div>
-          <h1 className="text-5xl md:text-7xl font-black italic uppercase text-zinc-900 dark:text-white mb-6 tracking-tighter drop-shadow-sm">
-            VNTG <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-400">Tutoriales</span>
+          <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6 subtle-glitch">
+            <span className="text-[#003e9b]">VNTG</span> <span className="text-[#ff5a00]">Tutoriales</span>
           </h1>
           <p className="text-lg md:text-2xl font-medium italic text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed">
             Domina nuestra plataforma en minutos. Seleccionamos estas guías exclusivas para que tu experiencia sea rápida, segura y sin complicaciones.
