@@ -5,7 +5,7 @@
 Plataforma completa con catálogo, carrito, wishlist, autenticación, pagos (Mercado Pago + crypto + transferencia), chatbot con IA, panel administrador, panel de soporte, reproductor de video y más.
 
 - **Live:** [vntg-hub.vercel.app](https://vntg-hub.vercel.app)
-- **API:** [Alojada en Render]
+- **API:** Alojada en Render
 
 ---
 
