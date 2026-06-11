@@ -246,7 +246,7 @@ vntg-hub/
 | `/admin` | **AdminPanel** | CRUD productos, categorías, pedidos, envíos, puntos |
 | `/soporte` | **SupportPanel** | Gestión de tickets, filtros, borrado múltiple |
 | `/puntos` | **Puntos** | Info del sistema de puntos |
-| `/tutoriales` | **Tutoriales** | Videoteca con reproductor custom |
+| `/tutoriales` | **Tutoriales** | Videoteca con reproductor custom. 6 tutoriales: "Cómo utilizar el Chat Bot", "Cómo utilizar los Filtros de búsqueda", "Cómo gestionar tus intereses", "Cómo guardar tus direcciones", "Cómo usar diferentes medios de pago", "Cómo iniciar sesión/registrarse" |
 | `/guia-autenticidad` | **GuiaAutenticidad** | Guía de autenticidad |
 | `/envios` | **EnviosSeguros** | Políticas de envío |
 | `/contacto` | **Contacto** | Formulario de contacto |
