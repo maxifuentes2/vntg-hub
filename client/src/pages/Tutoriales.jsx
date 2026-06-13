@@ -50,6 +50,12 @@ const tutoriales = [
   }
 ];
 
+const getPosterUrl = (videoUrl) => {
+  // Cloudinary: https://res.cloudinary.com/<cloud>/video/upload/<version>/<id>.mp4
+  // Poster:     https://res.cloudinary.com/<cloud>/video/upload/so_1/<version>/<id>.jpg
+  return videoUrl.replace('/upload/', '/upload/so_1/').replace('.mp4', '.jpg');
+};
+
 export default function Tutoriales() {
   const videoRefs = useRef({});
   const [playingStates, setPlayingStates] = useState({});
@@ -274,6 +280,7 @@ export default function Tutoriales() {
                       ref={setVideoRef(tutorial.id)}
                       className={`w-full h-full pointer-events-none ${fullscreenVideoId === tutorial.id ? 'object-contain max-h-screen' : 'object-cover'} transition-transform duration-700`}
                       preload="metadata"
+                      poster={getPosterUrl(tutorial.videoUrl)}
                       playsInline
                       onTimeUpdate={() => handleTimeUpdate(tutorial.id)}
                       onEnded={() => handleEnded(tutorial.id)}
