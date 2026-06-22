@@ -1,25 +1,21 @@
 import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const CartProvider = ({ children }) => {
     const { addToast } = useToast();
+    const { user: authUser, token: authToken } = useAuth();
     const [cart, setCart] = useState(() => {
+        if (authUser) return [];
         const savedCart = localStorage.getItem('vntg_cart');
         return savedCart ? JSON.parse(savedCart) : [];
     });
 
     const [shippingType, setShippingType] = useState('normal');
-    const [user, setUser] = useState(() => {
-        try {
-            const stored = localStorage.getItem('vntg_user');
-            return stored && stored !== "undefined" ? JSON.parse(stored) : null;
-        } catch {
-            return null;
-        }
-    });
+    const [serverCartReady, setServerCartReady] = useState(false);
 
     const [shippingConfig, setShippingConfig] = useState({
         envioNormal: 9426.05, envioPrioritario: 17276.99, envioGratisDesde: 200000,
@@ -39,36 +35,25 @@ export const CartProvider = ({ children }) => {
     const COSTO_NORMAL = shippingConfig.envioNormal;
     const COSTO_PRIO = shippingConfig.envioPrioritario;
 
-    // Persistir a localStorage en cada cambio
+    // Persistir a localStorage solo para invitados
     useEffect(() => {
+        if (authUser) return;
         localStorage.setItem('vntg_cart', JSON.stringify(cart));
-    }, [cart]);
-
-    // Detectar cambios de usuario desde otras pestañas
-    useEffect(() => {
-        const handleStorage = (e) => {
-            if (e.key === 'vntg_user') {
-                try {
-                    setUser(e.newValue && e.newValue !== "undefined" ? JSON.parse(e.newValue) : null);
-                } catch {
-                    setUser(null);
-                }
-            }
-        };
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
+    }, [cart, authUser]);
 
     const getToken = () => localStorage.getItem('vntg_token');
 
+    // Lee usuario desde localStorage (evita depender de authUser en efectos de sync)
+    const getStoredUser = () => {
+        try {
+            const stored = localStorage.getItem('vntg_user');
+            return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+        } catch { return null; }
+    };
+
     // Sincronizar al servidor
     const syncCartToServer = useCallback(async (itemsToSync) => {
-        const currentUser = (() => {
-            try {
-                const stored = localStorage.getItem('vntg_user');
-                return stored && stored !== "undefined" ? JSON.parse(stored) : null;
-            } catch { return null; }
-        })();
+        const currentUser = getStoredUser();
         if (!currentUser || !itemsToSync) return;
         const token = getToken();
         if (!token) return;
@@ -84,73 +69,48 @@ export const CartProvider = ({ children }) => {
         } catch {}
     }, []);
 
-    // Traer carrito del servidor al montar si hay usuario logueado
+    // Al iniciar sesión: limpiar carrito local y traer el del servidor
     useEffect(() => {
-        const storedUser = (() => {
-            try {
-                const stored = localStorage.getItem('vntg_user');
-                return stored && stored !== "undefined" ? JSON.parse(stored) : null;
-            } catch { return null; }
-        })();
-        if (!storedUser) return;
+        if (!authUser) {
+            setServerCartReady(false);
+            return;
+        }
+
+        setServerCartReady(false);
+        localStorage.removeItem('vntg_cart');
 
         const fetchServerCart = async () => {
-            const token = getToken();
-            if (!token) return;
+            if (!authToken) return;
             try {
-                const res = await fetch(`${API_URL}/api/cart/${storedUser.id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const res = await fetch(`${API_URL}/api/cart/${authUser.id}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 if (!res.ok) return;
                 const serverItems = await res.json();
-                if (!serverItems.length) return;
-
-                setCart(prev => {
-                    const merged = prev.map(i => ({ ...i }));
-                    for (const si of serverItems) {
-                        const idx = merged.findIndex(i => i.id === si.product_id);
-                        if (idx >= 0) {
-                            merged[idx] = {
-                                ...merged[idx],
-                                cantidad: Math.max(merged[idx].cantidad, si.quantity),
-                            };
-                        } else {
-                            merged.push({
-                                id: si.product_id,
-                                title: si.title,
-                                price: si.price,
-                                stock: si.stock,
-                                images: si.images,
-                                cantidad: si.quantity,
-                            });
-                        }
-                    }
-                    if (prev.length !== merged.length || prev.some((i, idx) => {
-                        const m = merged[idx];
-                        return i.id !== m.id || i.cantidad !== m.cantidad;
-                    })) {
-                        return merged;
-                    }
-                    return prev;
-                });
-            } catch {}
+                setCart(serverItems.map(si => ({
+                    id: si.product_id,
+                    title: si.title,
+                    price: si.price,
+                    stock: si.stock,
+                    images: si.images,
+                    cantidad: si.quantity,
+                })));
+            } catch {
+                setCart([]);
+            } finally {
+                setServerCartReady(true);
+            }
         };
 
         fetchServerCart();
-    }, []);
+    }, [authUser]);
 
-    // Sincronizar carrito al servidor cuando cambie (solo si hay usuario)
+    // Sincronizar carrito al servidor cuando cambie (solo si el carrito del servidor ya se cargó)
     useEffect(() => {
-        const currentUser = (() => {
-            try {
-                const stored = localStorage.getItem('vntg_user');
-                return stored && stored !== "undefined" ? JSON.parse(stored) : null;
-            } catch { return null; }
-        })();
-        if (!currentUser) return;
+        if (!authUser || !serverCartReady) return;
         const timer = setTimeout(() => syncCartToServer(cart), 300);
         return () => clearTimeout(timer);
-    }, [cart, syncCartToServer]);
+    }, [cart, syncCartToServer, authUser, serverCartReady]);
 
     const addToCart = (product) => {
         if (product.stock <= 0) {
