@@ -84,12 +84,13 @@ class EmailPoller {
             });
 
             const messages = res.data.messages || [];
+            console.log(`[email-poller] Gmail devolvió ${messages.length} mensajes en inbox`);
 
             // Filtrar mensajes ya procesados
             const newMessages = messages.filter(m => !this.seenIds.has(m.id));
             if (newMessages.length === 0) return;
 
-            console.log(`[email-poller] ${newMessages.length} mensajes nuevos en inbox`);
+            console.log(`[email-poller] ${newMessages.length} mensajes nuevos (no vistos)`);
 
             const processedIds = [];
 
@@ -105,11 +106,14 @@ class EmailPoller {
                     const headers = payload.headers || [];
                     const gmailThreadId = detail.data.threadId || '';
                     const fromHeader = getHeader(headers, 'from');
+                    const subject = getHeader(headers, 'subject') || '(sin asunto)';
                     const fromMatch = fromHeader.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
                     const fromEmail = fromMatch ? fromMatch[2] : fromHeader;
                     const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : fromHeader;
                     const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
                     const inReplyTo = getHeader(headers, 'in-reply-to') || '';
+
+                    console.log(`[email-poller] msg=${msg.id} from="${fromEmail}" subject="${subject}" threadId="${gmailThreadId}" inReplyTo="${inReplyTo}" bodyLen=${bodyText.length}`);
 
                     // Ignorar emails enviados desde hubvntg (auto-notificaciones)
                     if (fromEmail === 'hubvntg@gmail.com') {
@@ -117,8 +121,6 @@ class EmailPoller {
                         processedIds.push(msg.id);
                         continue;
                     }
-
-                    console.log(`[email-poller] msg=${msg.id} threadId=${gmailThreadId} inReplyTo="${inReplyTo}" from="${fromEmail}"`);
 
                     // 1) Buscar por threadId de Gmail
                     let contact = null;
@@ -128,6 +130,7 @@ class EmailPoller {
                             [gmailThreadId]
                         );
                         if (rows.length > 0) contact = rows[0];
+                        console.log(`[email-poller] Busqueda por threadId=${gmailThreadId}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
                     }
 
                     // 2) Fallback: buscar por In-Reply-To (patrón vntg-contact-{id})
@@ -139,6 +142,9 @@ class EmailPoller {
                                 [parseInt(patternMatch[1], 10)]
                             );
                             if (rows.length > 0) contact = rows[0];
+                            console.log(`[email-poller] Busqueda por In-Reply-To id=${patternMatch[1]}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
+                        } else {
+                            console.log(`[email-poller] In-Reply-To no coincide con patrón vntg-contact: "${inReplyTo}"`);
                         }
                     }
 
@@ -149,6 +155,7 @@ class EmailPoller {
                             [fromEmail]
                         );
                         if (rows.length > 0) contact = rows[0];
+                        console.log(`[email-poller] Busqueda por email ${fromEmail}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
                     }
 
                     if (contact) {
@@ -164,7 +171,9 @@ class EmailPoller {
                             [contact.id, contact.id]
                         );
 
+                        console.log(`[email-poller] Generando respuesta IA para contact #${contact.id} (historial: ${history.length} mensajes)`);
                         const aiResponse = await this.generateResponse(history);
+                        console.log(`[email-poller] Respuesta IA ${aiResponse ? 'generada ('+aiResponse.length+' chars)' : 'null'}`);
                         if (aiResponse) {
                             const replyThreadId = gmailThreadId || contact.thread_id;
                             console.log(`[email-poller] Enviando reply threadId=${replyThreadId} a ${fromEmail}`);
