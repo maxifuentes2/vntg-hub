@@ -21,6 +21,7 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const sgMail = require("@sendgrid/mail");
 if (process.env.SENDGRID_API_KEY) sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const { google } = require("googleapis");
 const GmailPoller = require("./imapPoller");
 const EmailPoller = require("./emailPoller");
 
@@ -300,6 +301,48 @@ const getEmailSubject = (type, data) => {
     return subjects[type] || "Notificación — VNTG Hub";
 };
 
+const sendGmailApi = async (from, to, subject, html, msgId) => {
+    const clientId = process.env.GMAIL_CLIENT_ID;
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+    if (!clientId || !clientSecret || !refreshToken) return null;
+
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const fromClean = from.replace(/<[^>]+>/, '').trim() || 'VNTG Hub';
+    const fromMatch = from.match(/<([^>]+)>/);
+    const fromEmail = fromMatch ? fromMatch[1] : (process.env.SMTP_USER || 'hubvntg@gmail.com');
+
+    const boundary = `vntg-${Date.now()}`;
+    const lines = [
+        `From: ${fromClean} <${fromEmail}>`,
+        `To: ${to}`,
+        `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+        'MIME-Version: 1.0',
+        `Content-Type: text/html; charset="UTF-8"`,
+        'Content-Transfer-Encoding: base64',
+    ];
+    if (msgId) lines.push(`Message-ID: ${msgId}`);
+    lines.push('');
+    lines.push(Buffer.from(html).toString('base64'));
+
+    const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
+
+    try {
+        await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: { raw },
+        });
+        console.log(`[email] OK via Gmail API to="${to}" subject="${subject}"`);
+        return { sentVia: 'gmail-api' };
+    } catch (err) {
+        console.error(`[email] Error Gmail API to="${to}":`, err.message);
+        return null;
+    }
+};
+
 const sendEmail = async (type, to, data) => {
     const isSupport = type === "support_reply" || type === "contact";
     const prefix = isSupport ? "SMTP_SUPPORT_" : "SMTP_";
@@ -308,6 +351,19 @@ const sendEmail = async (type, to, data) => {
     const subject = getEmailSubject(type, data);
     const html = buildEmailHtml(type, data);
 
+    let msgId = null;
+    if (type === "support_reply" && data.ticketId) {
+        msgId = `<vntg-ticket-${data.ticketId}@vntg-hub.onrender.com>`;
+    }
+    if (type === "contact_autoreply" && data.contactId) {
+        msgId = `<vntg-contact-${data.contactId}@vntg-hub.onrender.com>`;
+    }
+
+    // 1) Gmail API (HTTPS, funciona en Render)
+    const gmailResult = await sendGmailApi(from, to, subject, html, msgId);
+    if (gmailResult) return gmailResult;
+
+    // 2) SendGrid
     if (process.env.SENDGRID_API_KEY) {
         try {
             await sgMail.send({ from, to, subject, html });
@@ -318,6 +374,7 @@ const sendEmail = async (type, to, data) => {
         }
     }
 
+    // 3) SMTP directo (fallback)
     const transporter = createTransporter(prefix);
     if (!transporter) {
         console.error(`[email] SMTP${isSupport ? " soporte" : ""} no configurado. No se pudo enviar email type="${type}" to="${to}"`);
@@ -325,12 +382,7 @@ const sendEmail = async (type, to, data) => {
     }
 
     const mailOptions = { from, to, subject, html };
-    if (type === "support_reply" && data.ticketId) {
-        mailOptions.messageId = `<vntg-ticket-${data.ticketId}@vntg-hub.onrender.com>`;
-    }
-    if (type === "contact_autoreply" && data.contactId) {
-        mailOptions.messageId = `<vntg-contact-${data.contactId}@vntg-hub.onrender.com>`;
-    }
+    if (msgId) mailOptions.messageId = msgId;
     try {
         await transporter.sendMail(mailOptions);
         console.log(`[email] OK via SMTP type="${type}" to="${to}"`);
