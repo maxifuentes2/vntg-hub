@@ -8,7 +8,9 @@ import {
     CircleDollarSign,
     Tag,
     Loader,
-    Heart
+    Heart,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useCart } from '../context/CartContext'; 
 import { useWishList } from '../context/WishListContext';
@@ -58,6 +60,9 @@ const Categoria = () => {
     const [precioMaxLocal, setPrecioMaxLocal] = useState(1000000);
     const [precioMinFinal, setPrecioMinFinal] = useState(0);
     const [precioMaxFinal, setPrecioMaxFinal] = useState(1000000);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 6;
 
     const queryParams = new URLSearchParams(location.search);
     const searchQuery = queryParams.get('search') || '';
@@ -145,6 +150,7 @@ const Categoria = () => {
                 else if (orden === "alfaDesc") productosOrdenados.sort((a, b) => b.title.localeCompare(a.title));
                 
                 setProductos(productosOrdenados);
+                setCurrentPage(1);
 
                 const unicas = [...new Set(productosOrdenados.map(p => p.franchise).filter(f => f))];
                 setListaFranquicias(unicas);
@@ -186,6 +192,11 @@ const Categoria = () => {
     const bannerImg = slug === 'all' 
         ? "/wallpaper.webp" 
         : (categoriaInfo?.banner_url || "/wallpaper.webp");
+
+    const totalPages = Math.ceil(productos.length / ITEMS_PER_PAGE);
+    const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+    const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+    const currentItems = productos.slice(indexOfFirstItem, indexOfLastItem);
 
     if (loading && productos.length === 0) {
         return (
@@ -238,7 +249,7 @@ const Categoria = () => {
 
                 {/* GRID DE PRODUCTOS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xs:gap-8">
-                    {productos.map((item) => (
+                    {currentItems.map((item) => (
                         <div key={item.id} className={`group bg-zinc-50 dark:bg-brand-card  transition-all duration-500 hover:ring-2 hover:ring-brand-orange hover:border-brand-orange hover:shadow-2xl shadow-md rounded-3xl overflow-hidden ${item.stock === 0 ? 'opacity-70' : ''}`}>
                             <div className="aspect-video bg-transparent flex items-center justify-center overflow-hidden relative p-4 border-b border-white/20 dark:border-zinc-600">
                                 <Link to={`/producto/${slugify(item.title)}`} className="w-full h-full flex items-center justify-center">
@@ -279,6 +290,52 @@ const Categoria = () => {
                         </div>
                     ))}
                 </div>
+
+                {/* PAGINACIÓN */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2 sm:gap-4 mt-16 border-t border-zinc-100 dark:border-zinc-800 pt-10">
+                        <button 
+                            onClick={() => {
+                                setCurrentPage(p => Math.max(1, p - 1));
+                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            disabled={currentPage === 1}
+                            className="p-3 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg active:scale-95 border border-zinc-200 dark:border-zinc-700 disabled:hover:shadow-none disabled:active:scale-100 flex items-center justify-center"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-2 px-2 sm:px-4 flex-wrap justify-center">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
+                                <button
+                                    key={num}
+                                    onClick={() => {
+                                        setCurrentPage(num);
+                                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                                    }}
+                                    className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl font-black italic text-sm transition-all duration-300 ${
+                                        currentPage === num 
+                                        ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/30 scale-110 border border-brand-orange' 
+                                        : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-brand-orange dark:hover:text-brand-orange border border-zinc-200 dark:border-zinc-700 hover:border-brand-orange dark:hover:border-brand-orange hover:shadow-md'
+                                    }`}
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            onClick={() => {
+                                setCurrentPage(p => Math.min(totalPages, p + 1));
+                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            disabled={currentPage === totalPages}
+                            className="p-3 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg active:scale-95 border border-zinc-200 dark:border-zinc-700 disabled:hover:shadow-none disabled:active:scale-100 flex items-center justify-center"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                )}
             </main>
 
             {/* SIDEBAR DE FILTROS */}
