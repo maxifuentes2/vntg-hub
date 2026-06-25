@@ -391,7 +391,7 @@ const setAuthCookie = (res, token) => {
 
 app.use(
     cors({
-        origin: ["http://localhost:5173", "https://vntg-hub.onrender.com", /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/],
+        origin: ["http://localhost:5173", "https://vntg-hub.vercel.app", "https://vntg-hub.onrender.com", /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/],
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
