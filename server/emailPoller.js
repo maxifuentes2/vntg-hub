@@ -246,9 +246,19 @@ class EmailPoller {
         }
     }
 
-    async alreadyProcessed(id) {
+    async alreadyProcessed(id, fromEmail, body) {
         const [r] = await db.query("SELECT id FROM support_messages WHERE gmail_msg_id = ? LIMIT 1", [id]);
-        return r.length > 0;
+        if (r.length > 0) return true;
+        // Fallback para registros viejos sin gmail_msg_id: mismo email + mismo body hasta 200 chars en las últimas 24h
+        if (fromEmail && body) {
+            const preview = body.substring(0, 200);
+            const [dup] = await db.query(
+                "SELECT id FROM support_messages WHERE email = ? AND LEFT(mensaje, 200) = ? AND source IS NULL AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR) LIMIT 1",
+                [fromEmail, preview]
+            );
+            if (dup.length > 0) return true;
+        }
+        return false;
     }
 
     async poll() {
@@ -265,12 +275,13 @@ class EmailPoller {
             console.log(`[email-poller] ${messages.length} mensajes`);
 
             for (const msg of messages) {
-                if (await this.alreadyProcessed(msg.id)) continue;
-
                 let detail;
                 try {
                     detail = await this.gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' });
                 } catch (e) { continue; }
+
+                // Check gmail_msg_id first (rápido, evita re-procesar)
+                if (await this.alreadyProcessed(msg.id)) continue;
 
                 const payload = detail.data.payload;
                 const headers = payload.headers || [];
@@ -283,6 +294,9 @@ class EmailPoller {
                 const inReplyTo = getHeader(headers, 'in-reply-to');
                 const body = stripQuoted(extractBody(payload)).substring(0, 2000);
                 const gmailThreadId = detail.data.threadId;
+
+                // Fallback dedup por contenido para registros viejos sin gmail_msg_id
+                if (await this.alreadyProcessed(msg.id, fromEmail, body)) continue;
 
                 if (fromEmail === emailAddress || fromEmail === 'hubvntg@gmail.com') continue;
                 if (!body) { console.log(`[email-poller] Sin cuerpo de ${fromEmail}`); continue; }
@@ -375,9 +389,33 @@ class EmailPoller {
         }
     }
 
+    async cleanupDuplicates() {
+        try {
+            // Roots duplicados: mismo email + mismo contenido en las últimas 48h
+            const [dups] = await db.query(`
+                SELECT id, email, mensaje, created_at,
+                    (SELECT MIN(id) FROM support_messages AS s2 
+                     WHERE s2.email = s1.email AND LEFT(s2.mensaje, 200) = LEFT(s1.mensaje, 200) 
+                     AND s2.source IS NULL AND s2.created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)) AS keep_id
+                FROM support_messages s1
+                WHERE source IS NULL AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+                HAVING id != keep_id AND keep_id IS NOT NULL
+            `);
+            for (const dup of dups) {
+                // Re-asignar hijos al root que conservamos
+                await db.query("UPDATE support_messages SET thread_id = ? WHERE thread_id = ? AND source IS NOT NULL", [dup.keep_id, dup.id]);
+                await db.query("DELETE FROM support_messages WHERE id = ?", [dup.id]);
+                console.log(`[email-poller] Cleanup: duplicado #${dup.id} → fusionado en #${dup.keep_id}`);
+            }
+        } catch (e) {
+            console.error('[email-poller] Cleanup error:', e.message);
+        }
+    }
+
     start() {
         console.log('[email-poller] Iniciando...');
         this.auth().catch(() => {});
+        this.cleanupDuplicates().catch(() => {});
         const run = () => this.poll().catch(() => {});
         run();
         this.interval = setInterval(run, POLL_INTERVAL);
