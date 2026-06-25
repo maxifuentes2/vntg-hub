@@ -106,9 +106,10 @@ const SYSTEM_PROMPT = `Eres el asistente automático de VNTG HUB, una tienda arg
 REGLAS:
 - Máximo 2 oraciones. Tono amable.
 - Confirmá que trabajamos con lo que menciona y ofrecé el catálogo.
+- Si respondes sobre tutoriales, añade el enlace /tutoriales. Si sobre autenticidad, /guia-autenticidad. Si sobre puntos, /puntos.
 - NO confirmes stock ni productos específicos.
 - NUNCA inventes emails, teléfonos ni URLs.
-- Solo derivá a humano si es problema de cuenta/pago/envío.
+- Si el cliente tiene un problema complejo (devolución, reembolso, queja) o si expresamente pide hablar con un humano o si no puedes resolver su duda, añade la palabra clave [DERIVAR_HUMANO] a tu respuesta.
 - Texto plano, sin markdown.`;
 
 class EmailPoller {
@@ -295,6 +296,14 @@ class EmailPoller {
                 const body = stripQuoted(extractBody(payload)).substring(0, 2000);
                 const gmailThreadId = detail.data.threadId;
 
+                // Ignorar correos enviados por el sistema de notificaciones a nosotros mismos
+                if (fromEmail === emailAddress || fromEmail === 'hubvntg@gmail.com' || fromEmail.includes('vntg')) {
+                    if (subject.includes('Mensaje de contacto de') || subject.includes('Respuesta de soporte')) {
+                        console.log(`[email-poller] Ignorando email de notificacion interno: ${subject}`);
+                        continue;
+                    }
+                }
+
                 // Fallback dedup por contenido para registros viejos sin gmail_msg_id
                 if (await this.alreadyProcessed(msg.id, fromEmail, body)) continue;
 
@@ -329,10 +338,18 @@ class EmailPoller {
                 if (isReply && contactId) {
                     console.log(`[email-poller] Reply en thread #${contactId}`);
 
+                    const [assignmentRow] = await db.query("SELECT assignment FROM support_messages WHERE id = ?", [contactId]);
+                    const assignment = assignmentRow.length ? assignmentRow[0].assignment : 'IA';
+
                     await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source, gmail_msg_id) VALUES (?, ?, ?, 'pending', ?, 'email_reply', ?)",
-                        [fromName, fromEmail, body, contactId, msg.id]
+                        "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source, gmail_msg_id, assignment) VALUES (?, ?, ?, 'pending', ?, 'email_reply', ?, ?)",
+                        [fromName, fromEmail, body, contactId, msg.id, assignment]
                     );
+
+                    if (assignment === 'HUMANO') {
+                        console.log(`[email-poller] Hilo #${contactId} asignado a HUMANO, saltando IA`);
+                        continue;
+                    }
 
                     // Obtener el threadId ORIGINAL del auto-reply (no el del reply del usuario, puede ser diferente)
                     const [orig] = await db.query(
@@ -356,18 +373,25 @@ class EmailPoller {
                         { role: 'user', content: `Historial:\n${conversation}\n\nRespondé al último mensaje del cliente.` }
                     ]);
 
-                    const replyText = ai || 'Gracias por tu mensaje. En breve nos comunicaremos con vos.';
+                    let replyText = ai || 'Gracias por tu mensaje. En breve nos comunicaremos con vos.';
+                    let isDerivado = replyText.includes('[DERIVAR_HUMANO]');
+                    
+                    if (isDerivado) {
+                        replyText = "Gracias por comunicarte con VNTG Hub. He derivado tu consulta a un agente humano para que pueda ayudarte de manera personalizada. Te responderemos por este mismo medio lo antes posible.";
+                        await db.query("UPDATE support_messages SET assignment = 'HUMANO' WHERE id = ? OR thread_id = ?", [contactId, contactId]);
+                    }
+
                     await this.sendReply(fromEmail, replyText, replyThreadId, messageId, contactId);
                     await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
-                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, contactId]
+                        "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply', ?)",
+                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, contactId, isDerivado ? 'HUMANO' : 'IA']
                     );
                     console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                 } else {
                     // Nuevo contacto — auto-reply genérico (no AI)
                     console.log(`[email-poller] Nuevo contacto de ${fromEmail}`);
                     const [result] = await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, status, gmail_msg_id) VALUES (?, ?, ?, 'pending', ?)",
+                        "INSERT INTO support_messages (nombre, email, mensaje, status, gmail_msg_id, assignment) VALUES (?, ?, ?, 'pending', ?, 'IA')",
                         [fromName, fromEmail, body, msg.id]
                     );
                     contactId = result.insertId;
@@ -375,7 +399,7 @@ class EmailPoller {
                     const genericReply = `Gracias por contactarte con VNTG Hub, ${fromName}. Recibimos tu consulta y te responderemos a la brevedad.`;
                     await this.sendReply(fromEmail, genericReply, gmailThreadId, messageId, contactId);
                     await db.query(
-                        "INSERT INTO support_messages (nombre, email, respuesta, status, thread_id, source) VALUES (?, ?, ?, 'replied', ?, 'bot_reply')",
+                        "INSERT INTO support_messages (nombre, email, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, 'replied', ?, 'bot_reply', 'IA')",
                         ['VNTG Bot', 'hubvntg@gmail.com', genericReply, contactId]
                     );
                     console.log(`[email-poller] Nuevo contacto respondido: #${contactId}`);

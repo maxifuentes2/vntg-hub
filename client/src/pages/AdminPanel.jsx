@@ -63,6 +63,8 @@ export default function AdminPanel() {
         }
     };
     const [activeTab, setActiveTab] = useState('products');
+    const [supportMessages, setSupportMessages] = useState([]);
+    const [supportFilter, setSupportFilter] = useState('pending'); // pending, in_progress, resolved
     const navigate = useNavigate();
 
     // Estados para Modales
@@ -137,6 +139,7 @@ export default function AdminPanel() {
                 handleResponse(`${API_URL}/api/admin/products`, setProducts),
                 handleResponse(`${API_URL}/api/admin/categories`, setCategories),
                 handleResponse(`${API_URL}/api/admin/orders`, setOrders),
+                handleResponse(`${API_URL}/api/support/messages`, setSupportMessages),
                 fetch(`${API_URL}/api/admin/orders`, { headers })
                     .then(r => r.ok ? r.json() : [])
                     .then(data => {
@@ -450,10 +453,14 @@ export default function AdminPanel() {
                             </div>
                             <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-2 max-[400px]:border-t-0 max-[400px]:pt-0 max-[400px]:mt-0 max-[400px]:flex max-[400px]:shrink-0">
                                 <button
-                                    onClick={() => navigate('/soporte')}
-                                    className="flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all w-full text-left max-[400px]:w-auto text-zinc-500 hover:text-zinc-900 dark:hover:text-white max-[400px]:shrink-0"
+                                    onClick={() => setActiveTab('support')}
+                                    className={`flex items-center gap-2 px-2 xs:px-4 py-2 xs:py-3 text-[11px] xs:text-sm font-black uppercase italic rounded-lg transition-all w-full text-left max-[400px]:w-auto max-[400px]:shrink-0 ${activeTab === 'support' ? 'bg-brand-orange text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                                 >
-                                    <MessageSquare size={14} /> <span className="max-[400px]:hidden">Soporte</span><span className="hidden max-[400px]:inline">Sop.</span>
+                                    <MessageSquare size={14} /> 
+                                    <span className="max-[400px]:hidden">Soporte</span><span className="hidden max-[400px]:inline">Sop.</span>
+                                    {supportMessages.filter(m => m.assignment === 'HUMANO' && m.status === 'pending').length > 0 && (
+                                        <span className="w-2 h-2 rounded-full bg-red-500 ml-auto max-[400px]:ml-1 animate-pulse"></span>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -466,10 +473,10 @@ export default function AdminPanel() {
                         <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
                             <div>
                                 <h1 className="text-4xl max-[360px]:text-2xl font-black italic text-zinc-900 dark:text-white uppercase tracking-tighter">
-                                    {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : activeTab === 'shipping' ? 'Envíos' : activeTab === 'verificarPagos' ? 'Verificar Pagos' : 'Órdenes'}
+                                    {activeTab === 'products' ? 'Productos' : activeTab === 'categories' ? 'Categorías' : activeTab === 'shipping' ? 'Envíos' : activeTab === 'verificarPagos' ? 'Verificar Pagos' : activeTab === 'support' ? 'Soporte (Gmail)' : 'Órdenes'}
                                 </h1>
                                 <p className="text-brand-orange text-[10px] font-bold uppercase tracking-widest mt-1">
-                                    {activeTab === 'products' ? 'Gestión de Inventario' : activeTab === 'categories' ? 'Clasificación de Productos' : activeTab === 'shipping' ? 'Configuración de Envío' : activeTab === 'verificarPagos' ? `${pendingPayments.length} pagos pendientes de verificación` : `Total: ${metrics.total} pedidos`}
+                                    {activeTab === 'products' ? 'Gestión de Inventario' : activeTab === 'categories' ? 'Clasificación de Productos' : activeTab === 'shipping' ? 'Configuración de Envío' : activeTab === 'verificarPagos' ? `${pendingPayments.length} pagos pendientes de verificación` : activeTab === 'support' ? 'Tickets derivados por la IA' : `Total: ${metrics.total} pedidos`}
                                 </p>
                             </div>
 
@@ -969,6 +976,122 @@ export default function AdminPanel() {
                                                 </div>
                                             );
                                         })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {activeTab === 'support' && (
+                            <div className="space-y-6">
+                                {/* Buscador y Filtros de Soporte */}
+                                <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3">
+                                    <div className="flex gap-1.5 flex-wrap">
+                                        {['pending', 'in_progress', 'resolved'].map(f => (
+                                            <button
+                                                key={f}
+                                                onClick={() => setSupportFilter(f)}
+                                                className={`px-3 py-1.5 text-[9px] font-black uppercase italic rounded-lg border transition-all ${supportFilter === f ? 'bg-brand-orange text-white border-brand-orange shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange'}`}
+                                            >
+                                                {f === 'pending' ? 'Pendientes' : f === 'in_progress' ? 'En Progreso' : 'Resueltos'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase italic sm:ml-auto self-center">
+                                        (Se muestran tickets derivados por la IA)
+                                    </p>
+                                </div>
+
+                                {loading ? (
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-800 animate-pulse rounded-2xl" />)}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {(() => {
+                                            // Agrupamos mensajes
+                                            const sorted = [...supportMessages].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                                            const groups = new Map();
+                                            for(const m of sorted){
+                                                let key = m.thread_id || m.id;
+                                                const root = supportMessages.find(x => x.id == key);
+                                                if(root && root.thread_id) key = root.thread_id;
+                                                if(!groups.has(key)) groups.set(key, []);
+                                                groups.get(key).push(m);
+                                            }
+                                            
+                                            // Sólo tomamos los que tengan assignment === 'HUMANO' en algún mensaje del hilo, 
+                                            // y tomamos el status del último mensaje
+                                            const humanThreads = Array.from(groups.values()).filter(msgs => msgs.some(m => m.assignment === 'HUMANO')).map(msgs => {
+                                                const lastMsg = msgs[msgs.length - 1];
+                                                const firstUserMsg = msgs.find(m => m.source !== 'bot_reply' && m.source !== 'support_reply') || msgs[0];
+                                                return {
+                                                    id: firstUserMsg.id,
+                                                    nombre: firstUserMsg.nombre,
+                                                    email: firstUserMsg.email,
+                                                    mensaje: firstUserMsg.mensaje,
+                                                    status: lastMsg.status || 'pending',
+                                                    fecha: lastMsg.created_at
+                                                }
+                                            }).filter(t => t.status === supportFilter);
+
+                                            if(humanThreads.length === 0) {
+                                                return (
+                                                    <div className="bg-zinc-50 dark:bg-brand-card p-10 rounded-2xl shadow-sm text-center">
+                                                        <CircleCheck size={48} className="text-green-500 mx-auto mb-4" />
+                                                        <p className="text-lg font-black italic uppercase text-green-500">Todo en orden</p>
+                                                        <p className="text-xs text-zinc-500 mt-2">No hay tickets de soporte en este estado.</p>
+                                                    </div>
+                                                )
+                                            }
+
+                                            return humanThreads.map(t => (
+                                                <div key={t.id} className="bg-zinc-50 dark:bg-brand-card rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <MessageSquare size={20} className="text-brand-orange" />
+                                                            <h3 className="text-sm font-black uppercase italic">{t.nombre}</h3>
+                                                            <span className="text-[10px] text-zinc-500">{t.email}</span>
+                                                        </div>
+                                                        <p className="text-xs text-zinc-600 dark:text-zinc-400 italic line-clamp-2">"{t.mensaje}"</p>
+                                                        <p className="text-[10px] text-zinc-400">Última act: {new Date(t.fecha).toLocaleString('es-AR')}</p>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        <select
+                                                            value={t.status}
+                                                            onChange={async (e) => {
+                                                                const newVal = e.target.value;
+                                                                const token = localStorage.getItem('vntg_token');
+                                                                try {
+                                                                    const res = await fetch(`${API_URL}/api/support/messages/${t.id}/status`, {
+                                                                        method: 'PUT',
+                                                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                                        body: JSON.stringify({ status: newVal })
+                                                                    });
+                                                                    if(res.ok) {
+                                                                        fetchData();
+                                                                        addToast({title: 'Soporte'}, 'Estado actualizado', 'success');
+                                                                    }
+                                                                } catch(err) {
+                                                                    addToast({title: 'Soporte'}, 'Error de conexión', 'error');
+                                                                }
+                                                            }}
+                                                            className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase text-zinc-900 dark:text-white"
+                                                        >
+                                                            <option value="pending">Pendiente</option>
+                                                            <option value="in_progress">En Progreso</option>
+                                                            <option value="resolved">Resuelto</option>
+                                                        </select>
+                                                        <a 
+                                                            href={`https://mail.google.com/mail/u/0/#search/${t.email}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-center bg-brand-orange text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-orange-600 transition-all"
+                                                        >
+                                                            Ir a Gmail
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
                                     </div>
                                 )}
                             </div>

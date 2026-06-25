@@ -19,7 +19,6 @@ import Privacidad from './pages/Privacidad';
 import NotFound from './pages/NotFound'; 
 import Tutoriales from './pages/Tutoriales';
 import AdminPanel from './pages/AdminPanel';
-import SupportPanel from './pages/SupportPanel';
 import Puntos from './pages/Puntos';
 
 // NUEVA IMPORTACIÓN PARA EL RESET DE SCROLL Y TÍTULOS DINÁMICOS
@@ -131,7 +130,7 @@ function GoogleOAuthHandler() {
 
 function FloatingHomeButton() {
   const location = useLocation();
-  if (location.pathname === '/' || location.pathname === '/admin' || location.pathname === '/soporte') return null;
+  if (location.pathname === '/' || location.pathname === '/admin') return null;
   return (
     <Link
       to="/"
@@ -209,7 +208,6 @@ function App() {
                     <Route path="/recuperar-password" element={<RecuperarPassword />} />
                     <Route path="/reset-password" element={<RestablecerPassword />} />
                     <Route path="/admin" element={<AdminPanel />} />
-                    <Route path="/soporte" element={<SupportPanel />} />
                     <Route path="/guia-autenticidad" element={<GuiaAutenticidad />} />
                     <Route path="/envios" element={<EnviosSeguros />} />
                     <Route path="/contacto" element={<Contacto />} />

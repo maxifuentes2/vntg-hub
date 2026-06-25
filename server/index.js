@@ -2683,11 +2683,11 @@ Respondés correos de clientes de forma BREVE y ÚTIL.
 REGLAS:
 - Máximo 2 oraciones. Directo al punto. Tono amable.
 - Agradecé al cliente.
-- Respondé directamente: si mencionan una categoría/franquicia que claramente vendemos (Marvel, DC, Star Wars, Disney, anime, Funko, figuras, cómics, cartas, autos a escala, etc.), decí que SÍ trabajamos con esa línea e invitá a ver el catálogo en la web.
+- Respondé directamente: si mencionan una categoría/franquicia que claramente vendemos, decí que SÍ trabajamos con esa línea e invitá a ver el catálogo en la web.
+- Si preguntan sobre envíos/compras, podes enviar el link /tutoriales. Si preguntan sobre originalidad, envía /guia-autenticidad.
 - NO confirmes disponibilidad de un producto específico ni inventes stock o precios.
-- Si preguntan por algo que no es de coleccionismo vintage (ej. electrónica, ropa, muebles), decí que no lo manejamos.
-- Solo derivá a soporte humano si es un problema de cuenta, pago, envío o devolución.
-- NUNCA inventes direcciones de email, teléfonos ni URLs. Si derivás a humano, decí "vamos a derivar tu consulta al equipo de soporte".
+- Si preguntan por algo que no es de coleccionismo vintage, decí que no lo manejamos.
+- Si el cliente tiene un problema complejo (devolución, reembolso, pago, envío) o si expresamente pide hablar con un humano o si no puedes resolver su duda, añade obligatoriamente la palabra clave [DERIVAR_HUMANO] a tu respuesta. NUNCA inventes emails o teléfonos.
 - Texto plano, sin markdown.`;
 
     const groqMessages = [
@@ -2750,20 +2750,29 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
         sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje })
             .catch(err => console.error("[contact] Error email de notificación:", err?.message));
 
-        // Enviar auto-respuesta INMEDIATAMENTE para obtener threadId
-        const fallbackRespuesta = "Gracias por contactarte con VNTG Hub. Recibimos tu consulta y te responderemos a la brevedad.";
-        const payload = { nombre, mensaje, respuesta: fallbackRespuesta, contactId: insertId };
+        // Intentar obtener respuesta de IA
+        let respuesta = await generateContactAutoreply(nombre, mensaje);
+        let assignment = 'IA';
+        
+        if (respuesta && respuesta.includes('[DERIVAR_HUMANO]')) {
+            assignment = 'HUMANO';
+            respuesta = "Gracias por comunicarte con VNTG Hub. He derivado tu consulta a un agente humano para que pueda ayudarte de manera personalizada. Te responderemos por este mismo medio lo antes posible.";
+        } else if (!respuesta) {
+            respuesta = "Gracias por contactarte con VNTG Hub. Recibimos tu consulta y te responderemos a la brevedad.";
+        }
+
+        const payload = { nombre, mensaje, respuesta, contactId: insertId };
         const emailResult = await sendEmail("contact_autoreply", email, payload)
             .catch(err => console.error("[contact] Error auto-respuesta:", err?.message));
 
         if (emailResult?.threadId) {
-            await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [emailResult.threadId, insertId]);
-            console.log(`[contact] threadId=${emailResult.threadId} guardado para contact #${insertId}`);
+            await db.query("UPDATE support_messages SET thread_id = ?, assignment = ? WHERE id = ?", [emailResult.threadId, assignment, insertId]);
+            console.log(`[contact] threadId=${emailResult.threadId} guardado para contact #${insertId}, assignment=${assignment}`);
 
             // Guardar la auto-respuesta como registro del bot en el thread
             await db.query(
-                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
-                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, fallbackRespuesta, insertId]
+                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply', ?)",
+                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, respuesta, insertId, assignment]
             ).catch(err => console.error('[contact] Error guardando auto-respuesta en historial:', err.message));
         } else {
             console.error(`[contact] No se obtuvo threadId para contact #${insertId}`);
@@ -2786,38 +2795,7 @@ app.get("/api/support/messages", verifySupport, async (req, res) => {
     }
 });
 
-app.post("/api/support/reply/:id", verifySupport, async (req, res) => {
-    const { id } = req.params;
-    const { respuesta } = req.body;
 
-    if (!respuesta) return res.status(400).json({ error: "La respuesta es obligatoria" });
-
-    try {
-        const [msgData] = await db.query("SELECT * FROM support_messages WHERE id = ?", [id]);
-        if (msgData.length === 0) return res.status(404).json({ error: "Mensaje no encontrado" });
-
-        const message = msgData[0];
-
-        // Enviar el email y obtener threadId
-        const sendResult = await sendEmail("support_reply", message.email, {
-            ticketId: message.id,
-            nombre: message.nombre,
-            mensajeOriginal: message.mensaje,
-            respuesta: respuesta
-        });
-
-        // Insertar como nuevo registro de soporte humano
-        const [insertResult] = await db.query(
-            "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'support_reply')",
-            [req.user?.name || 'Soporte', req.user?.email || 'hubvntg@gmail.com', message.mensaje, respuesta, id]
-        );
-
-        res.json({ message: "Respuesta enviada y guardada con éxito", id: insertResult.insertId });
-    } catch (error) {
-        console.error("Error al responder mensaje:", error);
-        res.status(500).json({ error: "Error al enviar la respuesta" });
-    }
-});
 
 app.put("/api/support/messages/:id/status", verifySupport, async (req, res) => {
     const { id } = req.params;
@@ -2829,6 +2807,21 @@ app.put("/api/support/messages/:id/status", verifySupport, async (req, res) => {
     } catch (error) {
         console.error("Error al actualizar estado:", error);
         res.status(500).json({ error: "Error al actualizar estado" });
+    }
+});
+
+app.put("/api/support/messages/:id/assign", verifySupport, async (req, res) => {
+    const { id } = req.params;
+    const { assignment } = req.body;
+    if (!assignment || !['IA', 'HUMANO'].includes(assignment)) {
+        return res.status(400).json({ error: "Asignación requerida (IA o HUMANO)" });
+    }
+    try {
+        await db.query("UPDATE support_messages SET assignment = ? WHERE id = ? OR thread_id = ?", [assignment, id, id]);
+        res.json({ message: "Asignación actualizada" });
+    } catch (error) {
+        console.error("Error al actualizar asignación:", error);
+        res.status(500).json({ error: "Error al actualizar asignación" });
     }
 });
 
