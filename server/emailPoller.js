@@ -65,17 +65,20 @@ function extractBody(payload) {
 
 function stripQuoted(text) {
     if (!text) return '';
-    let clean = text.replace(/\r\n/g, '\n');
+    let clean = text.replace(/\r\n/g, '\n').replace(/\u00a0/g, ' ');
 
     // Buscar marcadores de reply (Gmail web y mobile)
-    // Usar [\s\S] en vez de . para matchear también newlines (el marcador puede tener saltos de línea)
     const markers = [
-        /\nOn [\s\S]+? wrote:\s*\n?/i,
-        /(?:^|\s)On [\s\S]+? wrote:\s*\n?/i,
-        /\nEl [\s\S]+? escribió:\s*\n?/i,
-        /(?:^|\s)El [\s\S]+? escribió:\s*\n?/i,
+        /\nOn\b[\s\S]*?\bwrote:\s*\n?/i,
+        /(?:^|\s)On\b[\s\S]*?\bwrote:\s*\n?/i,
+        /\nEl\b[\s\S]*?\bescribió:\s*\n?/i,
+        /(?:^|\s)El\b[\s\S]*?\bescribió:\s*\n?/i,
         /\n-{3,} Forwarded message -{3,}\n?/i,
         /\n_{10,}\n?/i,
+        /\n>+[\s\S]*/,
+        /(?:^|\n)De:.*/,
+        /(?:^|\n)Enviado:.*/,
+        /(?:^|\n)Para:.*/,
     ];
     for (const m of markers) {
         const idx = clean.search(m);
@@ -336,16 +339,15 @@ class EmailPoller {
                         { role: 'user', content: `Historial:\n${conversation}\n\nRespondé al último mensaje del cliente.` }
                     ]);
 
-                    if (ai) {
-                        await this.sendReply(fromEmail, ai, replyThreadId, messageId, contactId);
-                        await db.query(
-                            "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
-                            ['VNTG Bot', 'hubvntg@gmail.com', body, ai, contactId]
-                        );
-                        console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
-                    }
+                    const replyText = ai || 'Gracias por tu mensaje. En breve nos comunicaremos con vos.';
+                    await this.sendReply(fromEmail, replyText, replyThreadId, messageId, contactId);
+                    await db.query(
+                        "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
+                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, contactId]
+                    );
+                    console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                 } else {
-                    // Nuevo contacto
+                    // Nuevo contacto — auto-reply genérico (no AI)
                     console.log(`[email-poller] Nuevo contacto de ${fromEmail}`);
                     const [result] = await db.query(
                         "INSERT INTO support_messages (nombre, email, mensaje, status, gmail_msg_id) VALUES (?, ?, ?, 'pending', ?)",
@@ -353,18 +355,13 @@ class EmailPoller {
                     );
                     contactId = result.insertId;
 
-                    const ai = await this.groq([
-                        { role: 'user', content: `Un cliente escribió: "${body}". Respondé amablemente.` }
-                    ]);
-
-                    if (ai) {
-                        await this.sendReply(fromEmail, ai, gmailThreadId, messageId, contactId);
-                        await db.query(
-                            "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
-                            ['VNTG Bot', 'hubvntg@gmail.com', body, ai, contactId]
-                        );
-                        console.log(`[email-poller] Nuevo contacto respondido: #${contactId}`);
-                    }
+                    const genericReply = `Gracias por contactarte con VNTG Hub, ${fromName}. Recibimos tu consulta y te responderemos a la brevedad.`;
+                    await this.sendReply(fromEmail, genericReply, gmailThreadId, messageId, contactId);
+                    await db.query(
+                        "INSERT INTO support_messages (nombre, email, respuesta, status, thread_id, source) VALUES (?, ?, ?, 'replied', ?, 'bot_reply')",
+                        ['VNTG Bot', 'hubvntg@gmail.com', genericReply, contactId]
+                    );
+                    console.log(`[email-poller] Nuevo contacto respondido: #${contactId}`);
                     await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [gmailThreadId, contactId]);
                 }
             }

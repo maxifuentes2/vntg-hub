@@ -396,58 +396,84 @@ export default function SupportPanel() {
                                             </div>
                                         </div>
 
-                                        {/* Contenido */}
-                                        <div className="p-4 xs:p-8 flex-grow space-y-8 overflow-y-auto">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-3 text-zinc-400">
-                                                    <Mail size={16} />
-                                                    <p className="text-sm font-bold italic">{selectedMsg.email}</p>
-                                                </div>
-                                                <div className="flex items-center gap-3 text-zinc-400">
-                                                    <Clock size={16} />
-                                                    <p className="text-sm font-bold italic">{new Date(selectedMsg.created_at).toLocaleString()}</p>
-                                                </div>
-                                            </div>
+                                        {/* ─── CHAT: HISTORIAL CRONOLÓGICO ─── */}
+                                        {(() => {
+                                            const chatMessages = [selectedMsg, ...threadMessages].flatMap(tm => {
+                                                const entries = [];
+                                                const isClientMsg = tm.source === 'email' || tm.source === 'email_reply' || !tm.source;
+                                                if (tm.source === 'bot_reply') {
+                                                    // bot_reply.mensaje = texto del usuario (ya en email_reply), mostrar solo respuesta
+                                                    if (tm.respuesta) {
+                                                        entries.push({
+                                                            id: `${tm.id}-resp`,
+                                                            text: tm.respuesta,
+                                                            sender: 'VNTG Hub (Bot)',
+                                                            email: null,
+                                                            source: 'bot_reply',
+                                                            createdAt: tm.created_at,
+                                                            isClient: false,
+                                                        });
+                                                    }
+                                                } else {
+                                                    if (tm.mensaje) {
+                                                        entries.push({
+                                                            id: `${tm.id}-msg`,
+                                                            text: tm.mensaje,
+                                                            sender: tm.nombre,
+                                                            email: tm.email,
+                                                            source: tm.source,
+                                                            createdAt: tm.created_at,
+                                                            isClient: isClientMsg,
+                                                        });
+                                                    }
+                                                    if (tm.respuesta) {
+                                                        entries.push({
+                                                            id: `${tm.id}-resp`,
+                                                            text: tm.respuesta,
+                                                            sender: 'VNTG Hub (Bot)',
+                                                            email: null,
+                                                            source: 'bot_reply',
+                                                            createdAt: tm.created_at,
+                                                            isClient: false,
+                                                        });
+                                                    }
+                                                }
+                                                return entries;
+                                            }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-                                            {threadMessages.length > 0 && (
-                                                <div className="space-y-3 border-l-2 border-zinc-200 dark:border-zinc-700 ml-4 pl-6">
-                                                    {threadMessages.map(tm => (
-                                                        <div key={tm.id} className={`relative ${tm.id === selectedMsg.id ? 'ring-2 ring-brand-blue/30 rounded-xl' : ''}`}>
-                                                            <div className="absolute -left-8 top-4 w-3 h-0.5 bg-zinc-300 dark:bg-zinc-600"></div>
-                                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-700">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <p className="text-[9px] font-black uppercase italic text-zinc-500">{tm.nombre} ({tm.email})</p>
-                                                                    {tm.source === 'email' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500">Email</span>}
-                                                                    {tm.source === 'email_reply' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-brand-orange/10 text-brand-orange">Email Reply</span>}
-                                                                    {tm.source === 'bot_reply' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-brand-blue/10 text-brand-blue">Bot</span>}
-                                                                    <span className="text-[8px] text-zinc-400 ml-auto">{new Date(tm.created_at).toLocaleString()}</span>
+                                            return (
+                                                <div className="p-4 xs:p-8 flex-grow overflow-y-auto space-y-4">
+                                                    <div className="flex items-center gap-3 text-zinc-400 pb-2">
+                                                        <Mail size={16} />
+                                                        <p className="text-sm font-bold italic">{selectedMsg.email}</p>
+                                                        <Clock size={16} className="ml-2" />
+                                                        <p className="text-sm font-bold italic">{new Date(selectedMsg.created_at).toLocaleString()}</p>
+                                                    </div>
+                                                    {chatMessages.map((entry, i) => (
+                                                        <div key={entry.id} className={`flex ${entry.isClient ? '' : 'flex-row-reverse'} items-start gap-3 group`}>
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[9px] font-black uppercase shadow-sm ${entry.isClient ? 'bg-brand-blue/20 text-brand-blue' : 'bg-brand-orange/20 text-brand-orange'}`}>
+                                                                {entry.isClient ? 'C' : 'B'}
+                                                            </div>
+                                                            <div className={`max-w-[85%] ${entry.isClient ? '' : 'text-right'}`}>
+                                                                <div className={`p-4 rounded-2xl border shadow-sm ${
+                                                                    entry.isClient
+                                                                        ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-tl-md'
+                                                                        : 'bg-brand-orange/5 dark:bg-brand-orange/5 border-brand-orange/20 rounded-tr-md'
+                                                                }`}>
+                                                                    <p className="text-xs font-medium leading-relaxed">{entry.text}</p>
                                                                 </div>
-                                                                {tm.mensaje && <p className="text-xs font-medium leading-relaxed">{tm.mensaje}</p>}
-                                                                {tm.respuesta && (
-                                                                    <div className="mt-2 pl-3 border-l-2 border-brand-orange">
-                                                                        <p className="text-[9px] font-black uppercase text-brand-orange mb-1">Respuesta</p>
-                                                                        <p className="text-xs italic text-zinc-500">{tm.respuesta}</p>
-                                                                    </div>
-                                                                )}
+                                                                <div className={`flex items-center gap-2 mt-1 px-1 ${entry.isClient ? '' : 'flex-row-reverse'}`}>
+                                                                    <p className={`text-[8px] font-bold uppercase tracking-wider ${entry.isClient ? 'text-brand-blue' : 'text-brand-orange'}`}>
+                                                                        {entry.isClient ? 'Cliente' : 'VNTG Hub'}
+                                                                    </p>
+                                                                    <span className="text-[7px] text-zinc-400">{new Date(entry.createdAt).toLocaleString()}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            )}
-
-                                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 border-l-4 border-brand-blue relative rounded-r-2xl">
-                                                <MessageSquare size={40} className="absolute top-4 right-4 text-brand-blue/5" />
-                                                <p className="text-[10px] font-black uppercase text-brand-blue mb-2">Mensaje del Cliente</p>
-                                                <p className="text-sm font-medium leading-relaxed dark:text-zinc-200">{selectedMsg.mensaje}</p>
-                                            </div>
-
-                                            {selectedMsg.respuesta && (
-                                                <div className="bg-green-500/5 dark:bg-green-500/5 p-6 border-l-4 border-green-500 rounded-r-2xl">
-                                                    <p className="text-[10px] font-black uppercase text-green-500 mb-2">Respuesta Automática</p>
-                                                    <p className="text-sm font-medium leading-relaxed dark:text-zinc-200 italic">"{selectedMsg.respuesta}"</p>
-                                                </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })()}
 
                                         {/* Botón para Responder por Correo */}
                                         <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex flex-col sm:flex-row gap-3">
