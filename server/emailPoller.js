@@ -5,7 +5,22 @@ const POLL_INTERVAL = 20000;
 
 function decodeBase64(d) {
     if (!d) return '';
-    return Buffer.from(d.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
+    let s = Buffer.from(d.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
+    // Decodificar quoted-printable si está presente (Gmail API a veces lo deja sin decodificar)
+    if (/=([0-9A-Fa-f]{2})/g.test(s)) {
+        s = s.replace(/=\r?\n/g, '');
+        const buf = [];
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === '=' && i + 2 < s.length) {
+                buf.push(parseInt(s.substring(i + 1, i + 3), 16));
+                i += 2;
+            } else {
+                buf.push(s.charCodeAt(i));
+            }
+        }
+        s = Buffer.from(buf).toString('utf-8');
+    }
+    return s;
 }
 
 function getHeader(headers, name) {
@@ -17,11 +32,29 @@ function extractBody(payload) {
     if (payload.body?.data) {
         const d = decodeBase64(payload.body.data);
         if (d.length) {
+            if (payload.mimeType === 'text/html') {
+                // En HTML de Gmail, el reply nuevo está antes del primer <blockquote>
+                const beforeQuote = d.split(/<blockquote/i)[0];
+                return beforeQuote.replace(/<[^>]*>/g, '').trim();
+            }
             if (payload.mimeType === 'text/plain') return d;
-            if (payload.mimeType === 'text/html') return d.replace(/<[^>]*>/g, '').trim();
         }
     }
     if (payload.parts) {
+        // Preferir HTML sobre text/plain porque HTML separa quoted con <blockquote>
+        const htmlPart = payload.parts.find(p => p.mimeType === 'text/html');
+        if (htmlPart) {
+            const t = extractBody(htmlPart);
+            if (t) return t;
+        }
+        for (const p of payload.parts) {
+            // Buscar en text/plain como fallback
+            if (p.mimeType === 'text/plain') {
+                const t = extractBody(p);
+                if (t) return t;
+            }
+        }
+        // Fallback: cualquier parte
         for (const p of payload.parts) {
             const t = extractBody(p);
             if (t) return t;
@@ -253,6 +286,14 @@ class EmailPoller {
                         [fromName, fromEmail, body, contactId, msg.id]
                     );
 
+                    // Obtener el threadId ORIGINAL del auto-reply (no el del reply del usuario, puede ser diferente)
+                    const [orig] = await db.query(
+                        "SELECT thread_id FROM support_messages WHERE id = ? AND source IS NULL",
+                        [contactId]
+                    );
+                    const replyThreadId = (orig.length && orig[0].thread_id) ? orig[0].thread_id : gmailThreadId;
+                    console.log(`[email-poller] replyThreadId=${replyThreadId} (gmailThreadId=${gmailThreadId})`);
+
                     const [history] = await db.query(
                         "SELECT * FROM support_messages WHERE id = ? OR thread_id = ? ORDER BY created_at ASC",
                         [contactId, contactId]
@@ -268,12 +309,12 @@ class EmailPoller {
                     ]);
 
                     if (ai) {
-                        await this.sendReply(fromEmail, ai, gmailThreadId, messageId, contactId);
+                        await this.sendReply(fromEmail, ai, replyThreadId, messageId, contactId);
                         await db.query(
                             "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
                             ['VNTG Bot', 'hubvntg@gmail.com', body, ai, contactId]
                         );
-                        console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId}`);
+                        console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                     }
                 } else {
                     // Nuevo contacto
