@@ -88,11 +88,15 @@ class GmailPoller {
                     const payload = detail.data.payload;
                     const headers = payload.headers || [];
                     const inReplyTo = getHeader(headers, 'in-reply-to');
-                    const messageId = getHeader(headers, 'message-id');
-                    const from = getHeader(headers, 'from');
-                    const fromMatch = from.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
-                    const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : from;
-                    const fromEmail = fromMatch ? fromMatch[2] : from;
+                    const fromMatch = (getHeader(headers, 'from') || '').match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
+                    const fromEmail = fromMatch ? fromMatch[2] : '';
+                    const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : '';
+
+                    // Ignorar auto-notificaciones de hubvntg
+                    if (fromEmail === 'hubvntg@gmail.com') {
+                        processedIds.push(msg.id);
+                        continue;
+                    }
 
                     const match = inReplyTo.match(TICKET_PATTERN);
                     if (match) {
@@ -105,9 +109,8 @@ class GmailPoller {
                         );
 
                         console.log(`[gmail] Reply email recibido para ticket #${ticketId} de ${fromEmail}`);
+                        processedIds.push(msg.id);
                     }
-
-                    processedIds.push(msg.id);
                 } catch (err) {
                     console.error('[gmail] Error procesando mensaje ' + msg.id + ':', err.message);
                 }

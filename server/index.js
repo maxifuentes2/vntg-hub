@@ -2750,18 +2750,25 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
         sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje })
             .catch(err => console.error("[contact] Error email de notificación:", err?.message));
 
-        // Auto-respuesta con IA
+        // Enviar auto-respuesta INMEDIATAMENTE para obtener threadId
+        const fallbackRespuesta = "Gracias por contactarte con VNTG Hub. Recibimos tu consulta y te responderemos a la brevedad.";
+        const payload = { nombre, mensaje, respuesta: fallbackRespuesta, contactId: insertId };
+        const emailResult = await sendEmail("contact_autoreply", email, payload)
+            .catch(err => console.error("[contact] Error auto-respuesta:", err?.message));
+
+        if (emailResult?.threadId) {
+            await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [emailResult.threadId, insertId]);
+            console.log(`[contact] threadId=${emailResult.threadId} guardado para contact #${insertId}`);
+        } else {
+            console.error(`[contact] No se obtuvo threadId para contact #${insertId}`);
+        }
+
+        // En background: generar mejor respuesta con Groq y actualizar el registro
         generateContactAutoreply(nombre, mensaje).then(async respuestaIA => {
-            const payload = {
-                nombre,
-                mensaje,
-                respuesta: respuestaIA || "Gracias por contactarte con VNTG Hub. Hemos recibido tu mensaje y nuestro equipo de soporte lo revisará a la brevedad. Te responderemos pronto. ¡Gracias por tu paciencia!",
-                contactId: insertId,
-            };
-            const result = await sendEmail("contact_autoreply", email, payload)
-                .catch(err => console.error("[contact] Error auto-respuesta:", err?.message));
-            if (result?.threadId) {
-                await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [result.threadId, insertId]).catch(() => {});
+            if (respuestaIA && respuestaIA !== fallbackRespuesta) {
+                await db.query("UPDATE support_messages SET respuesta = ? WHERE id = ?", [respuestaIA, insertId])
+                    .catch(err => console.error("[contact] Error actualizando respuesta IA:", err?.message));
+                console.log(`[contact] Respuesta IA actualizada para contact #${insertId}`);
             }
         });
 

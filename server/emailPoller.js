@@ -97,6 +97,13 @@ class EmailPoller {
                     const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
                     const inReplyTo = getHeader(headers, 'in-reply-to') || '';
 
+                    // Ignorar emails enviados desde hubvntg (auto-notificaciones)
+                    if (fromEmail === 'hubvntg@gmail.com') {
+                        console.log(`[email-poller] Ignorando email de hubvntg msg=${msg.id}`);
+                        processedIds.push(msg.id);
+                        continue;
+                    }
+
                     console.log(`[email-poller] msg=${msg.id} threadId=${gmailThreadId} inReplyTo="${inReplyTo}" from="${fromEmail}"`);
 
                     // 1) Buscar por threadId de Gmail
