@@ -115,6 +115,7 @@ class EmailPoller {
     constructor() {
         this.gmail = null;
         this.interval = null;
+        this.polling = false;
     }
 
     async auth() {
@@ -251,7 +252,9 @@ class EmailPoller {
     }
 
     async poll() {
-        if (!this.gmail && !(await this.auth())) return;
+        if (this.polling) return;
+        this.polling = true;
+        if (!this.gmail && !(await this.auth())) { this.polling = false; return; }
 
         try {
             const { emailAddress } = (await this.gmail.users.getProfile({ userId: 'me' })).data;
@@ -367,6 +370,8 @@ class EmailPoller {
             }
         } catch (e) {
             console.error('[email-poller] Error:', e.message);
+        } finally {
+            this.polling = false;
         }
     }
 

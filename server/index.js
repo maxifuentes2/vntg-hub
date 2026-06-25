@@ -2769,15 +2769,6 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
             console.error(`[contact] No se obtuvo threadId para contact #${insertId}`);
         }
 
-        // En background: generar mejor respuesta con Groq y actualizar el registro
-        generateContactAutoreply(nombre, mensaje).then(async respuestaIA => {
-            if (respuestaIA && respuestaIA !== fallbackRespuesta) {
-                await db.query("UPDATE support_messages SET respuesta = ? WHERE id = ?", [respuestaIA, insertId])
-                    .catch(err => console.error("[contact] Error actualizando respuesta IA:", err?.message));
-                console.log(`[contact] Respuesta IA actualizada para contact #${insertId}`);
-            }
-        });
-
         res.json({ message: "Mensaje recibido con éxito. Te enviamos una respuesta automática a tu correo." });
     } catch (error) {
         console.error("Error al enviar mensaje de contacto:", error);
@@ -2807,16 +2798,21 @@ app.post("/api/support/reply/:id", verifySupport, async (req, res) => {
 
         const message = msgData[0];
 
-        await db.query("UPDATE support_messages SET respuesta = ?, status = 'replied' WHERE id = ?", [respuesta, id]);
-
-        await sendEmail("support_reply", message.email, {
+        // Enviar el email y obtener threadId
+        const sendResult = await sendEmail("support_reply", message.email, {
             ticketId: message.id,
             nombre: message.nombre,
             mensajeOriginal: message.mensaje,
             respuesta: respuesta
         });
 
-        res.json({ message: "Respuesta enviada y guardada con éxito" });
+        // Insertar como nuevo registro de soporte humano
+        const [insertResult] = await db.query(
+            "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'support_reply')",
+            [req.user?.name || 'Soporte', req.user?.email || 'hubvntg@gmail.com', message.mensaje, respuesta, id]
+        );
+
+        res.json({ message: "Respuesta enviada y guardada con éxito", id: insertResult.insertId });
     } catch (error) {
         console.error("Error al responder mensaje:", error);
         res.status(500).json({ error: "Error al enviar la respuesta" });

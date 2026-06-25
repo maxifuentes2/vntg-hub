@@ -14,7 +14,9 @@ import {
     Shield,
     RefreshCw,
     TriangleAlert,
-    Copy
+    Copy,
+    Send,
+    User
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -26,10 +28,12 @@ export default function SupportPanel() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMsg, setSelectedMsg] = useState(null);
-    const [filter, setFilter] = useState('all'); // all, pending, in_progress, finished
+    const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, ids: null });
     const [selectedMsgs, setSelectedMsgs] = useState(new Set());
+    const [replyText, setReplyText] = useState('');
+    const [sendingReply, setSendingReply] = useState(false);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('vntg_user'));
@@ -158,9 +162,34 @@ export default function SupportPanel() {
         }
     };
 
+    const handleSendReply = async () => {
+        if (!replyText.trim() || !selectedMsg || sendingReply) return;
+        setSendingReply(true);
+        try {
+            const token = localStorage.getItem('vntg_token');
+            const res = await fetch(`${API_URL}/api/support/reply/${selectedMsg.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ respuesta: replyText.trim() })
+            });
+            if (res.ok) {
+                addToast({}, 'Respuesta enviada con éxito', 'success');
+                setReplyText('');
+                fetchMessages();
+            } else {
+                const data = await res.json();
+                addToast({}, data.error || 'Error al enviar respuesta', 'error');
+            }
+        } catch (error) {
+            addToast({}, 'Error de conexión', 'error');
+        } finally {
+            setSendingReply(false);
+        }
+    };
+
     // Agrupar por conversación: mismo thread_id = misma charla
     const rootMessages = messages.filter(m => 
-        m.source !== 'bot_reply' && m.source !== 'email_reply'
+        m.source !== 'bot_reply' && m.source !== 'email_reply' && m.source !== 'support_reply'
     );
     // Deduplicar: si varias filas tienen el mismo thread_id, mostrar solo la primera
     const seenThreads = new Set();
@@ -401,8 +430,7 @@ export default function SupportPanel() {
                                             const chatMessages = [selectedMsg, ...threadMessages].flatMap(tm => {
                                                 const entries = [];
                                                 const isClientMsg = tm.source === 'email' || tm.source === 'email_reply' || !tm.source;
-                                                if (tm.source === 'bot_reply') {
-                                                    // bot_reply.mensaje = texto del usuario (ya en email_reply), mostrar solo respuesta
+                                                if (tm.source === 'bot_reply' || tm.source === 'support_reply') {
                                                     if (tm.respuesta) {
                                                         entries.push({
                                                             id: `${tm.id}-resp`,
@@ -426,17 +454,7 @@ export default function SupportPanel() {
                                                             isClient: isClientMsg,
                                                         });
                                                     }
-                                                    if (tm.respuesta) {
-                                                        entries.push({
-                                                            id: `${tm.id}-resp`,
-                                                            text: tm.respuesta,
-                                                            sender: 'VNTG Hub (Bot)',
-                                                            email: null,
-                                                            source: 'bot_reply',
-                                                            createdAt: tm.created_at,
-                                                            isClient: false,
-                                                        });
-                                                    }
+                                                    // respuesta del root se ignora (ya está en bot_reply)
                                                 }
                                                 return entries;
                                             }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -451,20 +469,34 @@ export default function SupportPanel() {
                                                     </div>
                                                     {chatMessages.map((entry, i) => (
                                                         <div key={entry.id} className={`flex ${entry.isClient ? '' : 'flex-row-reverse'} items-start gap-3 group`}>
-                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[9px] font-black uppercase shadow-sm ${entry.isClient ? 'bg-brand-blue/20 text-brand-blue' : 'bg-brand-orange/20 text-brand-orange'}`}>
-                                                                {entry.isClient ? 'C' : 'B'}
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[9px] font-black uppercase shadow-sm ${
+                                                                entry.isClient
+                                                                    ? 'bg-brand-blue/20 text-brand-blue'
+                                                                    : entry.source === 'support_reply'
+                                                                        ? 'bg-green-500/20 text-green-600'
+                                                                        : 'bg-brand-orange/20 text-brand-orange'
+                                                            }`}>
+                                                                {entry.isClient ? 'C' : entry.source === 'support_reply' ? 'S' : 'B'}
                                                             </div>
                                                             <div className={`max-w-[85%] ${entry.isClient ? '' : 'text-right'}`}>
                                                                 <div className={`p-4 rounded-2xl border shadow-sm ${
                                                                     entry.isClient
                                                                         ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-tl-md'
-                                                                        : 'bg-brand-orange/5 dark:bg-brand-orange/5 border-brand-orange/20 rounded-tr-md'
+                                                                        : entry.source === 'support_reply'
+                                                                            ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800 rounded-tr-md'
+                                                                            : 'bg-brand-orange/5 dark:bg-brand-orange/5 border-brand-orange/20 rounded-tr-md'
                                                                 }`}>
-                                                                    <p className="text-xs font-medium leading-relaxed">{entry.text}</p>
+                                                                    <p className="text-xs font-medium leading-relaxed whitespace-pre-wrap">{entry.text}</p>
                                                                 </div>
                                                                 <div className={`flex items-center gap-2 mt-1 px-1 ${entry.isClient ? '' : 'flex-row-reverse'}`}>
-                                                                    <p className={`text-[8px] font-bold uppercase tracking-wider ${entry.isClient ? 'text-brand-blue' : 'text-brand-orange'}`}>
-                                                                        {entry.isClient ? 'Cliente' : 'VNTG Hub'}
+                                                                    <p className={`text-[8px] font-bold uppercase tracking-wider ${
+                                                                        entry.isClient
+                                                                            ? 'text-brand-blue'
+                                                                            : entry.source === 'support_reply'
+                                                                                ? 'text-green-600'
+                                                                                : 'text-brand-orange'
+                                                                    }`}>
+                                                                        {entry.isClient ? 'Cliente' : entry.source === 'support_reply' ? 'Soporte' : 'VNTG Hub'}
                                                                     </p>
                                                                     <span className="text-[7px] text-zinc-400">{new Date(entry.createdAt).toLocaleString()}</span>
                                                                 </div>
@@ -475,24 +507,29 @@ export default function SupportPanel() {
                                             );
                                         })()}
 
-                                        {/* Botón para Responder por Correo */}
-                                        <div className="p-4 xs:p-8 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex flex-col sm:flex-row gap-3">
-                                            <a 
-                                                href={`https://mail.google.com/mail/?view=cm&fs=1&to=${selectedMsg.email}&su=Re: Consulta VNTG Hub`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex-1 bg-brand-blue text-white py-4 font-black uppercase italic tracking-widest flex items-center justify-center gap-3 hover:bg-brand-orange transition-all rounded-2xl shadow-lg active:scale-95 text-center text-xs"
+                                        {/* ─── INPUT DE RESPUESTA HUMANA ─── */}
+                                        <div className="p-4 xs:p-6 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 flex items-end gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <textarea
+                                                    value={replyText}
+                                                    onChange={(e) => setReplyText(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(); } }}
+                                                    placeholder="Escribí una respuesta..."
+                                                    rows={1}
+                                                    className="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-2xl p-4 text-sm outline-none focus:border-brand-orange transition-all resize-none"
+                                                    style={{ minHeight: 48, maxHeight: 120 }}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={handleSendReply}
+                                                disabled={sendingReply || !replyText.trim()}
+                                                className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                                                    sendingReply || !replyText.trim()
+                                                        ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                                                        : 'bg-brand-orange text-white hover:bg-orange-600 shadow-md active:scale-95'
+                                                }`}
                                             >
-                                                <Mail size={18} /> Responder por Correo
-                                            </a>
-                                            <button 
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(selectedMsg.email);
-                                                    addToast({}, 'Email copiado al portapapeles', 'success');
-                                                }}
-                                                className="px-6 py-4 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase italic text-xs tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2"
-                                            >
-                                                <Copy size={16} /> Copiar Dirección
+                                                {sendingReply ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
                                             </button>
                                         </div>
                                     </div>
