@@ -158,9 +158,22 @@ export default function SupportPanel() {
         }
     };
 
-    const filteredMessages = messages.filter(m => {
-        // Solo mostrar mensajes raíz en la lista (no respuestas del bot)
-        if (m.source === 'bot_reply' || m.source === 'email_reply') return false;
+    // Agrupar por conversación: mismo thread_id = misma charla
+    const rootMessages = messages.filter(m => 
+        m.source !== 'bot_reply' && m.source !== 'email_reply'
+    );
+    // Deduplicar: si varias filas tienen el mismo thread_id, mostrar solo la primera
+    const seenThreads = new Set();
+    const groupedMessages = [];
+    for (const m of rootMessages) {
+        const key = m.thread_id || 'no-thread-' + m.id;
+        if (!seenThreads.has(key)) {
+            seenThreads.add(key);
+            groupedMessages.push(m);
+        }
+    }
+
+    const filteredMessages = groupedMessages.filter(m => {
         const matchesFilter = filter === 'all' || m.status === filter;
         const matchesSearch = m.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                              m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
