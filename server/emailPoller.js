@@ -142,7 +142,6 @@ class EmailPoller {
         try {
             const list = await this.gmail.users.messages.list({
                 userId: 'me',
-                labelIds: ['INBOX'],
                 maxResults: 20,
             });
 
