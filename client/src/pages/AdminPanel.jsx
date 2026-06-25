@@ -992,7 +992,7 @@ export default function AdminPanel() {
                                                 onClick={() => setSupportFilter(f)}
                                                 className={`px-3 py-1.5 text-[9px] font-black uppercase italic rounded-lg border transition-all ${supportFilter === f ? 'bg-brand-orange text-white border-brand-orange shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange'}`}
                                             >
-                                                {f === 'pending' ? 'Pendientes' : f === 'replied' ? 'Respondidos' : 'Resueltos'}
+                                                {f === 'pending' ? 'Sin Respuesta' : f === 'replied' ? 'En Progreso' : 'Resueltos'}
                                             </button>
                                         ))}
                                     </div>
@@ -1022,7 +1022,11 @@ export default function AdminPanel() {
                                             // Tomamos el status y assignment del último mensaje
                                             const allThreads = Array.from(groups.values()).map(msgs => {
                                                 const lastMsg = msgs[msgs.length - 1];
-                                                const firstUserMsg = msgs.find(m => m.source !== 'bot_reply' && m.source !== 'support_reply') || msgs[0];
+                                                // Buscar el primer mensaje que sea de un cliente (no nuestro correo)
+                                                const firstUserMsg = msgs.find(m => m.email && m.email.toLowerCase() !== 'hubvntg@gmail.com');
+                                                
+                                                if (!firstUserMsg) return null; // Si no hay mensajes de clientes reales en el hilo, lo ignoramos
+
                                                 return {
                                                     id: firstUserMsg.id,
                                                     nombre: firstUserMsg.nombre,
@@ -1033,7 +1037,7 @@ export default function AdminPanel() {
                                                     fecha: lastMsg.created_at,
                                                     assignment: lastMsg.assignment || 'IA'
                                                 }
-                                            }).filter(t => t.status === supportFilter);
+                                            }).filter(t => t && t.status === supportFilter);
 
                                             if(allThreads.length === 0) {
                                                 return (
@@ -1107,8 +1111,8 @@ export default function AdminPanel() {
                                                             }}
                                                             className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase text-zinc-900 dark:text-white"
                                                         >
-                                                            <option value="pending">Pendiente</option>
-                                                            <option value="replied">Respondido</option>
+                                                            <option value="pending">Sin Respuesta</option>
+                                                            <option value="replied">En Progreso</option>
                                                             <option value="finished">Resuelto</option>
                                                         </select>
                                                         <div className="flex gap-2 w-full mt-1">

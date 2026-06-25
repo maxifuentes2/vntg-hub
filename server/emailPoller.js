@@ -35,7 +35,11 @@ function extractBody(payload) {
             if (payload.mimeType === 'text/html') {
                 // En HTML de Gmail, el reply nuevo está antes del primer <blockquote>
                 const beforeQuote = d.split(/<blockquote/i)[0];
-                return beforeQuote.replace(/<[^>]*>/g, '').trim();
+                const withNewlines = beforeQuote
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<\/?p>/gi, '\n')
+                    .replace(/<\/?div>/gi, '\n');
+                return withNewlines.replace(/<[^>]*>/g, '').trim();
             }
             if (payload.mimeType === 'text/plain') return d;
         }
@@ -69,16 +73,18 @@ function stripQuoted(text) {
 
     // Buscar marcadores de reply (Gmail web y mobile)
     const markers = [
-        /\nOn\b[\s\S]*?\bwrote:\s*\n?/i,
-        /(?:^|\s)On\b[\s\S]*?\bwrote:\s*\n?/i,
-        /\nEl\b[\s\S]*?\bescribió:\s*\n?/i,
-        /(?:^|\s)El\b[\s\S]*?\bescribió:\s*\n?/i,
+        /(?:\n|^|\s)On\s[\s\S]{1,150}wrote:\s*/i,
+        /(?:\n|^|\s)El\s[\s\S]{1,150}escribi[oóó]:\s*/i,
         /\n-{3,} Forwarded message -{3,}\n?/i,
         /\n_{10,}\n?/i,
         /\n>+[\s\S]*/,
-        /(?:^|\n)De:.*/,
-        /(?:^|\n)Enviado:.*/,
-        /(?:^|\n)Para:.*/,
+        /(?:^|\n)De:.*/i,
+        /(?:^|\n)Enviado:.*/i,
+        /(?:^|\n)Para:.*/i,
+        /(?:^|\n)From:.*/i,
+        /(?:^|\n)Sent:.*/i,
+        /(?:^|\n)To:.*/i,
+        /(?:^|\n)Date:.*/i,
     ];
     for (const m of markers) {
         const idx = clean.search(m);
@@ -162,6 +168,8 @@ IMPORTANTE: Cuando un usuario pregunte por un artículo específico, devuélvele
 
 DERIVACIÓN A SOPORTE HUMANO:
 Si el problema es complejo (devoluciones, quejas severas, reembolsos, problemas de pago o envío), o si el usuario solicita expresamente hablar con un humano, DEBES añadir OBLIGATORIAMENTE la palabra clave [DERIVAR_HUMANO] en tu respuesta. NO derives consultas sobre catálogo, stock, o medios de pago (para eso tienes la información).
+
+DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, agradece la ayuda y no necesita más asistencia, o se despide (ej: "gracias, eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.
 
 === OTRAS PREGUNTAS ===
 - Tutoriales: tenemos guías en https://vntg-hub.vercel.app/tutoriales
@@ -250,7 +258,7 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
 </tr>
 </table>
 <p style="color:#999;font-size:11px;margin:14px 0 0;font-family:Arial,sans-serif">VNTG Hub &mdash; Coleccionables Vintage</p>
-<p style="color:#bbb;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Este correo fue enviado automáticamente. No respondas a este mensaje.</p>
+<p style="color:#bbb;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Puedes responder a este correo para continuar la conversación con soporte.</p>
 </td></tr>
 </table>
 </td></tr>
@@ -414,16 +422,23 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
 
                     let replyText = ai || 'Gracias por tu mensaje. En breve nos comunicaremos con vos.';
                     let isDerivado = replyText.includes('[DERIVAR_HUMANO]');
+                    let isFinished = replyText.includes('[CHAT_FINISHED]');
                     
+                    if (isFinished) {
+                        replyText = replyText.replace('[CHAT_FINISHED]', '').trim();
+                    }
+
                     if (isDerivado) {
                         replyText = "Gracias por comunicarte con VNTG Hub. He derivado tu consulta a un agente humano para que pueda ayudarte de manera personalizada. Te responderemos por este mismo medio lo antes posible.";
                         await db.query("UPDATE support_messages SET assignment = 'HUMANO' WHERE id = ? OR thread_id = ?", [contactId, contactId]);
                     }
 
+                    let status = isDerivado ? 'pending' : (isFinished ? 'finished' : 'replied');
+
                     await this.sendReply(fromEmail, replyText, replyThreadId, messageId, contactId);
                     await db.query(
                         "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, ?, ?, 'bot_reply', ?)",
-                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, isDerivado ? 'pending' : 'replied', contactId, isDerivado ? 'HUMANO' : 'IA']
+                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, status, contactId, isDerivado ? 'HUMANO' : 'IA']
                     );
                     console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                 } else {

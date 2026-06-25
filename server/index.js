@@ -141,7 +141,7 @@ const FOOTER = `
             <td align="center" style="padding:4px 24px 20px">
                 ${FOOTER_SOCIAL}
                 <p style="color:#999;font-size:11px;margin:14px 0 0;font-family:Arial,sans-serif">VNTG Hub &mdash; Coleccionables Vintage</p>
-                <p style="color:#bbb;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Este correo fue enviado automáticamente. No respondas a este mensaje.</p>
+                <p style="color:#bbb;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Puedes responder a este correo para continuar la conversación con soporte.</p>
             </td>
         </tr>
     </table>`;
@@ -2688,6 +2688,7 @@ REGLAS:
 - NO confirmes disponibilidad de un producto específico ni inventes stock o precios.
 - Si preguntan por algo que no es de coleccionismo vintage, decí que no lo manejamos.
 - Si el cliente tiene un problema complejo (devolución, reembolso, pago, envío) o si expresamente pide hablar con un humano o si no puedes resolver su duda, añade obligatoriamente la palabra clave [DERIVAR_HUMANO] a tu respuesta. NUNCA inventes emails o teléfonos.
+- Si la consulta es trivial y queda resuelta (ej: solo dice "gracias" o se despide), incluye [CHAT_FINISHED] en tu respuesta.
 - Texto plano, sin markdown.`;
 
     const groqMessages = [
@@ -2753,10 +2754,15 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
         // Intentar obtener respuesta de IA
         let respuesta = await generateContactAutoreply(nombre, mensaje, motivo);
         let assignment = 'IA';
+        let status = 'replied';
         
         if (respuesta && respuesta.includes('[DERIVAR_HUMANO]')) {
             assignment = 'HUMANO';
+            status = 'pending';
             respuesta = "Gracias por comunicarte con VNTG Hub. He derivado tu consulta a un agente humano para que pueda ayudarte de manera personalizada. Te responderemos por este mismo medio lo antes posible.";
+        } else if (respuesta && respuesta.includes('[CHAT_FINISHED]')) {
+            status = 'finished';
+            respuesta = respuesta.replace('[CHAT_FINISHED]', '').trim();
         } else if (!respuesta) {
             respuesta = "Gracias por contactarte con VNTG Hub. Recibimos tu consulta y te responderemos a la brevedad.";
         }
@@ -2771,8 +2777,8 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
 
             // Guardar la auto-respuesta como registro del bot en el thread
             await db.query(
-                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply', ?)",
-                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, respuesta, insertId, assignment]
+                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, ?, ?, 'bot_reply', ?)",
+                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, respuesta, status, insertId, assignment]
             ).catch(err => console.error('[contact] Error guardando auto-respuesta en historial:', err.message));
         } else {
             console.error(`[contact] No se obtuvo threadId para contact #${insertId}`);
@@ -2883,6 +2889,18 @@ setInterval(async () => {
         console.error("Error purga");
     }
 }, 60000);
+
+// --- AUTO-CLOSE SUPPORT TICKETS ---
+// Cierra los tickets respondidos que tengan más de 48 horas sin respuesta del usuario
+setInterval(async () => {
+    try {
+        await db.query(
+            "UPDATE support_messages SET status = 'finished' WHERE status = 'replied' AND created_at <= DATE_SUB(NOW(), INTERVAL 48 HOUR)"
+        );
+    } catch (e) {
+        console.error("Error auto-closing support tickets");
+    }
+}, 60000 * 60); // Corre cada 1 hora
 
 const PORT = process.env.PORT || 5000;
 // ─── Gmail API Poller ───
