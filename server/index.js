@@ -2817,7 +2817,14 @@ app.put("/api/support/messages/:id/assign", verifySupport, async (req, res) => {
         return res.status(400).json({ error: "Asignación requerida (IA o HUMANO)" });
     }
     try {
-        await db.query("UPDATE support_messages SET assignment = ? WHERE id = ? OR thread_id = ?", [assignment, id, id]);
+        const [rows] = await db.query("SELECT thread_id FROM support_messages WHERE id = ?", [id]);
+        const threadId = rows[0]?.thread_id;
+        
+        if (threadId) {
+            await db.query("UPDATE support_messages SET assignment = ? WHERE id = ? OR thread_id = ?", [assignment, id, threadId]);
+        } else {
+            await db.query("UPDATE support_messages SET assignment = ? WHERE id = ?", [assignment, id]);
+        }
         res.json({ message: "Asignación actualizada" });
     } catch (error) {
         console.error("Error al actualizar asignación:", error);

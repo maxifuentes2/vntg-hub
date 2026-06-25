@@ -388,22 +388,8 @@ class EmailPoller {
                     );
                     console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                 } else {
-                    // Nuevo contacto — auto-reply genérico (no AI)
-                    console.log(`[email-poller] Nuevo contacto de ${fromEmail}`);
-                    const [result] = await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, status, gmail_msg_id, assignment) VALUES (?, ?, ?, 'pending', ?, 'IA')",
-                        [fromName, fromEmail, body, msg.id]
-                    );
-                    contactId = result.insertId;
-
-                    const genericReply = `Gracias por contactarte con VNTG Hub, ${fromName}. Recibimos tu consulta y te responderemos a la brevedad.`;
-                    await this.sendReply(fromEmail, genericReply, gmailThreadId, messageId, contactId);
-                    await db.query(
-                        "INSERT INTO support_messages (nombre, email, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, 'replied', ?, 'bot_reply', 'IA')",
-                        ['VNTG Bot', 'hubvntg@gmail.com', genericReply, contactId]
-                    );
-                    console.log(`[email-poller] Nuevo contacto respondido: #${contactId}`);
-                    await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [gmailThreadId, contactId]);
+                    // Ignorar correos fríos que no son respuesta a un formulario web
+                    console.log(`[email-poller] Ignorando correo frío (no es respuesta a un ticket web): ${fromEmail}`);
                 }
             }
         } catch (e) {

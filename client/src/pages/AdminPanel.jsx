@@ -265,6 +265,7 @@ export default function AdminPanel() {
         if (type === 'product') { endpoint = `products/${id}`; label = 'Producto'; }
         else if (type === 'category') { endpoint = `categories/${id}`; label = 'Categoría'; }
         else if (type === 'order') { endpoint = `orders/${id}`; label = 'Orden'; }
+        else if (type === 'support') { endpoint = `../support/messages/${id}`; label = 'Ticket'; }
 
         try {
             const res = await fetch(`${API_URL}/api/admin/${endpoint}`, { 
@@ -985,13 +986,13 @@ export default function AdminPanel() {
                                 {/* Buscador y Filtros de Soporte */}
                                 <div className="bg-zinc-50 dark:bg-brand-card p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3">
                                     <div className="flex gap-1.5 flex-wrap">
-                                        {['pending', 'in_progress', 'resolved'].map(f => (
+                                        {['pending', 'replied', 'finished'].map(f => (
                                             <button
                                                 key={f}
                                                 onClick={() => setSupportFilter(f)}
                                                 className={`px-3 py-1.5 text-[9px] font-black uppercase italic rounded-lg border transition-all ${supportFilter === f ? 'bg-brand-orange text-white border-brand-orange shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange'}`}
                                             >
-                                                {f === 'pending' ? 'Pendientes' : f === 'in_progress' ? 'En Progreso' : 'Resueltos'}
+                                                {f === 'pending' ? 'Pendientes' : f === 'replied' ? 'Respondidos' : 'Resueltos'}
                                             </button>
                                         ))}
                                     </div>
@@ -1018,9 +1019,8 @@ export default function AdminPanel() {
                                                 groups.get(key).push(m);
                                             }
                                             
-                                            // Sólo tomamos los que tengan assignment === 'HUMANO' en algún mensaje del hilo, 
-                                            // y tomamos el status del último mensaje
-                                            const humanThreads = Array.from(groups.values()).filter(msgs => msgs.some(m => m.assignment === 'HUMANO')).map(msgs => {
+                                            // Tomamos el status y assignment del último mensaje
+                                            const allThreads = Array.from(groups.values()).map(msgs => {
                                                 const lastMsg = msgs[msgs.length - 1];
                                                 const firstUserMsg = msgs.find(m => m.source !== 'bot_reply' && m.source !== 'support_reply') || msgs[0];
                                                 return {
@@ -1029,11 +1029,12 @@ export default function AdminPanel() {
                                                     email: firstUserMsg.email,
                                                     mensaje: firstUserMsg.mensaje,
                                                     status: lastMsg.status || 'pending',
-                                                    fecha: lastMsg.created_at
+                                                    fecha: lastMsg.created_at,
+                                                    assignment: lastMsg.assignment || 'IA'
                                                 }
                                             }).filter(t => t.status === supportFilter);
 
-                                            if(humanThreads.length === 0) {
+                                            if(allThreads.length === 0) {
                                                 return (
                                                     <div className="bg-zinc-50 dark:bg-brand-card p-10 rounded-2xl shadow-sm text-center">
                                                         <CircleCheck size={48} className="text-green-500 mx-auto mb-4" />
@@ -1043,7 +1044,7 @@ export default function AdminPanel() {
                                                 )
                                             }
 
-                                            return humanThreads.map(t => (
+                                            return allThreads.map(t => (
                                                 <div key={t.id} className="bg-zinc-50 dark:bg-brand-card rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center gap-4">
                                                     <div className="flex-1 space-y-2">
                                                         <div className="flex items-center gap-3">
@@ -1055,6 +1056,30 @@ export default function AdminPanel() {
                                                         <p className="text-[10px] text-zinc-400">Última act: {new Date(t.fecha).toLocaleString('es-AR')}</p>
                                                     </div>
                                                     <div className="flex flex-col gap-2">
+                                                        <select
+                                                            value={t.assignment}
+                                                            onChange={async (e) => {
+                                                                const newVal = e.target.value;
+                                                                const token = localStorage.getItem('vntg_token');
+                                                                try {
+                                                                    const res = await fetch(`${API_URL}/api/support/messages/${t.id}/assign`, {
+                                                                        method: 'PUT',
+                                                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                                        body: JSON.stringify({ assignment: newVal })
+                                                                    });
+                                                                    if(res.ok) {
+                                                                        fetchData();
+                                                                        addToast({title: 'Soporte'}, 'Asignación actualizada', 'success');
+                                                                    }
+                                                                } catch(err) {
+                                                                    addToast({title: 'Soporte'}, 'Error de conexión', 'error');
+                                                                }
+                                                            }}
+                                                            className={`border px-3 py-2 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all ${t.assignment === 'HUMANO' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'}`}
+                                                        >
+                                                            <option value="IA">Bot (IA)</option>
+                                                            <option value="HUMANO">Humano</option>
+                                                        </select>
                                                         <select
                                                             value={t.status}
                                                             onChange={async (e) => {
@@ -1077,17 +1102,30 @@ export default function AdminPanel() {
                                                             className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase text-zinc-900 dark:text-white"
                                                         >
                                                             <option value="pending">Pendiente</option>
-                                                            <option value="in_progress">En Progreso</option>
-                                                            <option value="resolved">Resuelto</option>
+                                                            <option value="replied">Respondido</option>
+                                                            <option value="finished">Resuelto</option>
                                                         </select>
-                                                        <a 
-                                                            href={`https://mail.google.com/mail/u/0/#search/${t.email}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-center bg-brand-orange text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-orange-600 transition-all"
-                                                        >
-                                                            Ir a Gmail
-                                                        </a>
+                                                        <div className="flex gap-2 w-full mt-1">
+                                                            <a 
+                                                                href={`https://mail.google.com/mail/u/0/#search/${t.email}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex-1 text-center bg-brand-orange text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-orange-600 transition-all"
+                                                            >
+                                                                Ir a Gmail
+                                                            </a>
+                                                            <button
+                                                                onClick={() => setConfirmDelete({
+                                                                    isOpen: true,
+                                                                    id: t.id,
+                                                                    title: `Ticket de ${t.nombre}`,
+                                                                    type: 'support'
+                                                                })}
+                                                                className="flex items-center justify-center bg-red-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-red-600 transition-all"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ));
@@ -1335,6 +1373,14 @@ export default function AdminPanel() {
                                     <span className="block mt-3 text-zinc-600 dark:text-zinc-400">
                                         Se restaurará el stock de los productos y la orden desaparecerá del sistema. <strong className="text-red-500 not-italic">Esta acción no se puede deshacer.</strong>
                                     </span>
+                                </p>
+                            ) : confirmDelete.type === 'support' ? (
+                                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
+                                    Estás a punto de eliminar el <br />
+                                    <span className="text-brand-orange font-black not-italic uppercase block mt-2 text-base">
+                                        {confirmDelete.title}
+                                    </span>
+                                    Se borrará todo el historial de conversación. <strong className="text-red-500 not-italic">Esta acción no se puede deshacer.</strong>
                                 </p>
                             ) : (
                                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed mb-8">
