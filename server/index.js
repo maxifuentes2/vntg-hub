@@ -2475,8 +2475,8 @@ app.put("/api/admin/shipping-config", verifyAdmin, async (req, res) => {
     const { envio_normal, envio_prioritario, envio_gratis_desde } = req.body;
     try {
         await db.query(
-            "UPDATE shipping_config SET envio_normal = ?, envio_prioritario = ?, envio_gratis_desde = ? WHERE id = 1",
-            [envio_normal, envio_prioritario, envio_gratis_desde],
+            "INSERT INTO shipping_config (id, envio_normal, envio_prioritario, envio_gratis_desde) VALUES (1, ?, ?, ?) ON DUPLICATE KEY UPDATE envio_normal = VALUES(envio_normal), envio_prioritario = VALUES(envio_prioritario), envio_gratis_desde = VALUES(envio_gratis_desde)",
+            [envio_normal, envio_prioritario, envio_gratis_desde]
         );
         shipping.invalidateCache();
         const cfg = await shipping.loadConfig(db);
@@ -3101,7 +3101,19 @@ app.listen(PORT, "0.0.0.0", async () => {
         }
     }
 
-    // Cargar configuración de envío (fallback a .env si la tabla no existe)
+    // Cargar configuración de envío (crea tabla si no existe y hace fallback a .env)
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS shipping_config (
+                id INT PRIMARY KEY,
+                envio_normal DECIMAL(10, 2) NOT NULL,
+                envio_prioritario DECIMAL(10, 2) NOT NULL,
+                envio_gratis_desde DECIMAL(10, 2) NOT NULL
+            )
+        `);
+    } catch (e) {
+        console.log('[db] Error creando tabla shipping_config:', e.message);
+    }
     try {
         await shipping.loadConfig(db);
     } catch (e) {

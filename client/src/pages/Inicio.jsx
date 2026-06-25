@@ -70,22 +70,22 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
     };
 
     return (
-        <div className="relative group/carousel sm:px-10 md:px-20">
+        <div className="relative group/carousel sm:px-16 md:px-20 lg:px-24">
             {items.length > 3 && (
                 <>
                     <button 
                         onClick={() => scroll('left')}
                         disabled={!canScrollLeft}
-                        className="absolute -left-2 sm:left-0 md:-left-4 lg:-left-8 top-[45%] -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20 hover:scale-110 disabled:opacity-0 disabled:pointer-events-none border border-zinc-200 dark:border-zinc-700 hover:border-brand-orange hover:shadow-brand-orange/20"
+                        className="absolute hidden sm:flex sm:left-0 md:left-2 lg:left-4 top-[45%] -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange w-10 h-10 sm:w-14 sm:h-14 items-center justify-center rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20 hover:scale-110 disabled:opacity-0 disabled:pointer-events-none border border-zinc-200 dark:border-zinc-700 hover:border-brand-orange hover:shadow-brand-orange/20"
                     >
-                        <ChevronLeft size={28} className="transition-transform group-hover/carousel:-translate-x-1" />
+                        <ChevronLeft size={28} />
                     </button>
                     <button 
                         onClick={() => scroll('right')}
                         disabled={!canScrollRight}
-                        className="absolute -right-2 sm:right-0 md:-right-4 lg:-right-8 top-[45%] -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20 hover:scale-110 disabled:opacity-0 disabled:pointer-events-none border border-zinc-200 dark:border-zinc-700 hover:border-brand-orange hover:shadow-brand-orange/20"
+                        className="absolute hidden sm:flex sm:right-0 md:right-2 lg:right-4 top-[45%] -translate-y-1/2 z-20 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange w-10 h-10 sm:w-14 sm:h-14 items-center justify-center rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-300 hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20 hover:scale-110 disabled:opacity-0 disabled:pointer-events-none border border-zinc-200 dark:border-zinc-700 hover:border-brand-orange hover:shadow-brand-orange/20"
                     >
-                        <ChevronRight size={28} className="transition-transform group-hover/carousel:translate-x-1" />
+                        <ChevronRight size={28} />
                     </button>
                 </>
             )}
