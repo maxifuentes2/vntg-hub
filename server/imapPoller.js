@@ -77,7 +77,10 @@ class GmailPoller {
 
             // Filtrar mensajes ya vistos
             const newMessages = messages.filter(m => !this.seenIds.has(m.id));
-            if (newMessages.length === 0) return;
+            if (newMessages.length === 0) {
+                if (messages.length > 0) console.log(`[gmail] 0 nuevos (${messages.length} ya vistos)`);
+                return;
+            }
 
             const processedIds = [];
 
@@ -145,7 +148,7 @@ class GmailPoller {
         this.authenticate().then((ok) => {
             if (ok) {
                 this.poll();
-                this.interval = setInterval(() => this.poll(), 30000);
+                this.interval = setInterval(() => this.poll(), 15000);
             }
         }).catch((err) => {
             console.error('[gmail] Error en start:', err.message);

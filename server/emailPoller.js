@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const db = require('./db');
 
-const POLL_INTERVAL = 30000;
+const POLL_INTERVAL = 15000;
 
 function decodeBase64(data) {
     if (!data) return '';
@@ -88,7 +88,10 @@ class EmailPoller {
 
             // Filtrar mensajes ya procesados
             const newMessages = messages.filter(m => !this.seenIds.has(m.id));
-            if (newMessages.length === 0) return;
+            if (newMessages.length === 0) {
+                if (messages.length > 0) console.log(`[email-poller] 0 nuevos (${messages.length} ya vistos)`);
+                return;
+            }
 
             console.log(`[email-poller] ${newMessages.length} mensajes nuevos (no vistos)`);
 
