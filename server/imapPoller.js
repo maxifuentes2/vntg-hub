@@ -31,6 +31,7 @@ class GmailPoller {
     constructor() {
         this.gmail = null;
         this.interval = null;
+        this.seenIds = new Set();
     }
 
     async authenticate() {
@@ -68,16 +69,19 @@ class GmailPoller {
         try {
             const res = await this.gmail.users.messages.list({
                 userId: 'me',
-                q: 'is:unread',
-                maxResults: 10,
+                q: 'in:inbox -from:me',
+                maxResults: 20,
             });
 
             const messages = res.data.messages || [];
-            if (messages.length === 0) return;
+
+            // Filtrar mensajes ya vistos
+            const newMessages = messages.filter(m => !this.seenIds.has(m.id));
+            if (newMessages.length === 0) return;
 
             const processedIds = [];
 
-            for (const msg of messages) {
+            for (const msg of newMessages) {
                 try {
                     const detail = await this.gmail.users.messages.get({
                         userId: 'me',
@@ -126,6 +130,11 @@ class GmailPoller {
                     },
                 });
                 console.log(`[gmail] ${processedIds.length} email(s) procesado(s)`);
+            }
+
+            // Marcar como vistos para no reprocesar
+            for (const m of newMessages) {
+                this.seenIds.add(m.id);
             }
         } catch (err) {
             console.error('[gmail] Error en poll:', err.message);

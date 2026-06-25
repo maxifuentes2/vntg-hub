@@ -38,6 +38,7 @@ class EmailPoller {
     constructor() {
         this.gmail = null;
         this.interval = null;
+        this.seenIds = new Set();
     }
 
     async authenticate() {
@@ -75,18 +76,24 @@ class EmailPoller {
         }
 
         try {
+            // Buscar en inbox completo (no solo unread, porque Gmail marca como leído al abrir)
             const res = await this.gmail.users.messages.list({
                 userId: 'me',
-                q: 'is:unread',
-                maxResults: 10,
+                q: 'in:inbox -from:me',
+                maxResults: 20,
             });
 
             const messages = res.data.messages || [];
-            if (messages.length === 0) return;
+
+            // Filtrar mensajes ya procesados
+            const newMessages = messages.filter(m => !this.seenIds.has(m.id));
+            if (newMessages.length === 0) return;
+
+            console.log(`[email-poller] ${newMessages.length} mensajes nuevos en inbox`);
 
             const processedIds = [];
 
-            for (const msg of messages) {
+            for (const msg of newMessages) {
                 try {
                     const detail = await this.gmail.users.messages.get({
                         userId: 'me',
@@ -185,6 +192,11 @@ class EmailPoller {
                     },
                 });
                 console.log(`[email-poller] ${processedIds.length} email(s) procesado(s)`);
+            }
+
+            // Marcar como vistos para no reprocesar
+            for (const m of newMessages) {
+                this.seenIds.add(m.id);
             }
         } catch (err) {
             console.error('[email-poller] Error en poll:', err.message);
