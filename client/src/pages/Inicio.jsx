@@ -207,6 +207,8 @@ export default function Inicio() {
     const [productos, setProductos] = useState([]);
     const [dbCategories, setDbCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const SECTIONS_PER_PAGE = 4; // Puedes ajustar cuántas categorías por página querés
     const { addToCart } = useCart();
     
     // ACA TRAEMOS LOS ITEMS Y LA FUNCIÓN DE REMOVER DEL CONTEXTO
@@ -301,6 +303,11 @@ export default function Inicio() {
     }).filter(seccion => seccion.items.length > 0);
 
     secciones = [...secciones, ...catSections];
+
+    const totalPages = Math.ceil(secciones.length / SECTIONS_PER_PAGE);
+    const indexOfLastSection = currentPage * SECTIONS_PER_PAGE;
+    const indexOfFirstSection = indexOfLastSection - SECTIONS_PER_PAGE;
+    const currentSections = secciones.slice(indexOfFirstSection, indexOfLastSection);
 
     if (loading) {
         return (
@@ -398,8 +405,8 @@ export default function Inicio() {
                 }
             ` }} />
 
-            {/* SECCIONES DINÁMICAS */}
-            {secciones.map((seccion, index) => (
+            {/* SECCIONES DINÁMICAS (PAGINADAS) */}
+            {currentSections.map((seccion, index) => (
                 <section
                     key={seccion.id}
                     ref={index === 0 ? firstCategoryRef : null}
@@ -458,6 +465,52 @@ export default function Inicio() {
                     </div>
                 </section>
             ))}
+
+            {/* PAGINACIÓN */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 sm:gap-4 pb-20 pt-4">
+                    <button 
+                        onClick={() => {
+                            setCurrentPage(p => Math.max(1, p - 1));
+                            scrollToContent();
+                        }}
+                        disabled={currentPage === 1}
+                        className="p-3 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg active:scale-95 border border-zinc-200 dark:border-zinc-700 disabled:hover:shadow-none disabled:active:scale-100 flex items-center justify-center"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+
+                    <div className="flex items-center gap-2 px-2 sm:px-4 flex-wrap justify-center">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
+                            <button
+                                key={num}
+                                onClick={() => {
+                                    setCurrentPage(num);
+                                    scrollToContent();
+                                }}
+                                className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl font-black italic text-sm transition-all duration-300 ${
+                                    currentPage === num 
+                                    ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/30 scale-110 border border-brand-orange' 
+                                    : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-brand-orange dark:hover:text-brand-orange border border-zinc-200 dark:border-zinc-700 hover:border-brand-orange dark:hover:border-brand-orange hover:shadow-md'
+                                }`}
+                            >
+                                {num}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button 
+                        onClick={() => {
+                            setCurrentPage(p => Math.min(totalPages, p + 1));
+                            scrollToContent();
+                        }}
+                        disabled={currentPage === totalPages}
+                        className="p-3 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-brand-orange dark:text-zinc-500 dark:hover:text-brand-orange rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg active:scale-95 border border-zinc-200 dark:border-zinc-700 disabled:hover:shadow-none disabled:active:scale-100 flex items-center justify-center"
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

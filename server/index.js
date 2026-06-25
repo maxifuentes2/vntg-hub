@@ -2685,9 +2685,9 @@ REGLAS:
 - Agradecé al cliente.
 - Respondé directamente: si mencionan una categoría/franquicia que claramente vendemos, decí que SÍ trabajamos con esa línea e invitá a ver el catálogo en la web.
 - Si preguntan sobre envíos/compras, podes enviar el link /tutoriales. Si preguntan sobre originalidad, envía /guia-autenticidad.
-- NO confirmes disponibilidad de un producto específico ni inventes stock o precios.
-- Si preguntan por algo que no es de coleccionismo vintage, decí que no lo manejamos.
-- Si el cliente tiene un problema complejo (devolución, reembolso, pago, envío) o si expresamente pide hablar con un humano o si no puedes resolver su duda, añade obligatoriamente la palabra clave [DERIVAR_HUMANO] a tu respuesta. NUNCA inventes emails o teléfonos.
+- NO confirmes disponibilidad de un producto específico ni inventes stock o precios. Invita al usuario a buscar en el catálogo.
+- Si preguntan por algo que no es de coleccionismo vintage o ropa deportiva, decí que no lo manejamos. Si preguntan por fútbol, deportes, o ropa en general, decí que SÍ trabajamos con eso y que miren la web.
+- Si el cliente tiene un problema complejo (devolución, quejas, reembolsos, problemas de pago o envío) o si expresamente pide hablar con un humano, añade obligatoriamente la palabra clave [DERIVAR_HUMANO] a tu respuesta. NUNCA inventes emails o teléfonos. ¡IMPORTANTE!: NO derives consultas sobre qué productos vendemos, si tenemos stock de algo, o medios de pago.
 - Si la consulta es trivial y queda resuelta (ej: solo dice "gracias" o se despide), incluye [CHAT_FINISHED] en tu respuesta.
 - Texto plano, sin markdown.`;
 
@@ -2808,7 +2808,15 @@ app.put("/api/support/messages/:id/status", verifySupport, async (req, res) => {
     const { status } = req.body;
     if (!status) return res.status(400).json({ error: "Estado requerido" });
     try {
-        await db.query("UPDATE support_messages SET status = ? WHERE id = ?", [status, id]);
+        const [rows] = await db.query("SELECT thread_id FROM support_messages WHERE id = ?", [id]);
+        const threadId = rows[0]?.thread_id;
+        const groupKey = threadId || id;
+        const isNumeric = /^\d+$/.test(String(groupKey));
+        
+        const condition = isNumeric ? "id = ? OR thread_id = ?" : "thread_id = ?";
+        const params = isNumeric ? [status, groupKey, groupKey] : [status, groupKey];
+
+        await db.query(`UPDATE support_messages SET status = ? WHERE ${condition}`, params);
         res.json({ message: "Estado actualizado" });
     } catch (error) {
         console.error("Error al actualizar estado:", error);
@@ -2825,12 +2833,13 @@ app.put("/api/support/messages/:id/assign", verifySupport, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT thread_id FROM support_messages WHERE id = ?", [id]);
         const threadId = rows[0]?.thread_id;
-        
-        if (threadId) {
-            await db.query("UPDATE support_messages SET assignment = ? WHERE id = ? OR thread_id = ?", [assignment, id, threadId]);
-        } else {
-            await db.query("UPDATE support_messages SET assignment = ? WHERE id = ?", [assignment, id]);
-        }
+        const groupKey = threadId || id;
+        const isNumeric = /^\d+$/.test(String(groupKey));
+
+        const condition = isNumeric ? "id = ? OR thread_id = ?" : "thread_id = ?";
+        const params = isNumeric ? [assignment, groupKey, groupKey] : [assignment, groupKey];
+
+        await db.query(`UPDATE support_messages SET assignment = ? WHERE ${condition}`, params);
         res.json({ message: "Asignación actualizada" });
     } catch (error) {
         console.error("Error al actualizar asignación:", error);
