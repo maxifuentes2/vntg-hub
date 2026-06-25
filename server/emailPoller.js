@@ -124,7 +124,7 @@ class EmailPoller {
         }
     }
 
-    async sendReply(to, text, threadId, inReplyTo) {
+    async sendReply(to, text, gmailThreadId, replyToMsgId) {
         if (!this.gmail && !(await this.auth())) return;
         const msgId = `<vntg-auto-${Date.now()}@hubvntg.com>`;
         const lines = [
@@ -135,18 +135,16 @@ class EmailPoller {
             `To: ${to}`,
             'Subject: =?UTF-8?B?' + Buffer.from('Re: Tu consulta en VNTG Hub').toString('base64') + '?=',
             `Message-ID: ${msgId}`,
+            `In-Reply-To: ${replyToMsgId}`,
+            `References: ${replyToMsgId}`,
+            '',
+            Buffer.from(text).toString('base64'),
         ];
-        if (inReplyTo) {
-            lines.push(`In-Reply-To: ${inReplyTo}`);
-            lines.push(`References: ${inReplyTo}`);
-        }
-        lines.push('');
-        lines.push(Buffer.from(text).toString('base64'));
         const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
         try {
             const res = await this.gmail.users.messages.send({
                 userId: 'me',
-                requestBody: { raw },
+                requestBody: { raw, threadId: gmailThreadId },
             });
             console.log(`[email-poller] Reply enviado a ${to} threadId=${res.data?.threadId}`);
         } catch (e) {
@@ -200,6 +198,7 @@ class EmailPoller {
                 const fromEmail = fromMatch ? fromMatch[2] : from;
                 const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : from;
                 const subject = getHeader(headers, 'subject');
+                const messageId = getHeader(headers, 'message-id');
                 const inReplyTo = getHeader(headers, 'in-reply-to');
                 const rawBody = extractBody(payload);
                 const body = stripQuoted(rawBody).substring(0, 2000);
@@ -254,7 +253,7 @@ class EmailPoller {
                     ]);
 
                     if (groqResp) {
-                        await this.sendReply(fromEmail, groqResp, gmailThreadId, inReplyTo);
+                        await this.sendReply(fromEmail, groqResp, gmailThreadId, messageId);
                         await db.query(
                             "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
                             ['VNTG Bot', 'hubvntg@gmail.com', body, groqResp, contactId]
@@ -275,7 +274,7 @@ class EmailPoller {
                     ]);
 
                     if (groqResp) {
-                        await this.sendReply(fromEmail, groqResp, gmailThreadId, inReplyTo);
+                        await this.sendReply(fromEmail, groqResp, gmailThreadId, messageId);
                         await db.query(
                             "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
                             ['VNTG Bot', 'hubvntg@gmail.com', body, groqResp, contactId]
