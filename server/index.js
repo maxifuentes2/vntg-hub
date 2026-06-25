@@ -1253,8 +1253,8 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         }
 
         await db.query(
-            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
-            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType })],
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, points_used) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 'mercadopago', ?)",
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), puntosARestar],
         );
         for (let item of cart) {
             await db.query(
@@ -1477,8 +1477,8 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         }
 
         await db.query(
-            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'crypto')",
-            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shippingData, shippingType })],
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, points_used) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'crypto', ?)",
+            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shippingData, shippingType }), puntosARestar],
         );
         for (let item of cart) {
             const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
@@ -1618,8 +1618,8 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         });
 
         await db.query(
-            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, crypto_info) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'transfer', ?)",
-            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), paymentInfo],
+            "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, crypto_info, points_used) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'transfer', ?, ?)",
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), paymentInfo, puntosARestar],
         );
         for (let item of cart) {
             const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
@@ -2375,20 +2375,35 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
 app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
-        const [orderData] = await db.query("SELECT * FROM orders WHERE id = ?", [id]);
+        const [orderData] = await db.query(
+            "SELECT o.*, u.email as user_email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?",
+            [id]
+        );
         if (orderData.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
 
-        // Restaurar stock de cada producto
-        const [items] = await db.query("SELECT * FROM order_items WHERE order_id = ?", [id]);
-        for (const item of items) {
-            await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+        const order = orderData[0];
+
+        // 1. Restaurar stock de cada producto (solo si no estaba cancelada ya)
+        if (order.status !== 'cancelled') {
+            const [items] = await db.query("SELECT * FROM order_items WHERE order_id = ?", [id]);
+            for (const item of items) {
+                await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+            }
         }
 
-        // Eliminar registros relacionados y la orden
+        // 2. Revocar puntos acumulados si la orden tenía estado approved o delivered
+        const calificaParaPuntos = ["approved", "delivered"].includes(order.status);
+        if (calificaParaPuntos && order.user_email) {
+            const puntosARevocar = Math.floor(parseFloat(order.total) / 1000);
+            await db.query("UPDATE users SET points = GREATEST(0, points - ?) WHERE email = ?", [puntosARevocar, order.user_email]);
+        }
+
+        // 3. Eliminar registros relacionados y la orden
         await db.query("DELETE FROM order_items WHERE order_id = ?", [id]);
+        await db.query("DELETE FROM points_history WHERE order_id = ?", [id]);
         await db.query("DELETE FROM orders WHERE id = ?", [id]);
 
-        res.json({ message: "Orden eliminada completamente del sistema" });
+        res.json({ message: "Orden eliminada completamente del sistema y stock restaurado" });
     } catch (error) {
         console.error("Error al eliminar orden:", error);
         res.status(500).json({ error: "Error al eliminar orden" });
@@ -2856,8 +2871,19 @@ app.put("/api/support/messages/:id/assign", verifySupport, async (req, res) => {
 app.delete("/api/support/messages/:id", verifySupport, async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query("DELETE FROM support_messages WHERE id = ?", [id]);
-        res.json({ message: "Mensaje eliminado" });
+        const [rows] = await db.query("SELECT thread_id FROM support_messages WHERE id = ?", [id]);
+        const threadId = rows[0]?.thread_id;
+        
+        let queryParams = [id, String(id)];
+        let condition = "id = ? OR thread_id = ?";
+
+        if (threadId) {
+            condition += " OR thread_id = ?";
+            queryParams.push(threadId);
+        }
+
+        await db.query(`DELETE FROM support_messages WHERE ${condition}`, queryParams);
+        res.json({ message: "Hilo de soporte eliminado completamente" });
     } catch (error) {
         console.error("Error al eliminar mensaje:", error);
         res.status(500).json({ error: "Error al eliminar mensaje" });
@@ -2882,9 +2908,10 @@ app.post("/api/support/messages/bulk-delete", verifySupport, async (req, res) =>
 setInterval(async () => {
     try {
         const [expired] = await db.query(
-            "SELECT id FROM orders WHERE status = 'pending' AND expires_at <= NOW()",
+            "SELECT id, user_id, points_used FROM orders WHERE status = 'pending' AND expires_at <= NOW()",
         );
         for (let order of expired) {
+            // Restaurar stock
             const [items] = await db.query(
                 "SELECT * FROM order_items WHERE order_id = ?",
                 [order.id],
@@ -2895,13 +2922,15 @@ setInterval(async () => {
                     [item.quantity, item.product_id],
                 );
             }
-            await db.query("DELETE FROM order_items WHERE order_id = ?", [
-                order.id,
-            ]);
-            await db.query("DELETE FROM orders WHERE id = ?", [order.id]);
+            // Devolver puntos usados si aplica
+            if (order.points_used > 0) {
+                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [order.points_used, order.user_id]);
+            }
+            // Cambiar a cancelada (manteniendo el historial)
+            await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [order.id]);
         }
     } catch (e) {
-        console.error("Error purga");
+        console.error("Error purga", e);
     }
 }, 60000);
 

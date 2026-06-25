@@ -140,6 +140,11 @@ class EmailPoller {
             )
             .join("\n");
 
+        const unicasFranquicias = [...new Set(productos.map(p => p.franchise).filter(f => f))];
+        const enlacesFranquicias = unicasFranquicias
+            .map(f => `- ${f}: https://vntg-hub.vercel.app/categoria/all?franquicia=${encodeURIComponent(f)}`)
+            .join("\n");
+
         return `Eres el agente de soporte automático de VNTG HUB, una tienda argentina de coleccionismo vintage. Tu tono es amable, profesional y resolutivo. Respuestas cortas y directas en texto plano (sin markdown). Siempre respondes en español.
 
 === INFORMACIÓN DE ENVÍOS ===
@@ -159,9 +164,13 @@ class EmailPoller {
 - El producto debe estar sin usar, en su estado original y con todas las etiquetas
 - Los gastos de envío de la devolución corren por cuenta del cliente
 
-CATÁLOGO ACTUAL DE PRODUCTOS (incluye URL directa):
+=== ENLACES POR CATEGORÍA O FRANQUICIA ===
+Si el usuario pregunta de forma general si venden artículos de alguna temática, serie o franquicia (ej. "¿Tienen algo de Star Wars?"), DEBES proporcionarle obligatoriamente el enlace a la franquicia en lugar del enlace a un solo producto específico.
+${enlacesFranquicias}
+
+=== CATÁLOGO ACTUAL DE PRODUCTOS ===
+Si el usuario pregunta por un artículo ESPECÍFICO (ej. "¿Tienen el Funko Pop de Luke?"), DEBES proporcionarle el enlace directo del producto.
 ${catalogo}
-IMPORTANTE: Cuando un usuario pregunte por un artículo específico, devuélvele el enlace directo usando la URL incluida en el catálogo.
 
 DERIVACIÓN A SOPORTE HUMANO:
 Si el problema es complejo (devoluciones, quejas severas, reembolsos, problemas de pago o envío), o si el usuario solicita expresamente hablar con un humano, DEBES añadir OBLIGATORIAMENTE la palabra clave [DERIVAR_HUMANO] en tu respuesta. NO derives consultas sobre catálogo, stock, o medios de pago (para eso tienes la información).
@@ -173,7 +182,7 @@ DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resue
 - Autenticidad: todos nuestros productos son verificados. Info en https://vntg-hub.vercel.app/guia-autenticidad
 - Puntos VNTG: compras suman puntos para descuentos. Info en https://vntg-hub.vercel.app/puntos
 
-REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oraciones). Confirmá si trabajamos con algo y pasale el link del catálogo. NUNCA inventes links, emails o teléfonos.`;
+REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oraciones). Confirmá si trabajamos con algo y pasale el link de la franquicia si pregunta en general, o el link del producto si pregunta algo específico. NUNCA inventes links, emails o teléfonos.`;
     }
 
     async groq(messages) {
@@ -222,7 +231,7 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
 <tr><td>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px 16px 0 0;border-bottom:1px solid #eee">
 <tr><td align="center" style="padding:32px 24px 24px">
-<a href="https://vntg-hub.onrender.com" style="text-decoration:none">
+<a href="https://vntg-hub.vercel.app" style="text-decoration:none">
 <img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
 </a>
 </td></tr>
@@ -236,10 +245,10 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
 <p style="font-size:12px;color:#999;margin:0 0 20px;font-family:Arial,sans-serif">Si tenés más preguntas, respondé directamente a este correo.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto">
 <tr><td align="center" style="border-radius:8px;background:#f97316;padding:0">
-<a href="https://vntg-hub.onrender.com" target="_blank" style="display:inline-block;padding:14px 32px;background:#f97316;color:#ffffff;text-decoration:none;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.3px">Ir a VNTG Hub</a>
+<a href="https://vntg-hub.vercel.app" target="_blank" style="display:inline-block;padding:14px 32px;background:#f97316;color:#ffffff;text-decoration:none;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.3px">Ir a VNTG Hub</a>
 </td></tr>
 <tr><td align="center" style="padding-top:10px">
-<a href="https://vntg-hub.onrender.com" target="_blank" style="color:#999;font-size:11px;font-family:Arial,sans-serif;text-decoration:underline">vntg-hub.onrender.com</a>
+<a href="https://vntg-hub.vercel.app" target="_blank" style="color:#999;font-size:11px;font-family:Arial,sans-serif;text-decoration:underline">vntg-hub.vercel.app</a>
 </td></tr>
 </table>
 </td></tr>

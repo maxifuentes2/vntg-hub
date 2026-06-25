@@ -5,6 +5,7 @@ import { ChevronLeft, Package, Truck, CircleCheck, House, MapPin, Loader, Extern
 import { slugify } from '../utils/slugify';
 import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
+import { formatArgTime } from '../utils/dateUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -49,6 +50,10 @@ export default function PedidoDetalle() {
     const [timeLeft, setTimeLeft] = useState(null);
     const [expired, setExpired] = useState(false);
     const timerRef = useRef(null);
+    
+    // Temporizador global de la orden
+    const [timeLeftOrder, setTimeLeftOrder] = useState(null);
+    const orderTimerRef = useRef(null);
     const [proofData, setProofData] = useState({ titular: '', banco: '', nroOperacion: '' });
     const [uploading, setUploading] = useState(false);
     const [proofUploaded, setProofUploaded] = useState(false);
@@ -113,6 +118,28 @@ export default function PedidoDetalle() {
             setExpired(false);
         }
     }, [cryptoRetry?.expires_at]);
+
+    useEffect(() => {
+        if (pedido?.status === 'pending' && pedido?.expires_at) {
+            // Reemplazar Z por vacío si el backend ya devuelve hora local en GMT, pero
+            // si la base de datos devuelve MySQL date string, JS Date la asume local.
+            const expiresStr = pedido.expires_at.replace('Z', '').replace('T', ' ');
+            const expires = new Date(expiresStr).getTime();
+            const tick = () => {
+                const now = Date.now();
+                const diff = Math.max(0, Math.floor((expires - now) / 1000));
+                setTimeLeftOrder(diff);
+                if (diff <= 0) {
+                    clearInterval(orderTimerRef.current);
+                }
+            };
+            tick();
+            orderTimerRef.current = setInterval(tick, 1000);
+            return () => clearInterval(orderTimerRef.current);
+        } else {
+            setTimeLeftOrder(null);
+        }
+    }, [pedido?.status, pedido?.expires_at]);
 
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -274,7 +301,7 @@ export default function PedidoDetalle() {
                 </button>
                 <div className="mb-12">
                     <h1 className="text-2xl max-[400px]:text-xl md:text-5xl font-black italic uppercase tracking-tighter mb-2">Orden #{pedido.id.slice(0,8)}</h1>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {new Date(pedido.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Fecha de compra: {formatArgTime(pedido.created_at)} (Hora ARG)</p>
                 </div>
 
                 {/* MAPA DE ESTADO (TIMELINE) */}
@@ -433,7 +460,7 @@ export default function PedidoDetalle() {
                                                     <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">{esTransfer ? 'Banco/Billetera' : 'Billetera/Exchange'}:</span> {paymentInfo.proofData.banco}</p>
                                                     <p className="text-zinc-700 dark:text-zinc-300"><span className="font-bold">{esTransfer ? 'Nro. de Operación' : 'TXID / Hash'}:</span> {paymentInfo.proofData.nroOperacion}</p>
                                                     {paymentInfo.proofUploadedAt && (
-                                                        <p className="text-[10px] text-zinc-500 italic mt-1">Enviado: {new Date(paymentInfo.proofUploadedAt).toLocaleString('es-AR')}</p>
+                                                        <p className="text-[10px] text-zinc-500 italic mt-1">Enviado: {formatArgTime(paymentInfo.proofUploadedAt)}</p>
                                                     )}
                                                 </div>
                                             )}
@@ -462,6 +489,17 @@ export default function PedidoDetalle() {
                                             <p className="text-xs text-zinc-500 mt-1">El estado se actualizará automáticamente cuando se confirme la transacción.</p>
                                         </div>
                                     </div>
+
+                                    {timeLeftOrder !== null && timeLeftOrder > 0 && (
+                                        <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-1">El pedido expira en</p>
+                                            <p className="text-3xl font-black italic tracking-tighter text-red-500">
+                                                {String(Math.floor(timeLeftOrder / 60)).padStart(2, '0')}:{String(timeLeftOrder % 60).padStart(2, '0')}
+                                            </p>
+                                            <p className="text-xs text-red-400 mt-1">Aboná ahora para no perder tu reserva.</p>
+                                        </div>
+                                    )}
+
                                     <div className="mt-4 flex flex-col gap-3">
                                         <button
                                             onClick={() => setShowCryptoModal(true)}
@@ -472,7 +510,7 @@ export default function PedidoDetalle() {
                                         </button>
                                         <button
                                             onClick={handleRetryPayment}
-                                            disabled={retrying}
+                                            disabled={retrying || (timeLeftOrder !== null && timeLeftOrder <= 0)}
                                             className="w-full flex items-center justify-center gap-2 bg-brand-blue text-white px-6 py-4 rounded-2xl text-sm font-black uppercase italic hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-60"
                                         >
                                             {retrying ? <Loader className="animate-spin" size={20} /> : <CreditCard size={20} />}

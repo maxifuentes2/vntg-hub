@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Package, Calendar, Pencil, Check, X, MapPin, Smartphone, ChevronRight, Plus, Star, Trash2, Heart, Info } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { formatArgTime } from '../utils/dateUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -673,7 +674,7 @@ export default function MiCuenta() {
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 mb-1">
-                                            <Calendar size={12}/> {new Date(order.created_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false })} (Hora ARG)
+                                            <Calendar size={12}/> {formatArgTime(order.created_at)} (Hora ARG)
                                         </div>
                                         <p className="font-bold italic uppercase text-sm group-hover:text-brand-orange transition-colors">Orden #{order.id.slice(0,8)}</p>
                                     </div>
