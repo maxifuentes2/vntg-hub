@@ -1216,12 +1216,15 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         let subtotal = 0;
         for (let item of cart) {
             const [prod] = await db.query(
-                "SELECT stock, price FROM products WHERE id = ?",
+                "SELECT stock, price, discount_percentage FROM products WHERE id = ?",
                 [item.id],
             );
             if (!prod[0] || prod[0].stock < item.cantidad)
                 return res.status(400).json({ error: "Sin stock" });
-            subtotal += prod[0].price * item.cantidad;
+            const realPrice = prod[0].discount_percentage > 0 
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+                : prod[0].price;
+            subtotal += realPrice * item.cantidad;
         }
         let shippingCost = 0;
         const cfg = await shipping.loadConfig(db);
@@ -1257,9 +1260,14 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
             [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), puntosARestar],
         );
         for (let item of cart) {
+            const [prodInfo] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
+            const realPrice = (prodInfo[0] && prodInfo[0].discount_percentage > 0) 
+                ? prodInfo[0].price * (1 - prodInfo[0].discount_percentage / 100) 
+                : (prodInfo[0]?.price || item.price);
+            
             await db.query(
                 "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)",
-                [orderId, item.id, item.cantidad, item.price],
+                [orderId, item.id, item.cantidad, realPrice],
             );
             await db.query(
                 "UPDATE products SET stock = stock - ? WHERE id = ?",
@@ -1443,9 +1451,12 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
 
         let subtotal = 0;
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
+            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
             if (prod.length === 0) continue;
-            subtotal += Number(prod[0].price) * (item.cantidad || 1);
+            const realPrice = prod[0].discount_percentage > 0 
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+                : prod[0].price;
+            subtotal += Number(realPrice) * (item.cantidad || 1);
         }
 
         let shippingCost = 0;
@@ -1481,8 +1492,11 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
             [orderId, req.user.id, totalConComision, JSON.stringify({ ...shippingData, shippingType }), puntosARestar],
         );
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
-            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, prod[0]?.price || 0]);
+            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
+            const realPrice = (prod[0] && prod[0].discount_percentage > 0) 
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+                : (prod[0]?.price || 0);
+            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, realPrice]);
             await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad || 1, item.id]);
         }
 
@@ -1572,9 +1586,12 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
 
         let subtotal = 0;
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
+            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
             if (prod.length === 0) continue;
-            subtotal += Number(prod[0].price) * (item.cantidad || 1);
+            const realPrice = prod[0].discount_percentage > 0 
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+                : prod[0].price;
+            subtotal += Number(realPrice) * (item.cantidad || 1);
         }
 
         let shippingCost = 0;
@@ -1622,8 +1639,11 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
             [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), paymentInfo, puntosARestar],
         );
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price FROM products WHERE id = ?", [item.id]);
-            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, prod[0]?.price || 0]);
+            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
+            const realPrice = (prod[0] && prod[0].discount_percentage > 0) 
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+                : (prod[0]?.price || 0);
+            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, realPrice]);
             await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad || 1, item.id]);
         }
 
@@ -2092,11 +2112,12 @@ app.post("/api/admin/products", verifyAdmin, async (req, res) => {
         anio,
         material,
         estado,
+        discount_percentage,
     } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         await db.query(
-            "INSERT INTO products (title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO products (title, description, franchise, categoryId, price, stock, images, gallery, escala, fabricante, anio, material, estado, discount_percentage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 title,
                 description || "",
@@ -2111,6 +2132,7 @@ app.post("/api/admin/products", verifyAdmin, async (req, res) => {
                 anio || "",
                 material || "",
                 estado || "",
+                discount_percentage || 0,
             ],
         );
         res.json({ message: "Producto creado exitosamente" });
@@ -2135,6 +2157,7 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
         anio,
         material,
         estado,
+        discount_percentage,
     } = req.body;
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
@@ -2145,7 +2168,7 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
         const stockPrevio = prev[0]?.stock || 0;
 
         await db.query(
-            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=?, escala=?, fabricante=?, anio=?, material=?, estado=? WHERE id=?",
+            "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=?, escala=?, fabricante=?, anio=?, material=?, estado=?, discount_percentage=? WHERE id=?",
             [
                 title,
                 description || "",
@@ -2160,6 +2183,7 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
                 anio || "",
                 material || "",
                 estado || "",
+                discount_percentage || 0,
                 id,
             ],
         );
@@ -2480,12 +2504,12 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
         }
 
         const [productos] = await db.query(
-            "SELECT title, franchise, price, stock FROM products WHERE stock > 0",
+            "SELECT title, franchise, price, stock, discount_percentage FROM products WHERE stock > 0",
         );
 
         const catalogo = productos
             .map(
-                (p) => `- ${p.title} (Franquicia: ${p.franchise}): $${p.price} - URL: /producto/${slugify(p.title)}`,
+                (p) => `- ${p.title} (Franquicia: ${p.franchise}): $${p.discount_percentage > 0 ? (p.price * (1 - p.discount_percentage/100)).toFixed(2) + ' (Precio original: $' + p.price + ' con ' + p.discount_percentage + '% de descuento)' : p.price} - URL: /producto/${slugify(p.title)}`,
             )
             .join("\n");
 

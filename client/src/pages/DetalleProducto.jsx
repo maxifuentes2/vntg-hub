@@ -7,6 +7,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext'; 
 import { useCurrency } from '../context/CurrencyContext'; 
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 import { slugify } from '../utils/slugify';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -227,7 +228,19 @@ const DetalleProducto = () => {
                             
                             {/* PRECIO Y STOCK */}
                             <div className="flex flex-col mt-4">
-                                <p className="text-2xl max-[400px]:text-xl font-black italic text-brand-orange">{formatPrice(producto.price)}</p>
+                                <div className="flex flex-col">
+                                    {producto.discount_percentage > 0 ? (
+                                        <>
+                                            <p className="text-lg line-through text-zinc-400 font-bold">{formatPrice(producto.price)}</p>
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-3xl max-[400px]:text-2xl font-black italic text-brand-orange">{formatPrice(calculateDiscountedPrice(producto.price, producto.discount_percentage))}</p>
+                                                <span className="text-sm bg-red-500/10 text-red-500 px-2.5 py-1 rounded-full font-bold">-{producto.discount_percentage}% OFF</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className="text-3xl max-[400px]:text-2xl font-black italic text-brand-orange">{formatPrice(producto.price)}</p>
+                                    )}
+                                </div>
                                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-2">
                                     Stock Disponible: <span className={producto.stock === 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}>{producto.stock ?? '0'}</span>
                                 </p>
@@ -315,7 +328,23 @@ const DetalleProducto = () => {
                                                 <h3 className="text-base max-[400px]:text-sm font-black uppercase italic text-zinc-900 dark:text-white group-hover:text-brand-orange transition-colors truncate mb-6">{item.title}</h3>
                                             </Link>
                                             <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 mt-auto">
-                                                <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">{formatPrice(item.price)}</p>
+                                                <div className="flex flex-col">
+                                                    {item.discount_percentage > 0 ? (
+                                                        <>
+                                                            <p className="text-xs line-through text-zinc-400 font-bold">{formatPrice(item.price)}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-black italic text-brand-orange text-lg">
+                                                                    {formatPrice(calculateDiscountedPrice(item.price, item.discount_percentage))}
+                                                                </span>
+                                                                <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold">-{item.discount_percentage}%</span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <span className="font-black italic text-brand-orange text-lg">
+                                                            {formatPrice(item.price)}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="flex items-center gap-4">
                                                     <button
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (isWished) { removeFromWishList(item.id); } else { addToWishList(item); } }}

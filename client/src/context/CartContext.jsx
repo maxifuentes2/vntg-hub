@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from './ToastContext';
 import { useAuth } from './AuthContext';
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 
 const CartContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -147,7 +148,7 @@ export const CartProvider = ({ children }) => {
 
     const removeFromCart = (productId) => setCart(prev => prev.filter(item => item.id !== productId));
     const clearCart = () => setCart([]);
-    const cartTotal = cart.reduce((total, item) => total + (item.price * item.cantidad), 0);
+    const cartTotal = cart.reduce((total, item) => total + (calculateDiscountedPrice(item.price, item.discount_percentage) * item.cantidad), 0);
 
     const refreshCartPrices = async (apiUrl) => {
         if (cart.length === 0) return;
@@ -162,6 +163,7 @@ export const CartProvider = ({ children }) => {
                         price: product.price,
                         stock: product.stock,
                         title: product.title,
+                        discount_percentage: product.discount_percentage || 0
                     };
                 })
             );
@@ -169,9 +171,9 @@ export const CartProvider = ({ children }) => {
             setCart(prev =>
                 prev.map(item => {
                     const updated = updates.find(u => u && u.id === item.id);
-                    if (updated && (updated.price !== item.price || updated.stock !== item.stock)) {
+                    if (updated && (updated.price !== item.price || updated.stock !== item.stock || updated.discount_percentage !== item.discount_percentage)) {
                         changed = true;
-                        return { ...item, price: updated.price, stock: updated.stock };
+                        return { ...item, price: updated.price, stock: updated.stock, discount_percentage: updated.discount_percentage };
                     }
                     return item;
                 })

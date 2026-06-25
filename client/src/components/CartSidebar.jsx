@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useSidebar } from '../context/SidebarContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 import SidebarWrapper from './SidebarWrapper';
 
 export default function CartSidebar() {
@@ -59,7 +60,19 @@ export default function CartSidebar() {
                         <img src={item.images} className="w-16 xs:w-20 h-16 xs:h-20 object-cover  rounded-xl shadow-sm" alt="" />
                         <div className="flex-grow">
                             <h3 className="text-xs font-black uppercase italic line-clamp-1">{item.title}</h3>
-                            <p className="text-brand-orange font-black italic text-sm mb-3">{formatPrice(item.price)}</p>
+                            <div className="flex flex-col mb-3">
+                                {item.discount_percentage > 0 ? (
+                                    <>
+                                        <p className="text-[10px] line-through text-zinc-400 font-bold">{formatPrice(item.price)}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-brand-orange font-black italic text-sm">{formatPrice(calculateDiscountedPrice(item.price, item.discount_percentage))}</p>
+                                            <span className="text-[9px] bg-red-500/10 text-red-500 px-1 py-0.5 rounded-full font-bold">-{item.discount_percentage}%</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-brand-orange font-black italic text-sm">{formatPrice(item.price)}</p>
+                                )}
+                            </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800  px-2 py-1 rounded-xl">
                                     <button onClick={() => updateQuantity(item.id, -1)} className="hover:text-brand-orange transition-colors"><Minus size={14} /></button>

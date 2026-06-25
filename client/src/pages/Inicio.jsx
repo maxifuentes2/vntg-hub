@@ -4,6 +4,7 @@ import { ShoppingCart, Box, ArrowRight, Loader, ChevronDown, Heart, Sparkles, Ch
 import { useCart } from '../context/CartContext';
 import { useWishList } from '../context/WishListContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 import Reveal from '../components/Reveal';
 import TypewriterText from '../components/TypewriterText';
 import { slugify } from '../utils/slugify';
@@ -118,9 +119,23 @@ const ProductCarousel = ({ items, addToCart, addToWishList, wishListItems = [], 
                                     </Link>
 
                                     <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6 mt-auto">
-                                        <p className="text-xl max-[400px]:text-lg font-black text-zinc-900 dark:text-white italic">
-                                            {formatPrice(item.price)}
-                                        </p>
+                                        <div className="flex flex-col">
+                                            {item.discount_percentage > 0 ? (
+                                                <>
+                                                    <p className="text-xs line-through text-zinc-400 font-bold">{formatPrice(item.price)}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-black italic text-brand-orange text-lg">
+                                                            {formatPrice(calculateDiscountedPrice(item.price, item.discount_percentage))}
+                                                        </span>
+                                                        <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold">-{item.discount_percentage}%</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <span className="font-black italic text-brand-orange text-lg">
+                                                    {formatPrice(item.price)}
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-4">
                                             <button
                                                 onClick={(e) => { 

@@ -131,12 +131,12 @@ class EmailPoller {
 
     async getSystemPrompt() {
         const [productos] = await db.query(
-            "SELECT title, franchise, price, stock FROM products WHERE stock > 0",
+            "SELECT title, franchise, price, stock, discount_percentage FROM products WHERE stock > 0",
         );
 
         const catalogo = productos
             .map(
-                (p) => `- ${p.title} (Franquicia: ${p.franchise || 'N/A'}): $${p.price} - URL: https://vntg-hub.vercel.app/producto/${slugify(p.title)}`,
+                (p) => `- ${p.title} (Franquicia: ${p.franchise || 'N/A'}): $${p.discount_percentage > 0 ? (p.price * (1 - p.discount_percentage/100)).toFixed(2) + ' (Precio original: $' + p.price + ' con ' + p.discount_percentage + '% de descuento)' : p.price} - URL: https://vntg-hub.vercel.app/producto/${slugify(p.title)}`,
             )
             .join("\n");
 

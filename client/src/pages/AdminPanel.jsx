@@ -131,7 +131,7 @@ export default function AdminPanel() {
     const [productForm, setProductForm] = useState({
         id: '', title: '', description: '', franchise: '',
         categoryId: '', price: 0, stock: 0, images: '', gallery: '',
-        escala: '', fabricante: '', anio: '', material: '', estado: ''
+        escala: '', fabricante: '', anio: '', material: '', estado: '', discount_percentage: 0
     });
     const [categoryForm, setCategoryForm] = useState({ id: '', name: '', banner_url: '' });
 
@@ -221,7 +221,7 @@ export default function AdminPanel() {
             setProductForm({
                 id: '', title: '', description: '', franchise: '',
                 categoryId: '', price: 0, stock: 0, images: '', gallery: '',
-                escala: '', fabricante: '', anio: '', material: '', estado: ''
+                escala: '', fabricante: '', anio: '', material: '', estado: '', discount_percentage: 0
             });
         }
         setIsProductModalOpen(true);
@@ -595,7 +595,12 @@ export default function AdminPanel() {
                                                         <p className="text-[10px] font-bold uppercase tracking-wider">{p.id}</p>
                                                         <p className="text-[9px] uppercase mt-0.5">{p.categoryId || '-'}</p>
                                                     </td>
-                                                    <td className="px-6 py-4 font-black italic text-brand-orange">{formatPrice(p.price)}</td>
+                                                    <td className="px-6 py-4 font-black italic text-brand-orange">
+                                                        {formatPrice(p.price)}
+                                                        {p.discount_percentage > 0 && (
+                                                            <span className="ml-2 text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full not-italic">-{p.discount_percentage}%</span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${p.stock > 0 ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'}`}>
                                                             <div className={`w-1.5 h-1.5 rounded-full ${p.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -934,8 +939,9 @@ export default function AdminPanel() {
                                 <div className="space-y-4">
                                     <input placeholder="Título del producto" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} />
                                     <textarea placeholder="Descripción" required rows={3} className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all resize-none" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <input type="number" placeholder="Precio" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.price || ''} onChange={e => setProductForm({ ...productForm, price: Number(e.target.value) })} />
+                                        <input type="number" placeholder="Descuento (%)" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.discount_percentage || 0} onChange={e => setProductForm({ ...productForm, discount_percentage: Number(e.target.value) })} />
                                         <input type="number" placeholder="Stock" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.stock || ''} onChange={e => setProductForm({ ...productForm, stock: Number(e.target.value) })} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">

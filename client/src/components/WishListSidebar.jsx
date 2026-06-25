@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useWishList } from '../context/WishListContext'; 
 import { useCart } from '../context/CartContext'; 
 import { useCurrency } from '../context/CurrencyContext'; 
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 import { useSidebar } from '../context/SidebarContext';
 import { slugify } from '../utils/slugify';
 import SidebarWrapper from './SidebarWrapper';
@@ -91,7 +92,19 @@ export default function WishListSidebar() {
                                     <p className="text-[10px] font-black uppercase italic text-brand-orange mb-1">{item.franchise || item.brand || 'VNTG'}</p>
                                     <Link to={`/producto/${slugify(item.title)}`} onClick={closeAll} className="text-sm font-bold leading-tight mb-auto hover:text-brand-orange line-clamp-2">{item.title}</Link>
                                     <div className="flex items-center justify-between mt-2">
-                                        <p className="font-black">{formatPrice(item.price)}</p>
+                                        <div className="flex flex-col">
+                                            {item.discount_percentage > 0 ? (
+                                                <>
+                                                    <p className="text-[10px] line-through text-zinc-400 font-bold">{formatPrice(item.price)}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-black italic text-brand-orange">{formatPrice(calculateDiscountedPrice(item.price, item.discount_percentage))}</p>
+                                                        <span className="text-[9px] bg-red-500/10 text-red-500 px-1 py-0.5 rounded-full font-bold">-{item.discount_percentage}%</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p className="font-black italic text-brand-orange">{formatPrice(item.price)}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end justify-between ml-2">

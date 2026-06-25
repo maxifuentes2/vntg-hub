@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 import { useCart } from '../context/CartContext';
 import { QRCodeCanvas } from 'qrcode.react';
 import { ShieldCheck, MapPin, ArrowLeft, Star, Plus, House, Briefcase, Copy, CircleCheck, Loader, Bitcoin, Clock, AlertTriangle, Pencil, X, Landmark, Upload } from 'lucide-react';
@@ -1010,7 +1011,12 @@ export default function Checkout() {
                         {cart.map(item => (
                             <div key={item.id} className="flex justify-between text-sm font-bold italic border-b border-zinc-100 dark:border-zinc-800 pb-2">
                                 <span>{item.cantidad}x {item.title}</span>
-                                <span>{formatPrice(item.price * item.cantidad)}</span>
+                                <div className="flex flex-col items-end">
+                                    {item.discount_percentage > 0 && (
+                                        <span className="text-[10px] line-through text-zinc-400 font-bold">{formatPrice(item.price * item.cantidad)}</span>
+                                    )}
+                                    <span>{formatPrice(calculateDiscountedPrice(item.price, item.discount_percentage) * item.cantidad)}</span>
+                                </div>
                             </div>
                         ))}
                         <div className="flex justify-between text-xs font-black uppercase text-zinc-500 pt-2">

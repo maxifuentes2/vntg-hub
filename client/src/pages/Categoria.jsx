@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
+import { calculateDiscountedPrice } from '../utils/priceUtils';
 import { useCart } from '../context/CartContext'; 
 import { useWishList } from '../context/WishListContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -264,7 +265,19 @@ const Categoria = () => {
                                     {item.title}
                                 </h3>
                                 <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-6">
-                                    <p className="text-xl max-[400px]:text-lg font-black italic">{formatPrice(item.price)}</p>
+                                    <div className="flex flex-col">
+                                        {item.discount_percentage > 0 ? (
+                                            <>
+                                                <p className="text-sm line-through text-zinc-400 font-bold">{formatPrice(item.price)}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-xl max-[400px]:text-lg font-black italic text-brand-orange">{formatPrice(calculateDiscountedPrice(item.price, item.discount_percentage))}</p>
+                                                    <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold">-{item.discount_percentage}%</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <p className="text-xl max-[400px]:text-lg font-black italic">{formatPrice(item.price)}</p>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-4">
                                         {(() => {
                                             const isWished = wishListItems.some(w => String(w.id) === String(item.id));
