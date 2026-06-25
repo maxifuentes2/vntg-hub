@@ -167,10 +167,10 @@ const DetalleProducto = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xs:gap-12 lg:gap-20 mb-32 items-start">
                     <div className="flex flex-col gap-6">
                         <div 
-                            className="relative w-full aspect-square md:aspect-[4/3] bg-transparent overflow-hidden flex items-center justify-center cursor-zoom-in group rounded-3xl"
+                            className="relative w-full aspect-square md:aspect-[4/3] bg-transparent flex items-center justify-center cursor-zoom-in group"
                             onClick={() => { setIsModalOpen(true); setZoomLevel(1); }}
                         >
-                            <img src={imgPrincipal} alt={producto.title} className="w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105" />
+                            <img src={imgPrincipal} alt={producto.title} className="max-w-full max-h-full object-contain drop-shadow-md dark:drop-shadow-2xl transition-transform duration-500 group-hover:scale-105 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900" />
                             
                             <div className="absolute top-6 left-6 bg-brand-orange text-white px-4 py-1.5 font-black uppercase italic text-[10px] tracking-widest shadow-xl rounded-full z-30">
                                 {producto.stock === 0 ? 'SIN STOCK' : (producto.estado || 'STOCK EXCLUSIVO')}
@@ -250,14 +250,14 @@ const DetalleProducto = () => {
                         <button 
                             onClick={() => addToCart(producto)} 
                             disabled={producto.stock === 0}
-                            className={`w-full py-6 font-black uppercase italic text-lg tracking-[0.2em] transition-all flex items-center justify-center gap-4 mb-4 shadow-xl active:translate-y-1 rounded-2xl ${producto.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-orange text-white hover:bg-zinc-900'}`}
+                            className={`w-full py-6 max-[360px]:py-4 font-black uppercase italic text-lg max-[360px]:text-sm tracking-[0.2em] max-[360px]:tracking-widest transition-all flex items-center justify-center gap-4 max-[360px]:gap-2 mb-4 shadow-xl active:translate-y-1 rounded-2xl ${producto.stock === 0 ? 'bg-zinc-200 cursor-not-allowed text-zinc-400' : 'bg-brand-orange text-white hover:bg-zinc-900'}`}
                         >
                             <ShoppingCart size={24} /> {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
                         </button>
 
                         <button 
                             onClick={() => isInWishlist ? removeFromWishList(producto.id) : addToWishList(producto)} 
-                            className={`w-full border py-4 font-black uppercase italic text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 mb-10 rounded-xl ${
+                            className={`w-full border py-4 max-[360px]:py-3 font-black uppercase italic text-xs max-[360px]:text-[9px] tracking-[0.2em] max-[360px]:tracking-wider transition-all flex items-center justify-center gap-3 max-[360px]:gap-1.5 mb-10 rounded-xl ${
                                 isInWishlist 
                                 ? 'bg-green-500/10 border-green-500 text-green-600 dark:text-green-500 hover:bg-green-500/20' 
                                 : 'bg-transparent border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:border-brand-orange hover:text-brand-orange'

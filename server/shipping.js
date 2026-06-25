@@ -15,7 +15,7 @@ const loadConfig = async (db) => {
     cached = {
       COSTO_NORMAL: parseFloat(process.env.ENVIO_NORMAL) || 9426.05,
       COSTO_PRIORITARIO: parseFloat(process.env.ENVIO_PRIORITARIO) || 17276.99,
-      ENVIO_GRATIS_DESDE: parseFloat(process.env.ENVIO_GRATIS_DESDE) || 200000,
+      ENVIO_GRATIS_DESDE: parseFloat(process.env.ENVIO_GRATIS_DESDE) || 250000,
     };
   }
   return cached;
@@ -26,7 +26,7 @@ const getConfig = () => {
     cached = {
       COSTO_NORMAL: parseFloat(process.env.ENVIO_NORMAL) || 9426.05,
       COSTO_PRIORITARIO: parseFloat(process.env.ENVIO_PRIORITARIO) || 17276.99,
-      ENVIO_GRATIS_DESDE: parseFloat(process.env.ENVIO_GRATIS_DESDE) || 200000,
+      ENVIO_GRATIS_DESDE: parseFloat(process.env.ENVIO_GRATIS_DESDE) || 250000,
     };
   }
   return cached;

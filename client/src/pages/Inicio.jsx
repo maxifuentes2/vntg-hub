@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Box, ArrowRight, Loader, ChevronDown, Heart, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -275,61 +275,72 @@ export default function Inicio() {
         fetchData();
     }, []);
 
-    let secciones = [];
-
-    try {
-        const productosConDescuento = productos.filter(p => p.discount_percentage > 0);
-        if (productosConDescuento.length > 0) {
-            secciones.push({
-                id: 'ofertas',
-                nombre: 'Ofertas Especiales',
-                subtitle: 'Precios rebajados por tiempo limitado',
-                banner: '/wallpaper.webp',
-                items: productosConDescuento,
-                isRecomendados: true // Reuse this layout style for a clean look
-            });
+    const shuffleArray = (array) => {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
         }
+        return newArray;
+    };
 
-        const storedInterests = localStorage.getItem('vntg_interests');
-        if (storedInterests) {
-            const interestsArray = JSON.parse(storedInterests);
-            if (Array.isArray(interestsArray) && interestsArray.length > 0) {
-                const topRecomendados = productos.filter(p => 
-                    interestsArray.includes(String(p.categoryId || p.category_id))
-                );
+    const secciones = useMemo(() => {
+        let result = [];
 
-                if (topRecomendados.length > 0) {
-                    secciones.push({
-                        id: 'recomendados',
-                        nombre: 'Recomendados para ti',
-                        subtitle: 'Basado en tus intereses',
-                        banner: '/wallpaper.webp',
-                        items: topRecomendados,
-                        isRecomendados: true
-                    });
+        try {
+            const productosConDescuento = productos.filter(p => p.discount_percentage > 0);
+            if (productosConDescuento.length > 0) {
+                result.push({
+                    id: 'ofertas',
+                    nombre: 'Ofertas Especiales',
+                    subtitle: 'Precios rebajados por tiempo limitado',
+                    banner: '/wallpaper.webp',
+                    items: productosConDescuento,
+                    isRecomendados: true
+                });
+            }
+
+            const storedInterests = localStorage.getItem('vntg_interests');
+            if (storedInterests) {
+                const interestsArray = JSON.parse(storedInterests);
+                if (Array.isArray(interestsArray) && interestsArray.length > 0) {
+                    const topRecomendados = productos.filter(p => 
+                        interestsArray.includes(String(p.categoryId || p.category_id))
+                    );
+
+                    if (topRecomendados.length > 0) {
+                        result.push({
+                            id: 'recomendados',
+                            nombre: 'Recomendados para ti',
+                            subtitle: 'Basado en tus intereses',
+                            banner: '/wallpaper.webp',
+                            items: topRecomendados,
+                            isRecomendados: true
+                        });
+                    }
                 }
             }
+        } catch (e) {
+            console.error("Error loading recommendations", e);
         }
-    } catch (e) {
-        console.error("Error loading recommendations", e);
-    }
 
-    const catSections = dbCategories.map(cat => {
-        const filtrados = productos.filter(p =>
-            String(p.categoryId || p.category_id) === String(cat.id)
-        );
+        const catSections = dbCategories.map(cat => {
+            const filtrados = productos.filter(p =>
+                String(p.categoryId || p.category_id) === String(cat.id)
+            );
 
-        return {
-            id: cat.id,
-            nombre: cat.name,
-            subtitle: 'Colección Oficial',
-            banner: cat.banner_url || "/wallpaper.webp",
-            items: filtrados,
-            slug: slugify(cat.name)
-        };
-    }).filter(seccion => seccion.items.length > 0);
+            return {
+                id: cat.id,
+                nombre: cat.name,
+                subtitle: 'Colección Oficial',
+                banner: cat.banner_url || "/wallpaper.webp",
+                items: shuffleArray(filtrados),
+                slug: slugify(cat.name)
+            };
+        }).filter(seccion => seccion.items.length > 0);
 
-    secciones = [...secciones, ...catSections];
+        return [...result, ...shuffleArray(catSections)];
+    }, [productos, dbCategories]);
 
     const totalPages = Math.ceil(secciones.length / SECTIONS_PER_PAGE);
     const indexOfLastSection = currentPage * SECTIONS_PER_PAGE;
