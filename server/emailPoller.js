@@ -70,6 +70,7 @@ class EmailPoller {
     }
 
     async poll() {
+        console.log('[email-poller] Poll...');
         if (!this.gmail) {
             const ok = await this.authenticate();
             if (!ok) return;
@@ -85,6 +86,10 @@ class EmailPoller {
 
             const messages = res.data.messages || [];
             console.log(`[email-poller] Gmail devolvió ${messages.length} mensajes en inbox`);
+
+            if (messages.length > 0) {
+                console.log(`[email-poller] IDs: ${messages.map(m => m.id).join(', ')}`);
+            }
 
             // Filtrar mensajes ya procesados
             const newMessages = messages.filter(m => !this.seenIds.has(m.id));
