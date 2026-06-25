@@ -133,25 +133,25 @@ class EmailPoller {
                         console.log(`[email-poller] Busqueda por threadId=${gmailThreadId}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
                     }
 
-                    // 2) Fallback: buscar por In-Reply-To (patrón vntg-contact-{id})
+                    // 2) Fallback: buscar por In-Reply-To (patrón vntg-contact-{id} o vntg-ticket-{id})
                     if (!contact) {
-                        const patternMatch = inReplyTo.match(/vntg-contact-(\d+)/);
-                        if (patternMatch) {
+                        const idMatch = inReplyTo.match(/vntg-(?:contact|ticket)-(\d+)/);
+                        if (idMatch) {
                             const [rows] = await db.query(
                                 "SELECT id, nombre, email, thread_id FROM support_messages WHERE id = ? AND source IS NULL LIMIT 1",
-                                [parseInt(patternMatch[1], 10)]
+                                [parseInt(idMatch[1], 10)]
                             );
                             if (rows.length > 0) contact = rows[0];
-                            console.log(`[email-poller] Busqueda por In-Reply-To id=${patternMatch[1]}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
+                            console.log(`[email-poller] Busqueda por In-Reply-To id=${idMatch[1]}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
                         } else {
-                            console.log(`[email-poller] In-Reply-To no coincide con patrón vntg-contact: "${inReplyTo}"`);
+                            console.log(`[email-poller] In-Reply-To no coincide con patrón vntg: "${inReplyTo.substring(0, 60)}"`);
                         }
                     }
 
-                    // 3) Fallback: buscar por email del remitente
+                    // 3) Fallback: buscar por email del remitente (cualquier contacto, incluso sin thread_id)
                     if (!contact && fromEmail) {
                         const [rows] = await db.query(
-                            "SELECT id, nombre, email, thread_id FROM support_messages WHERE email = ? AND source IS NULL AND thread_id IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+                            "SELECT id, nombre, email, thread_id FROM support_messages WHERE email = ? AND source IS NULL ORDER BY created_at DESC LIMIT 1",
                             [fromEmail]
                         );
                         if (rows.length > 0) contact = rows[0];
