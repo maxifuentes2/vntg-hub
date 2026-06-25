@@ -937,33 +937,75 @@ export default function AdminPanel() {
                         <form onSubmit={handleSaveProduct} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-4">
-                                    <input placeholder="Título del producto" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} />
-                                    <textarea placeholder="Descripción" required rows={3} className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all resize-none" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Título del Producto</label>
+                                        <input placeholder="Título del producto" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Descripción</label>
+                                        <textarea placeholder="Descripción" required rows={3} className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all resize-none" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
+                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <input type="number" placeholder="Precio" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.price || ''} onChange={e => setProductForm({ ...productForm, price: Number(e.target.value) })} />
-                                        <input type="number" placeholder="Descuento (%)" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.discount_percentage || 0} onChange={e => setProductForm({ ...productForm, discount_percentage: Number(e.target.value) })} />
-                                        <input type="number" placeholder="Stock" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.stock || ''} onChange={e => setProductForm({ ...productForm, stock: Number(e.target.value) })} />
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Precio</label>
+                                            <input type="number" placeholder="Precio" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.price || ''} onChange={e => setProductForm({ ...productForm, price: Number(e.target.value) })} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Descuento (%)</label>
+                                            <input type="number" placeholder="Descuento (%)" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.discount_percentage || 0} onChange={e => setProductForm({ ...productForm, discount_percentage: Number(e.target.value) })} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Stock</label>
+                                            <input type="number" placeholder="Stock" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.stock || ''} onChange={e => setProductForm({ ...productForm, stock: Number(e.target.value) })} />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <select className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.categoryId} onChange={e => setProductForm({ ...productForm, categoryId: e.target.value })}>
-                                            <option value="">Sin Categoría</option>
-                                            {categories.map(c => <option key={c.id} value={c.id}>{c.name || c.id}</option>)}
-                                        </select>
-                                        <input placeholder="Franquicia (ej. Star Wars)" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.franchise} onChange={e => setProductForm({ ...productForm, franchise: e.target.value })} />
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Categoría</label>
+                                            <select className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.categoryId} onChange={e => setProductForm({ ...productForm, categoryId: e.target.value })}>
+                                                <option value="">Sin Categoría</option>
+                                                {categories.map(c => <option key={c.id} value={c.id}>{c.name || c.id}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Franquicia</label>
+                                            <input placeholder="Ej. Star Wars" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.franchise} onChange={e => setProductForm({ ...productForm, franchise: e.target.value })} />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="Escala" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.escala} onChange={e => setProductForm({ ...productForm, escala: e.target.value })} />
-                                        <input placeholder="Fabricante" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.fabricante} onChange={e => setProductForm({ ...productForm, fabricante: e.target.value })} />
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Escala</label>
+                                            <input placeholder="Escala" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.escala} onChange={e => setProductForm({ ...productForm, escala: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Fabricante</label>
+                                            <input placeholder="Fabricante" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.fabricante} onChange={e => setProductForm({ ...productForm, fabricante: e.target.value })} />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="Año" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.anio} onChange={e => setProductForm({ ...productForm, anio: e.target.value })} />
-                                        <input placeholder="Material" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.material} onChange={e => setProductForm({ ...productForm, material: e.target.value })} />
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Año</label>
+                                            <input placeholder="Año" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.anio} onChange={e => setProductForm({ ...productForm, anio: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Material</label>
+                                            <input placeholder="Material" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.material} onChange={e => setProductForm({ ...productForm, material: e.target.value })} />
+                                        </div>
                                     </div>
-                                    <input placeholder="Estado (ej. Nuevo en caja)" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.estado} onChange={e => setProductForm({ ...productForm, estado: e.target.value })} />
-                                    <input placeholder="URL Imagen Principal" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.images} onChange={e => setProductForm({ ...productForm, images: e.target.value })} />
-                                    <textarea placeholder="URLs Galería (separadas por coma)" rows={2} className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all resize-none" value={productForm.gallery} onChange={e => setProductForm({ ...productForm, gallery: e.target.value })} />
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Estado</label>
+                                        <input placeholder="Ej. Nuevo en caja" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.estado} onChange={e => setProductForm({ ...productForm, estado: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Imagen Principal (URL)</label>
+                                        <input placeholder="URL Imagen Principal" className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.images} onChange={e => setProductForm({ ...productForm, images: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Galería (URLs por coma)</label>
+                                        <textarea placeholder="URLs Galería (separadas por coma)" rows={2} className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all resize-none" value={productForm.gallery} onChange={e => setProductForm({ ...productForm, gallery: e.target.value })} />
+                                    </div>
                                 </div>
                             </div>
                             <button type="submit" className="w-full bg-brand-orange text-white py-4 rounded-xl font-black italic tracking-widest uppercase hover:bg-zinc-900 transition-colors shadow-lg active:scale-95">Guardar Producto</button>

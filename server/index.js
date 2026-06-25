@@ -200,6 +200,18 @@ const buildEmailHtml = (type, data) => {
                 ${BTN("Ver producto", `https://vntg-hub.vercel.app/producto/${data.productId}`)}
             `);
 
+        case "discount_alert":
+            return WRAP(`
+                <p style="font-size:14px;color:#1a1a1a;margin:0 0 6px;font-family:Arial,sans-serif">Hola ${data.userName},</p>
+                <p style="font-size:14px;color:#333;margin:0 0 16px;line-height:1.5;font-family:Arial,sans-serif">¡Un producto de tu lista de deseos está en oferta!</p>
+                <div style="background:#fff7ed;border-left:4px solid #f97316;padding:14px 18px;border-radius:8px;margin:0 0 20px">
+                    <p style="font-size:15px;font-weight:bold;color:#c2410c;margin:0 0 4px;font-family:Arial,sans-serif">${data.productTitle}</p>
+                    <p style="font-size:13px;font-weight:bold;color:#f97316;margin:0;font-family:Arial,sans-serif">¡Ahora con ${data.discountPercentage}% de descuento!</p>
+                </div>
+                <p style="font-size:13px;color:#666;margin:0 0 24px;font-family:Arial,sans-serif">Aprovechá antes de que termine la oferta o se agote el stock.</p>
+                ${BTN("Ver oferta", `https://vntg-hub.vercel.app/producto/${data.productId}`)}
+            `);
+
         case "order_status":
             return WRAP(`
                 <p style="font-size:18px;font-weight:bold;color:#f97316;margin:0 0 12px;font-family:Arial,sans-serif">${data.title}</p>
@@ -291,6 +303,7 @@ const getEmailSubject = (type, data) => {
     const subjects = {
         "2fa_code":       "Tu código de verificación — VNTG Hub",
         "stock_alert":    `¡${data.productTitle} tiene stock! — VNTG Hub`,
+        "discount_alert": `¡Oferta en tu lista de deseos! ${data.productTitle} — VNTG Hub`,
         "order_status":   data.subject || "Estado de tu pedido — VNTG Hub",
         "support_reply":  "Respuesta de soporte — VNTG Hub",
         "contact":          `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
@@ -2162,10 +2175,11 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
     const gal = Array.isArray(gallery) ? JSON.stringify(gallery) : gallery;
     try {
         const [prev] = await db.query(
-            "SELECT stock, title FROM products WHERE id = ?",
+            "SELECT stock, title, discount_percentage FROM products WHERE id = ?",
             [id],
         );
         const stockPrevio = prev[0]?.stock || 0;
+        const descuentoPrevio = prev[0]?.discount_percentage || 0;
 
         await db.query(
             "UPDATE products SET title=?, description=?, franchise=?, categoryId=?, price=?, stock=?, images=?, gallery=?, escala=?, fabricante=?, anio=?, material=?, estado=?, discount_percentage=? WHERE id=?",
@@ -2198,6 +2212,21 @@ app.put("/api/admin/products/:id", verifyAdmin, async (req, res) => {
                     userName: u.name,
                     productTitle: title,
                     productId: id,
+                });
+            }
+        }
+
+        if (descuentoPrevio === 0 && (discount_percentage || 0) > 0) {
+            const [interesados] = await db.query(
+                "SELECT u.email, u.name FROM wishlist w JOIN users u ON w.user_id = u.id WHERE w.product_id = ?",
+                [id],
+            );
+            for (let u of interesados) {
+                await sendEmail("discount_alert", u.email, {
+                    userName: u.name,
+                    productTitle: title,
+                    productId: id,
+                    discountPercentage: discount_percentage,
                 });
             }
         }

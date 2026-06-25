@@ -278,6 +278,18 @@ export default function Inicio() {
     let secciones = [];
 
     try {
+        const productosConDescuento = productos.filter(p => p.discount_percentage > 0);
+        if (productosConDescuento.length > 0) {
+            secciones.push({
+                id: 'ofertas',
+                nombre: 'Ofertas Especiales',
+                subtitle: 'Precios rebajados por tiempo limitado',
+                banner: '/wallpaper.webp',
+                items: productosConDescuento,
+                isRecomendados: true // Reuse this layout style for a clean look
+            });
+        }
+
         const storedInterests = localStorage.getItem('vntg_interests');
         if (storedInterests) {
             const interestsArray = JSON.parse(storedInterests);
