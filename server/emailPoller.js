@@ -15,8 +15,15 @@ function getHeader(headers, name) {
 }
 
 function extractBody(payload) {
-    if (payload.mimeType === 'text/plain' && payload.body?.data) {
-        return decodeBase64(payload.body.data);
+    if (payload.body?.data) {
+        const decoded = decodeBase64(payload.body.data);
+        if (decoded.length > 0) {
+            if (payload.mimeType === 'text/plain') return decoded;
+            if (payload.mimeType === 'text/html') {
+                // Strip HTML tags
+                return decoded.replace(/<[^>]*>/g, '').trim();
+            }
+        }
     }
     if (payload.parts) {
         for (const part of payload.parts) {
@@ -247,6 +254,9 @@ REGLAS:
         if (!this.gmail) await this.authenticate();
         if (!this.gmail) return;
 
+        const msgId = `<vntg-bot-${Date.now()}@vntg-hub.onrender.com>`;
+        const inReplyTo = `<vntg-thread-${gmailThreadId}@vntg-hub.onrender.com>`;
+
         const lines = [
             'MIME-Version: 1.0',
             'Content-Type: text/plain; charset="UTF-8"',
@@ -254,6 +264,9 @@ REGLAS:
             `From: VNTG Hub <${process.env.SMTP_USER || 'hubvntg@gmail.com'}>`,
             `To: ${to}`,
             `Subject: =?UTF-8?B?${Buffer.from('Re: Recibimos tu mensaje — VNTG Hub').toString('base64')}?=`,
+            `Message-ID: ${msgId}`,
+            `In-Reply-To: ${inReplyTo}`,
+            `References: ${inReplyTo}`,
             '',
             Buffer.from(text).toString('base64'),
         ];
@@ -261,10 +274,11 @@ REGLAS:
         const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
 
         try {
-            await this.gmail.users.messages.send({
+            const res = await this.gmail.users.messages.send({
                 userId: 'me',
                 requestBody: { raw, threadId: gmailThreadId },
             });
+            console.log('[email-poller] Reply enviado threadId=' + (res.data?.threadId || gmailThreadId));
         } catch (err) {
             console.error('[email-poller] Error enviando reply por Gmail API:', err.message);
         }
