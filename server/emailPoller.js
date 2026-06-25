@@ -1,8 +1,6 @@
 const { google } = require('googleapis');
-const nodemailer = require('nodemailer');
 const db = require('./db');
 
-const CONTACT_PATTERN = /vntg-contact-(\d+)/;
 const POLL_INTERVAL = 30000;
 
 function decodeBase64(data) {
@@ -33,7 +31,6 @@ class EmailPoller {
     constructor() {
         this.gmail = null;
         this.interval = null;
-        this.transporter = null;
     }
 
     async authenticate() {
@@ -61,20 +58,6 @@ class EmailPoller {
     }
 
     connect() {
-        const user = process.env.SMTP_USER;
-        const password = process.env.SMTP_PASS;
-        if (!user || !password) {
-            console.log('[email-poller] SMTP_USER/PASS no configurados');
-            return false;
-        }
-
-        this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT) || 587,
-            secure: false,
-            auth: { user, pass: password },
-        });
-
         return true;
     }
 
@@ -106,46 +89,40 @@ class EmailPoller {
 
                     const payload = detail.data.payload;
                     const headers = payload.headers || [];
-                    const inReplyTo = getHeader(headers, 'in-reply-to');
-                    const match = inReplyTo.match(CONTACT_PATTERN);
+                    const gmailThreadId = detail.data.threadId;
 
-                    if (match) {
-                        const contactId = parseInt(match[1], 10);
+                    // Buscar por threadId de Gmail (más confiable que In-Reply-To)
+                    const [contacts] = await db.query(
+                        "SELECT id, nombre, email FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
+                        [gmailThreadId]
+                    );
+
+                    if (contacts.length > 0) {
+                        const contact = contacts[0];
                         const fromHeader = getHeader(headers, 'from');
                         const fromMatch = fromHeader.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
                         const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : fromHeader;
                         const fromEmail = fromMatch ? fromMatch[2] : fromHeader;
                         const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
 
-                        console.log(`[email-poller] Reply recibido para contact #${contactId} de ${fromEmail}`);
+                        console.log(`[email-poller] Reply recibido para contact #${contact.id} de ${fromEmail}`);
 
                         await db.query(
                             "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email_reply')",
-                            [fromName, fromEmail, bodyText, contactId]
+                            [fromName, fromEmail, bodyText, contact.id]
                         );
 
                         const [history] = await db.query(
                             "SELECT * FROM support_messages WHERE id = ? OR thread_id = ? ORDER BY created_at ASC",
-                            [contactId, contactId]
+                            [contact.id, contact.id]
                         );
 
                         const aiResponse = await this.generateResponse(history);
                         if (aiResponse) {
-                            const msgId = `<vntg-contact-${contactId}-${Date.now()}@vntg-hub.onrender.com>`;
-
-                            await this.transporter.sendMail({
-                                from: `"VNTG Hub" <${process.env.SMTP_USER}>`,
-                                to: fromEmail,
-                                subject: 'Re: Recibimos tu mensaje — VNTG Hub',
-                                text: aiResponse,
-                                inReplyTo,
-                                references: inReplyTo,
-                                messageId: msgId,
-                            });
-
-                            console.log(`[email-poller] Auto-respuesta enviada a ${fromEmail} para contact #${contactId}`);
+                            await this.sendGmailReply(fromEmail, aiResponse, gmailThreadId);
+                            console.log(`[email-poller] Auto-respuesta enviada a ${fromEmail} para contact #${contact.id}`);
                         } else {
-                            console.log(`[email-poller] No se generó respuesta IA para contact #${contactId}`);
+                            console.log(`[email-poller] No se generó respuesta IA para contact #${contact.id}`);
                         }
                     }
 
@@ -225,14 +202,36 @@ REGLAS:
         }
     }
 
-    start() {
-        if (!this.connect()) {
-            console.log('[email-poller] No se pudo conectar');
-            return;
-        }
+    async sendGmailReply(to, text, gmailThreadId) {
+        if (!this.gmail) await this.authenticate();
+        if (!this.gmail) return;
 
+        const lines = [
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset="UTF-8"',
+            'Content-Transfer-Encoding: base64',
+            `From: VNTG Hub <${process.env.SMTP_USER || 'hubvntg@gmail.com'}>`,
+            `To: ${to}`,
+            `Subject: =?UTF-8?B?${Buffer.from('Re: Recibimos tu mensaje — VNTG Hub').toString('base64')}?=`,
+            '',
+            Buffer.from(text).toString('base64'),
+        ];
+
+        const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
+
+        try {
+            await this.gmail.users.messages.send({
+                userId: 'me',
+                requestBody: { raw, threadId: gmailThreadId },
+            });
+        } catch (err) {
+            console.error('[email-poller] Error enviando reply por Gmail API:', err.message);
+        }
+    }
+
+    start() {
         console.log('[email-poller] Iniciando...');
-        this.authenticate();
+        this.authenticate().catch(() => {});
 
         const pollFn = () => {
             this.poll().catch(err => {

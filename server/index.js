@@ -331,12 +331,13 @@ const sendGmailApi = async (from, to, subject, html, msgId) => {
     const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
 
     try {
-        await gmail.users.messages.send({
+        const response = await gmail.users.messages.send({
             userId: 'me',
             requestBody: { raw },
         });
-        console.log(`[email] OK via Gmail API to="${to}" subject="${subject}"`);
-        return { sentVia: 'gmail-api' };
+        const threadId = response.data?.threadId || null;
+        console.log(`[email] OK via Gmail API to="${to}" subject="${subject}" threadId="${threadId}"`);
+        return { sentVia: 'gmail-api', threadId };
     } catch (err) {
         console.error(`[email] Error Gmail API to="${to}":`, err.message);
         return null;
@@ -1108,7 +1109,7 @@ app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
         );
 
         await sendEmail("reset_password", email, {
-            resetUrl: `https://vntg-hub.onrender.com/reset-password?email=${encodeURIComponent(email)}&token=${token}`,
+            resetUrl: `https://vntg-hub.vercel.app/reset-password?email=${encodeURIComponent(email)}&token=${token}`,
         });
 
         res.json({ message: "Si el email existe, recibirás un enlace" });
@@ -2747,15 +2748,18 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
             .catch(err => console.error("[contact] Error email de notificación:", err?.message));
 
         // Auto-respuesta con IA
-        generateContactAutoreply(nombre, mensaje).then(respuestaIA => {
+        generateContactAutoreply(nombre, mensaje).then(async respuestaIA => {
             const payload = {
                 nombre,
                 mensaje,
                 respuesta: respuestaIA || "Gracias por contactarte con VNTG Hub. Hemos recibido tu mensaje y nuestro equipo de soporte lo revisará a la brevedad. Te responderemos pronto. ¡Gracias por tu paciencia!",
                 contactId: insertId,
             };
-            sendEmail("contact_autoreply", email, payload)
+            const result = await sendEmail("contact_autoreply", email, payload)
                 .catch(err => console.error("[contact] Error auto-respuesta:", err?.message));
+            if (result?.threadId) {
+                await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [result.threadId, insertId]).catch(() => {});
+            }
         });
 
         res.json({ message: "Mensaje recibido con éxito. Te enviamos una respuesta automática a tu correo." });
