@@ -169,7 +169,14 @@ class EmailPoller {
                             const replyThreadId = gmailThreadId || contact.thread_id;
                             console.log(`[email-poller] Enviando reply threadId=${replyThreadId} a ${fromEmail}`);
                             await this.sendGmailReply(fromEmail, aiResponse, replyThreadId);
-                            console.log(`[email-poller] Auto-respuesta enviada a ${fromEmail} para contact #${contact.id}`);
+
+                            // Guardar la respuesta de la IA en el historial
+                            await db.query(
+                                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
+                                ['VNTG Bot', 'hubvntg@gmail.com', bodyText, aiResponse, contact.id]
+                            ).catch(err => console.error('[email-poller] Error guardando respuesta IA:', err.message));
+
+                            console.log(`[email-poller] Auto-respuesta enviada y guardada para contact #${contact.id}`);
                         } else {
                             console.log(`[email-poller] No se generó respuesta IA para contact #${contact.id}`);
                         }

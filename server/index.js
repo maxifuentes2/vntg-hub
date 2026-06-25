@@ -2759,6 +2759,12 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
         if (emailResult?.threadId) {
             await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [emailResult.threadId, insertId]);
             console.log(`[contact] threadId=${emailResult.threadId} guardado para contact #${insertId}`);
+
+            // Guardar la auto-respuesta como registro del bot en el thread
+            await db.query(
+                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
+                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, fallbackRespuesta, insertId]
+            ).catch(err => console.error('[contact] Error guardando auto-respuesta en historial:', err.message));
         } else {
             console.error(`[contact] No se obtuvo threadId para contact #${insertId}`);
         }

@@ -159,6 +159,8 @@ export default function SupportPanel() {
     };
 
     const filteredMessages = messages.filter(m => {
+        // Solo mostrar mensajes raíz en la lista (no respuestas del bot)
+        if (m.source === 'bot_reply' || m.source === 'email_reply') return false;
         const matchesFilter = filter === 'all' || m.status === filter;
         const matchesSearch = m.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                              m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -403,9 +405,17 @@ export default function SupportPanel() {
                                                                 <div className="flex items-center gap-2 mb-1">
                                                                     <p className="text-[9px] font-black uppercase italic text-zinc-500">{tm.nombre} ({tm.email})</p>
                                                                     {tm.source === 'email' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500">Email</span>}
+                                                                    {tm.source === 'email_reply' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-brand-orange/10 text-brand-orange">Email Reply</span>}
+                                                                    {tm.source === 'bot_reply' && <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-brand-blue/10 text-brand-blue">Bot</span>}
                                                                     <span className="text-[8px] text-zinc-400 ml-auto">{new Date(tm.created_at).toLocaleString()}</span>
                                                                 </div>
-                                                                <p className="text-xs font-medium leading-relaxed">{tm.mensaje}</p>
+                                                                {tm.mensaje && <p className="text-xs font-medium leading-relaxed">{tm.mensaje}</p>}
+                                                                {tm.respuesta && (
+                                                                    <div className="mt-2 pl-3 border-l-2 border-brand-orange">
+                                                                        <p className="text-[9px] font-black uppercase text-brand-orange mb-1">Respuesta</p>
+                                                                        <p className="text-xs italic text-zinc-500">{tm.respuesta}</p>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}
@@ -417,6 +427,13 @@ export default function SupportPanel() {
                                                 <p className="text-[10px] font-black uppercase text-brand-blue mb-2">Mensaje del Cliente</p>
                                                 <p className="text-sm font-medium leading-relaxed dark:text-zinc-200">{selectedMsg.mensaje}</p>
                                             </div>
+
+                                            {selectedMsg.respuesta && (
+                                                <div className="bg-green-500/5 dark:bg-green-500/5 p-6 border-l-4 border-green-500 rounded-r-2xl">
+                                                    <p className="text-[10px] font-black uppercase text-green-500 mb-2">Respuesta Automática</p>
+                                                    <p className="text-sm font-medium leading-relaxed dark:text-zinc-200 italic">"{selectedMsg.respuesta}"</p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Botón para Responder por Correo */}
