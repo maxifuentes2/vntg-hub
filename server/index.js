@@ -2892,6 +2892,16 @@ const emailPoller = new EmailPoller();
 app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`);
 
+    // Migración: agrandar columna thread_id para Gmail threadIds
+    try {
+        await db.query("ALTER TABLE support_messages MODIFY COLUMN thread_id VARCHAR(100)");
+        console.log('[db] Migración thread_id OK');
+    } catch (e) {
+        if (e.code !== 'ER_DUP_FIELDNAME' && !e.message.includes('Duplicate')) {
+            console.log('[db] Migración thread_id:', e.message);
+        }
+    }
+
     // Cargar configuración de envío (fallback a .env si la tabla no existe)
     try {
         await shipping.loadConfig(db);
