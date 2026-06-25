@@ -2675,7 +2675,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
 });
 
 // --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
-const generateContactAutoreply = async (nombre, mensaje) => {
+const generateContactAutoreply = async (nombre, mensaje, motivo) => {
     const systemPrompt = `Eres el agente de soporte automático de VNTG HUB, una tienda argentina de coleccionismo vintage (Mendoza, Argentina). Vendemos figuras de acción, Funko Pops, cómics, manga, cartas coleccionables, artículos de cine y películas, autos a escala, y más — de franquicias como Marvel, DC, Disney, anime, y cultura pop.
 
 Respondés correos de clientes de forma BREVE y ÚTIL.
@@ -2692,7 +2692,7 @@ REGLAS:
 
     const groqMessages = [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Nombre del cliente: ${nombre}\n\nMensaje del cliente:\n${mensaje}` },
+        { role: "user", content: `Nombre del cliente: ${nombre}\n${motivo ? `Motivo de consulta: ${motivo}\n` : ''}\nMensaje del cliente:\n${mensaje}` },
     ];
 
     const controller = new AbortController();
@@ -2731,7 +2731,7 @@ REGLAS:
 };
 
 app.post("/api/contact", contactLimiter, async (req, res) => {
-    const { nombre, email, mensaje } = req.body;
+    const { nombre, email, mensaje, motivo } = req.body;
 
     if (!nombre || !email || !mensaje) {
         return res
@@ -2741,17 +2741,17 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
 
     try {
         const [result] = await db.query(
-            "INSERT INTO support_messages (nombre, email, mensaje) VALUES (?, ?, ?)",
-            [nombre, email, mensaje]
+            "INSERT INTO support_messages (nombre, email, mensaje, motivo) VALUES (?, ?, ?, ?)",
+            [nombre, email, mensaje, motivo || null]
         );
         const insertId = result.insertId;
 
         // No bloqueamos la respuesta si el email falla
-        sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje })
+        sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje, motivo })
             .catch(err => console.error("[contact] Error email de notificación:", err?.message));
 
         // Intentar obtener respuesta de IA
-        let respuesta = await generateContactAutoreply(nombre, mensaje);
+        let respuesta = await generateContactAutoreply(nombre, mensaje, motivo);
         let assignment = 'IA';
         
         if (respuesta && respuesta.includes('[DERIVAR_HUMANO]')) {

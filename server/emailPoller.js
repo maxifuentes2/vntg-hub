@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const db = require('./db');
 
-const POLL_INTERVAL = 20000;
+const POLL_INTERVAL = 5000;
 
 function decodeBase64(d) {
     if (!d) return '';
@@ -101,16 +101,7 @@ function extractContactIdFromRef(ref) {
     return null;
 }
 
-const SYSTEM_PROMPT = `Eres el asistente automático de VNTG HUB, una tienda argentina de coleccionismo vintage. Vendemos figuras, Funko Pops, cómics, manga, cartas, artículos de cine/películas, autos a escala, y más — de Marvel, DC, Star Wars, Disney, anime y cultura pop.
-
-REGLAS:
-- Máximo 2 oraciones. Tono amable.
-- Confirmá que trabajamos con lo que menciona y ofrecé el catálogo.
-- Si respondes sobre tutoriales, añade el enlace /tutoriales. Si sobre autenticidad, /guia-autenticidad. Si sobre puntos, /puntos.
-- NO confirmes stock ni productos específicos.
-- NUNCA inventes emails, teléfonos ni URLs.
-- Si el cliente tiene un problema complejo (devolución, reembolso, queja) o si expresamente pide hablar con un humano o si no puedes resolver su duda, añade la palabra clave [DERIVAR_HUMANO] a tu respuesta.
-- Texto plano, sin markdown.`;
+const slugify = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
 class EmailPoller {
     constructor() {
@@ -135,10 +126,56 @@ class EmailPoller {
         }
     }
 
+    async getSystemPrompt() {
+        const [productos] = await db.query(
+            "SELECT title, franchise, price, stock FROM products WHERE stock > 0",
+        );
+
+        const catalogo = productos
+            .map(
+                (p) => `- ${p.title} (Franquicia: ${p.franchise || 'N/A'}): $${p.price} - URL: https://vntg-hub.vercel.app/producto/${slugify(p.title)}`,
+            )
+            .join("\n");
+
+        return `Eres el agente de soporte automático de VNTG HUB, una tienda argentina de coleccionismo vintage. Tu tono es amable, profesional y resolutivo. Respuestas cortas y directas en texto plano (sin markdown). Siempre respondes en español.
+
+=== INFORMACIÓN DE ENVÍOS ===
+- Envío normal: $9,426.05 ARS
+- Envío prioritario: $17,276.99 ARS
+- Envío GRATIS en compras superiores a $200,000 ARS
+- Los envíos se realizan a todo el país
+- Los artículos se envían en bolsas plástica y caja de cartón rígido
+
+=== MÉTODOS DE PAGO ===
+- Mercado Pago (tarjetas de crédito, débito, transferencia)
+- Transferencia bancaria
+- Efectivo (en puntos de pago habilitados)
+
+=== POLÍTICA DE DEVOLUCIONES ===
+- Se aceptan devoluciones dentro de los 30 días posteriores a la recepción
+- El producto debe estar sin usar, en su estado original y con todas las etiquetas
+- Los gastos de envío de la devolución corren por cuenta del cliente
+
+CATÁLOGO ACTUAL DE PRODUCTOS (incluye URL directa):
+${catalogo}
+IMPORTANTE: Cuando un usuario pregunte por un artículo específico, devuélvele el enlace directo usando la URL incluida en el catálogo.
+
+DERIVACIÓN A SOPORTE HUMANO:
+Si el problema es complejo (devoluciones, quejas severas, reembolsos, problemas de pago o envío), o si el usuario solicita expresamente hablar con un humano, DEBES añadir OBLIGATORIAMENTE la palabra clave [DERIVAR_HUMANO] en tu respuesta. NO derives consultas sobre catálogo, stock, o medios de pago (para eso tienes la información).
+
+=== OTRAS PREGUNTAS ===
+- Tutoriales: tenemos guías en https://vntg-hub.vercel.app/tutoriales
+- Autenticidad: todos nuestros productos son verificados. Info en https://vntg-hub.vercel.app/guia-autenticidad
+- Puntos VNTG: compras suman puntos para descuentos. Info en https://vntg-hub.vercel.app/puntos
+
+REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oraciones). Confirmá si trabajamos con algo y pasale el link del catálogo. NUNCA inventes links, emails o teléfonos.`;
+    }
+
     async groq(messages) {
         const c = new AbortController();
         const t = setTimeout(() => c.abort(), 15000);
         try {
+            const sysPrompt = await this.getSystemPrompt();
             const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -147,9 +184,9 @@ class EmailPoller {
                 },
                 body: JSON.stringify({
                     model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-                    messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+                    messages: [{ role: 'system', content: sysPrompt }, ...messages],
                     temperature: 0.7,
-                    max_tokens: 256,
+                    max_tokens: 512,
                 }),
                 signal: c.signal,
             });
@@ -365,8 +402,10 @@ class EmailPoller {
                     );
 
                     const conversation = history.map(h => {
-                        const s = h.source === 'email_reply' ? 'Cliente' : 'VNTG Bot';
-                        return `${s}: ${h.mensaje || h.respuesta || ''}`;
+                        const s = (h.source === 'email_reply' || !h.source || h.source === 'web') ? 'Cliente' : 'VNTG Bot';
+                        let text = h.mensaje || h.respuesta || '';
+                        if (h.motivo && s === 'Cliente') text = `[Motivo: ${h.motivo}] ${text}`;
+                        return `${s}: ${text}`;
                     }).join('\n');
 
                     const ai = await this.groq([
@@ -383,8 +422,8 @@ class EmailPoller {
 
                     await this.sendReply(fromEmail, replyText, replyThreadId, messageId, contactId);
                     await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply', ?)",
-                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, contactId, isDerivado ? 'HUMANO' : 'IA']
+                        "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, ?, ?, 'bot_reply', ?)",
+                        ['VNTG Bot', 'hubvntg@gmail.com', body, replyText, isDerivado ? 'pending' : 'replied', contactId, isDerivado ? 'HUMANO' : 'IA']
                     );
                     console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                 } else {

@@ -44,7 +44,7 @@ export default function Chatbot() {
   const [showContactForm, setShowContactForm] = useState(false);
   const [showOrderLookup, setShowOrderLookup] = useState(false);
   const [orderLookupInput, setOrderLookupInput] = useState('');
-  const [contactForm, setContactForm] = useState({ nombre: '', email: '', mensaje: '' });
+  const [contactForm, setContactForm] = useState({ nombre: '', email: '', motivo: '', mensaje: '' });
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const messagesEndRef = useRef(null);
@@ -280,7 +280,7 @@ export default function Chatbot() {
           text: "📩 Consulta enviada con éxito. Un agente humano del equipo VNTG Hub te responderá a la brevedad a tu correo. Gracias por contactarnos.",
           isBot: true
         }]);
-        setContactForm({ nombre: '', email: '', mensaje: '' });
+        setContactForm({ nombre: '', email: '', motivo: '', mensaje: '' });
       } else {
         setMessages(prev => [...prev, { text: "Hubo un error al enviar tu consulta. Intenta de nuevo.", isBot: true }]);
       }
@@ -416,6 +416,14 @@ export default function Chatbot() {
               <form onSubmit={handleContactSubmit} className="space-y-3">
                 <input type="text" placeholder="Tu nombre" value={contactForm.nombre} onChange={(e) => setContactForm(p => ({ ...p, nombre: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:ring-1 focus:ring-brand-orange" />
                 <input type="email" placeholder="Tu email" value={contactForm.email} onChange={(e) => setContactForm(p => ({ ...p, email: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:ring-1 focus:ring-brand-orange" />
+                <select value={contactForm.motivo} onChange={(e) => setContactForm(p => ({ ...p, motivo: e.target.value }))} required className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white focus:ring-1 focus:ring-brand-orange appearance-none cursor-pointer">
+                    <option value="" disabled>Seleccioná un motivo...</option>
+                    <option value="Consulta sobre Producto">Consulta sobre Producto</option>
+                    <option value="Problemas con mi Pedido">Problemas con mi Pedido</option>
+                    <option value="Envíos y Entregas">Envíos y Entregas</option>
+                    <option value="Cambios y Devoluciones">Cambios y Devoluciones</option>
+                    <option value="Otros">Otros</option>
+                </select>
                 <textarea placeholder="Describí tu consulta..." value={contactForm.mensaje} onChange={(e) => setContactForm(p => ({ ...p, mensaje: e.target.value }))} required rows={3} className="w-full bg-zinc-100 dark:bg-zinc-800 px-3 py-2 text-xs font-bold italic rounded-xl focus:outline-none text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 resize-none focus:ring-1 focus:ring-brand-orange" />
                 <div className="flex gap-2">
                   <button type="submit" disabled={isLoading} className="flex-1 bg-brand-orange text-white px-3 py-2 text-[10px] font-black italic uppercase tracking-tighter rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 active:scale-95">Enviar</button>

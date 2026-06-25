@@ -1028,6 +1028,7 @@ export default function AdminPanel() {
                                                     nombre: firstUserMsg.nombre,
                                                     email: firstUserMsg.email,
                                                     mensaje: firstUserMsg.mensaje,
+                                                    motivo: firstUserMsg.motivo || 'No especificado',
                                                     status: lastMsg.status || 'pending',
                                                     fecha: lastMsg.created_at,
                                                     assignment: lastMsg.assignment || 'IA'
@@ -1047,10 +1048,15 @@ export default function AdminPanel() {
                                             return allThreads.map(t => (
                                                 <div key={t.id} className="bg-zinc-50 dark:bg-brand-card rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center gap-4">
                                                     <div className="flex-1 space-y-2">
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-3 flex-wrap">
                                                             <MessageSquare size={20} className="text-brand-orange" />
                                                             <h3 className="text-sm font-black uppercase italic">{t.nombre}</h3>
                                                             <span className="text-[10px] text-zinc-500">{t.email}</span>
+                                                            {t.motivo && t.motivo !== 'No especificado' && (
+                                                                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest bg-brand-orange/10 text-brand-orange rounded-full border border-brand-orange/30">
+                                                                    {t.motivo}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <p className="text-xs text-zinc-600 dark:text-zinc-400 italic line-clamp-2">"{t.mensaje}"</p>
                                                         <p className="text-[10px] text-zinc-400">Última act: {new Date(t.fecha).toLocaleString('es-AR')}</p>

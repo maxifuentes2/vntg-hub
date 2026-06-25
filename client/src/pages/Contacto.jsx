@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function Contacto() {
     const { addToast } = useToast();
     // Estados para guardar la información del formulario
-    const [formData, setFormData] = useState({ nombre: '', email: '', mensaje: '' });
+    const [formData, setFormData] = useState({ nombre: '', email: '', motivo: '', mensaje: '' });
     const [estadoEnviando, setEstadoEnviando] = useState('idle');
 
     // Función para copiar email
@@ -55,7 +55,7 @@ export default function Contacto() {
 
             if (response.ok) {
                 setEstadoEnviando('success');
-                setFormData({ nombre: '', email: '', mensaje: '' }); // Limpiamos el formulario
+                setFormData({ nombre: '', email: '', motivo: '', mensaje: '' }); // Limpiamos el formulario
                 addToast({ title: 'Contacto' }, 'Mensaje enviado correctamente', 'success');
                 setTimeout(() => setEstadoEnviando('idle'), 3000);
             } else {
@@ -136,6 +136,20 @@ export default function Contacto() {
                         placeholder="Email de contacto"
                         className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-5 font-black italic focus:border-brand-orange outline-none rounded-xl transition-all"
                     />
+                    <select
+                        name="motivo"
+                        value={formData.motivo}
+                        onChange={handleChange}
+                        required
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-600 p-5 font-black italic focus:border-brand-orange outline-none rounded-xl transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled>Seleccioná un motivo...</option>
+                        <option value="Consulta sobre Producto">Consulta sobre Producto</option>
+                        <option value="Problemas con mi Pedido">Problemas con mi Pedido</option>
+                        <option value="Envíos y Entregas">Envíos y Entregas</option>
+                        <option value="Cambios y Devoluciones">Cambios y Devoluciones</option>
+                        <option value="Otros">Otros</option>
+                    </select>
                     <textarea
                         name="mensaje"
                         value={formData.mensaje}
