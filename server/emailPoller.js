@@ -33,15 +33,22 @@ function extractBody(payload) {
 function stripQuoted(text) {
     if (!text) return '';
     let clean = text;
+
+    // Buscar marcadores de reply (estándar e inline)
     const markers = [
-        /\nEl .+ escribió:\n/i,
-        /\nOn .+ wrote:\n/i,
+        /\nOn .+? wrote:\s*\n/i,
+        /On .+? wrote:\s*\n/i,
+        /\nEl .+? escribió:\s*\n/i,
+        /El .+? escribió:\s*\n/i,
         /\n-{3,} Forwarded message -{3,}\n/i,
         /\n_{10,}\n/i,
     ];
     for (const m of markers) {
         const idx = clean.search(m);
-        if (idx >= 0) { clean = clean.substring(0, idx).trim(); break; }
+        if (idx >= 0) {
+            clean = clean.substring(0, idx).trim();
+            break;
+        }
     }
     clean = clean.split('\n').filter(l => !l.trim().startsWith('>')).join('\n').trim();
     clean = clean.replace(/https?:\/\/\S+/g, '').trim();
