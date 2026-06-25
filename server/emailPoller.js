@@ -121,9 +121,36 @@ class EmailPoller {
     async sendReply(to, text, gmailThreadId, replyToMsgId, contactId) {
         if (!this.gmail && !(await this.auth())) return;
         const msgId = `<vntg-autoreply-${contactId}-${Date.now()}@hubvntg.com>`;
+
+        // Envolver en HTML como el auto-reply original
+        const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        const htmlBody = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 10px">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+<tr><td style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:30px 40px;text-align:center">
+<img src="https://vntg-hub.onrender.com/logo.svg" alt="VNTG Hub" height="48" style="margin-bottom:12px">
+<h1 style="color:#fff;font-size:20px;margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.5px">VNTG<span style="color:#f97316"> Hub</span></h1>
+<p style="color:#94a3b8;font-size:11px;margin:4px 0 0;text-transform:uppercase;letter-spacing:2px">Coleccionables Vintage</p>
+</td></tr>
+<tr><td style="padding:30px 40px">
+<p style="font-size:14px;color:#333;line-height:1.6;margin:0 0 16px">${safe}</p>
+<p style="font-size:12px;color:#888;margin:24px 0 0;border-top:1px solid #eee;padding-top:16px">Si tenés más preguntas, respondé directamente a este correo. Un agente humano puede ayudarte si el tema es complejo.</p>
+</td></tr>
+<tr><td style="background:#f8f8f8;padding:20px 40px;text-align:center;font-size:11px;color:#aaa">
+<a href="https://vntg-hub.onrender.com" style="color:#f97316;text-decoration:none;font-weight:700">vntg-hub.onrender.com</a>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>`;
+
         const lines = [
             'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset="UTF-8"',
+            'Content-Type: text/html; charset="UTF-8"',
             'Content-Transfer-Encoding: base64',
             'From: VNTG Hub <hubvntg@gmail.com>',
             `To: ${to}`,
@@ -132,7 +159,7 @@ class EmailPoller {
             `In-Reply-To: ${replyToMsgId}`,
             `References: ${replyToMsgId}`,
             '',
-            Buffer.from(text).toString('base64'),
+            Buffer.from(htmlBody).toString('base64'),
         ];
         const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
         try {
