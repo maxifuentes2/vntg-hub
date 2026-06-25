@@ -2778,7 +2778,7 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
             // Guardar la auto-respuesta como registro del bot en el thread
             await db.query(
                 "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source, assignment) VALUES (?, ?, ?, ?, ?, ?, 'bot_reply', ?)",
-                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, respuesta, status, insertId, assignment]
+                ['VNTG Bot', 'hubvntg@gmail.com', mensaje, respuesta, status, emailResult.threadId, assignment]
             ).catch(err => console.error('[contact] Error guardando auto-respuesta en historial:', err.message));
         } else {
             console.error(`[contact] No se obtuvo threadId para contact #${insertId}`);
@@ -2810,13 +2810,16 @@ app.put("/api/support/messages/:id/status", verifySupport, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT thread_id FROM support_messages WHERE id = ?", [id]);
         const threadId = rows[0]?.thread_id;
-        const groupKey = threadId || id;
-        const isNumeric = /^\d+$/.test(String(groupKey));
         
-        const condition = isNumeric ? "id = ? OR thread_id = ?" : "thread_id = ?";
-        const params = isNumeric ? [status, groupKey, groupKey] : [status, groupKey];
+        let queryParams = [status, id, String(id)];
+        let condition = "id = ? OR thread_id = ?";
 
-        await db.query(`UPDATE support_messages SET status = ? WHERE ${condition}`, params);
+        if (threadId) {
+            condition += " OR thread_id = ?";
+            queryParams.push(threadId);
+        }
+
+        await db.query(`UPDATE support_messages SET status = ? WHERE ${condition}`, queryParams);
         res.json({ message: "Estado actualizado" });
     } catch (error) {
         console.error("Error al actualizar estado:", error);
@@ -2833,13 +2836,16 @@ app.put("/api/support/messages/:id/assign", verifySupport, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT thread_id FROM support_messages WHERE id = ?", [id]);
         const threadId = rows[0]?.thread_id;
-        const groupKey = threadId || id;
-        const isNumeric = /^\d+$/.test(String(groupKey));
+        
+        let queryParams = [assignment, id, String(id)];
+        let condition = "id = ? OR thread_id = ?";
 
-        const condition = isNumeric ? "id = ? OR thread_id = ?" : "thread_id = ?";
-        const params = isNumeric ? [assignment, groupKey, groupKey] : [assignment, groupKey];
+        if (threadId) {
+            condition += " OR thread_id = ?";
+            queryParams.push(threadId);
+        }
 
-        await db.query(`UPDATE support_messages SET assignment = ? WHERE ${condition}`, params);
+        await db.query(`UPDATE support_messages SET assignment = ? WHERE ${condition}`, queryParams);
         res.json({ message: "Asignación actualizada" });
     } catch (error) {
         console.error("Error al actualizar asignación:", error);

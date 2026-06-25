@@ -98,13 +98,10 @@ function stripQuoted(text) {
     return clean;
 }
 
-function extractContactIdFromRef(ref) {
-    if (!ref) return null;
-    const m1 = ref.match(/vntg-contact-(\d+)@/);
-    if (m1) return parseInt(m1[1], 10);
-    const m2 = ref.match(/vntg-autoreply-(\d+)-/);
-    if (m2) return parseInt(m2[1], 10);
-    return null;
+function extractContactIdFromRef(refs) {
+    if (!refs) return null;
+    const match = refs.match(/<vntg-(?:autoreply|contact|ticket)-(\d+)(?:-|@)/);
+    return match ? parseInt(match[1]) : null;
 }
 
 const slugify = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
