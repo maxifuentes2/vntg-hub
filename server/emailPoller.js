@@ -103,7 +103,7 @@ class EmailPoller {
                     let contact = null;
                     if (gmailThreadId) {
                         const [rows] = await db.query(
-                            "SELECT id, nombre, email FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
+                            "SELECT id, nombre, email, thread_id FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
                             [gmailThreadId]
                         );
                         if (rows.length > 0) contact = rows[0];
@@ -114,24 +114,24 @@ class EmailPoller {
                         const patternMatch = inReplyTo.match(/vntg-contact-(\d+)/);
                         if (patternMatch) {
                             const [rows] = await db.query(
-                                "SELECT id, nombre, email FROM support_messages WHERE id = ? AND source IS NULL LIMIT 1",
+                                "SELECT id, nombre, email, thread_id FROM support_messages WHERE id = ? AND source IS NULL LIMIT 1",
                                 [parseInt(patternMatch[1], 10)]
                             );
                             if (rows.length > 0) contact = rows[0];
                         }
                     }
 
-                    // 3) Fallback: buscar por email del remitente + mensaje reciente
+                    // 3) Fallback: buscar por email del remitente
                     if (!contact && fromEmail) {
                         const [rows] = await db.query(
-                            "SELECT id, nombre, email FROM support_messages WHERE email = ? AND source IS NULL AND thread_id IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+                            "SELECT id, nombre, email, thread_id FROM support_messages WHERE email = ? AND source IS NULL AND thread_id IS NOT NULL ORDER BY created_at DESC LIMIT 1",
                             [fromEmail]
                         );
                         if (rows.length > 0) contact = rows[0];
                     }
 
                     if (contact) {
-                        console.log(`[email-poller] Reply recibido para contact #${contact.id} de ${fromEmail}`);
+                        console.log(`[email-poller] Reply recibido para contact #${contact.id} de ${fromEmail} threadId=${contact.thread_id}`);
 
                         await db.query(
                             "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email_reply')",
@@ -145,7 +145,9 @@ class EmailPoller {
 
                         const aiResponse = await this.generateResponse(history);
                         if (aiResponse) {
-                            await this.sendGmailReply(fromEmail, aiResponse, gmailThreadId || contact.thread_id);
+                            const replyThreadId = gmailThreadId || contact.thread_id;
+                            console.log(`[email-poller] Enviando reply threadId=${replyThreadId} a ${fromEmail}`);
+                            await this.sendGmailReply(fromEmail, aiResponse, replyThreadId);
                             console.log(`[email-poller] Auto-respuesta enviada a ${fromEmail} para contact #${contact.id}`);
                         } else {
                             console.log(`[email-poller] No se generó respuesta IA para contact #${contact.id}`);
@@ -182,13 +184,16 @@ class EmailPoller {
             return `${sender}: ${text}`;
         }).join('\n');
 
-        const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Un cliente respondió a un email anterior.
+        const systemPrompt = `Eres el agente de soporte automático de VNTG HUB, una tienda argentina de coleccionismo vintage. Vendemos figuras, Funko Pops, cómics, manga, cartas, artículos de cine/películas, autos a escala, y más — de Marvel, DC, Star Wars, Disney, anime y cultura pop.
+
+Un cliente respondió a un email anterior.
 
 REGLAS:
-- Máximo 2 oraciones. Respondé en español, tono amable.
-- Respondé directamente lo que pregunte si podés.
-- NO inventes productos ni confirmes stock.
-- Solo derivá a humano si necesitás info que no tenés.
+- Máximo 2 oraciones. Tono amable. Respondé directamente lo que pregunte.
+- Si menciona una categoría/franquicia que vendemos, confirmá que sí trabajamos con eso e invitá a ver el catálogo.
+- NO confirmes stock ni productos específicos.
+- NUNCA inventes direcciones de email, teléfonos ni URLs.
+- Solo derivá a humano si es problema de cuenta/pago/envío.
 - Texto plano, sin markdown.`;
 
         const groqMessages = [

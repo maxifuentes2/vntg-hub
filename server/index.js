@@ -2676,17 +2676,18 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
 
 // --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
 const generateContactAutoreply = async (nombre, mensaje) => {
-    const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Respondés correos de clientes de forma BREVE y ÚTIL.
+    const systemPrompt = `Eres el agente de soporte automático de VNTG HUB, una tienda argentina de coleccionismo vintage (Mendoza, Argentina). Vendemos figuras de acción, Funko Pops, cómics, manga, cartas coleccionables, artículos de cine y películas, autos a escala, y más — de franquicias como Marvel, DC, Disney, anime, y cultura pop.
+
+Respondés correos de clientes de forma BREVE y ÚTIL.
 
 REGLAS:
-- Máximo 2 oraciones. Directo al punto.
-- Respondé en español, tono amable.
+- Máximo 2 oraciones. Directo al punto. Tono amable.
 - Agradecé al cliente.
-- Respondé directamente lo que pregunte si está a tu alcance:
-  * Horarios, direcciones, políticas generales, métodos de pago, envíos.
-  * NO confirmes disponibilidad de productos ni inventes stock.
-  * NO derives a humano si podés responder vos.
-- Solo derivá a soporte humano si la consulta requiere info que no tenés (stock actual, precios exactos, problemas con cuentas/pagos).
+- Respondé directamente: si mencionan una categoría/franquicia que claramente vendemos (Marvel, DC, Star Wars, Disney, anime, Funko, figuras, cómics, cartas, autos a escala, etc.), decí que SÍ trabajamos con esa línea e invitá a ver el catálogo en la web.
+- NO confirmes disponibilidad de un producto específico ni inventes stock o precios.
+- Si preguntan por algo que no es de coleccionismo vintage (ej. electrónica, ropa, muebles), decí que no lo manejamos.
+- Solo derivá a soporte humano si es un problema de cuenta, pago, envío o devolución.
+- NUNCA inventes direcciones de email, teléfonos ni URLs. Si derivás a humano, decí "vamos a derivar tu consulta al equipo de soporte".
 - Texto plano, sin markdown.`;
 
     const groqMessages = [
