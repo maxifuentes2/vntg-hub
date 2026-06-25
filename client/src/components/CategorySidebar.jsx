@@ -208,7 +208,7 @@ export default function CategorySidebar({ categories = [] }) {
                                     <MapPin size={12} className="text-brand-blue" /> Mendoza, Argentina
                                 </p>
                                 <p className="flex items-center gap-2 text-[10px] font-bold italic text-zinc-500 lowercase">
-                                    <Mail size={12} className="text-brand-blue" /> soportehubvntg@gmail.com
+                                    <Mail size={12} className="text-brand-blue" /> hubvntg@gmail.com
                                 </p>
                             </div>
 

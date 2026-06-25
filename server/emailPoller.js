@@ -89,22 +89,48 @@ class EmailPoller {
 
                     const payload = detail.data.payload;
                     const headers = payload.headers || [];
-                    const gmailThreadId = detail.data.threadId;
+                    const gmailThreadId = detail.data.threadId || '';
+                    const fromHeader = getHeader(headers, 'from');
+                    const fromMatch = fromHeader.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
+                    const fromEmail = fromMatch ? fromMatch[2] : fromHeader;
+                    const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : fromHeader;
+                    const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
+                    const inReplyTo = getHeader(headers, 'in-reply-to') || '';
 
-                    // Buscar por threadId de Gmail (más confiable que In-Reply-To)
-                    const [contacts] = await db.query(
-                        "SELECT id, nombre, email FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
-                        [gmailThreadId]
-                    );
+                    console.log(`[email-poller] msg=${msg.id} threadId=${gmailThreadId} inReplyTo="${inReplyTo}" from="${fromEmail}"`);
 
-                    if (contacts.length > 0) {
-                        const contact = contacts[0];
-                        const fromHeader = getHeader(headers, 'from');
-                        const fromMatch = fromHeader.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
-                        const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : fromHeader;
-                        const fromEmail = fromMatch ? fromMatch[2] : fromHeader;
-                        const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
+                    // 1) Buscar por threadId de Gmail
+                    let contact = null;
+                    if (gmailThreadId) {
+                        const [rows] = await db.query(
+                            "SELECT id, nombre, email FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
+                            [gmailThreadId]
+                        );
+                        if (rows.length > 0) contact = rows[0];
+                    }
 
+                    // 2) Fallback: buscar por In-Reply-To (patrón vntg-contact-{id})
+                    if (!contact) {
+                        const patternMatch = inReplyTo.match(/vntg-contact-(\d+)/);
+                        if (patternMatch) {
+                            const [rows] = await db.query(
+                                "SELECT id, nombre, email FROM support_messages WHERE id = ? AND source IS NULL LIMIT 1",
+                                [parseInt(patternMatch[1], 10)]
+                            );
+                            if (rows.length > 0) contact = rows[0];
+                        }
+                    }
+
+                    // 3) Fallback: buscar por email del remitente + mensaje reciente
+                    if (!contact && fromEmail) {
+                        const [rows] = await db.query(
+                            "SELECT id, nombre, email FROM support_messages WHERE email = ? AND source IS NULL AND thread_id IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+                            [fromEmail]
+                        );
+                        if (rows.length > 0) contact = rows[0];
+                    }
+
+                    if (contact) {
                         console.log(`[email-poller] Reply recibido para contact #${contact.id} de ${fromEmail}`);
 
                         await db.query(
@@ -119,11 +145,13 @@ class EmailPoller {
 
                         const aiResponse = await this.generateResponse(history);
                         if (aiResponse) {
-                            await this.sendGmailReply(fromEmail, aiResponse, gmailThreadId);
+                            await this.sendGmailReply(fromEmail, aiResponse, gmailThreadId || contact.thread_id);
                             console.log(`[email-poller] Auto-respuesta enviada a ${fromEmail} para contact #${contact.id}`);
                         } else {
                             console.log(`[email-poller] No se generó respuesta IA para contact #${contact.id}`);
                         }
+                    } else {
+                        console.log(`[email-poller] No se encontró contacto para msg=${msg.id}`);
                     }
 
                     processedIds.push(msg.id);
@@ -154,12 +182,13 @@ class EmailPoller {
             return `${sender}: ${text}`;
         }).join('\n');
 
-        const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Un cliente respondió a un email anterior y necesitás contestar.
+        const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Un cliente respondió a un email anterior.
 
 REGLAS:
-- Máximo 3 oraciones. Respondé en español, tono amable.
-- Respondé al contenido de su último mensaje.
-- Si no sabés con certeza, decí que lo derivás a soporte humano.
+- Máximo 2 oraciones. Respondé en español, tono amable.
+- Respondé directamente lo que pregunte si podés.
+- NO inventes productos ni confirmes stock.
+- Solo derivá a humano si necesitás info que no tenés.
 - Texto plano, sin markdown.`;
 
         const groqMessages = [

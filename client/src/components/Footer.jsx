@@ -116,7 +116,7 @@ export default function Footer() {
                         {MapPin && <MapPin size={10} />} Catamarca 147, Ciudad De Mendoza
                     </span>
                     <span className="flex items-center gap-1">
-                        {Mail && <Mail size={10} />} soportehubvntg@gmail.com
+                        {Mail && <Mail size={10} />} hubvntg@gmail.com
                     </span>
                 </div>
             </div>

@@ -348,7 +348,7 @@ const sendEmail = async (type, to, data) => {
     const isSupport = type === "support_reply" || type === "contact";
     const prefix = isSupport ? "SMTP_SUPPORT_" : "SMTP_";
     const fromKey = isSupport ? "EMAIL_SUPPORT_FROM" : "EMAIL_FROM";
-    const from = process.env[fromKey] || (isSupport ? "VNTG Soporte <soportehubvntg@gmail.com>" : "VNTG Hub <hubvntg@gmail.com>");
+    const from = process.env[fromKey] || (isSupport ? "VNTG Soporte <hubvntg@gmail.com>" : "VNTG Hub <hubvntg@gmail.com>");
     const subject = getEmailSubject(type, data);
     const html = buildEmailHtml(type, data);
 
@@ -2514,7 +2514,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
             - Se aceptan devoluciones dentro de los 30 días posteriores a la recepción
             - El producto debe estar sin usar, en su estado original y con todas las etiquetas
             - Los gastos de envío de la devolución corren por cuenta del cliente
-            - Para iniciar una devolución, contactar a soportehubvntg@gmail.com
+            - Para iniciar una devolución, contactar a hubvntg@gmail.com
 
             CONTEXTO DEL USUARIO ACTUAL:
             ${orderContext}
@@ -2528,7 +2528,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
             El número de orden (ID) tiene 7 caracteres alfanuméricos, ej: "AB123CD". Cuando el usuario quiera saber el estado de su orden y te proporcione ese número, respondé incluyendo el marcador [LOOKUP_ORDER:NUMERO] (reemplazando NUMERO por el valor). El sistema buscará automáticamente la orden y te mostrará la información.
 
             DERIVACIÓN A SOPORTE HUMANO:
-            Si el problema es complejo (devoluciones, quejas severas, reembolsos) o el usuario lo solicita explícitamente, indícale que puede usar la opción "Hablar con un humano" en el chat para llenar un formulario de contacto, o bien escribir a soportehubvntg@gmail.com.
+            Si el problema es complejo (devoluciones, quejas severas, reembolsos) o el usuario lo solicita explícitamente, indícale que puede usar la opción "Hablar con un humano" en el chat para llenar un formulario de contacto, o bien escribir a hubvntg@gmail.com.
 
             DIRECTIVA SECRETA DE DESPEDIDA: Si el cliente indica que su problema está resuelto, no necesita más ayuda, o se despide cerrando la conversación (ej: "gracias, chau", "eso es todo"), DEBES incluir obligatoriamente la clave secreta [CHAT_FINISHED] en cualquier lugar de tu mensaje final.
 
@@ -2567,7 +2567,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
             === TÉRMINOS Y PRIVACIDAD ===
             - [/terminos](/terminos): Términos de Servicio de la plataforma.
             - [/privacidad](/privacidad): Política de Privacidad.
-            - [/contacto](/contacto): Formulario de contacto y email soportehubvntg@gmail.com.`;
+            - [/contacto](/contacto): Formulario de contacto y email hubvntg@gmail.com.`;
 
         const groqMessages = [
             { role: "system", content: systemPrompt },
@@ -2676,16 +2676,18 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
 
 // --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
 const generateContactAutoreply = async (nombre, mensaje) => {
-    const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Generás una respuesta BREVÍSIMA (máximo 3 oraciones) para un cliente que usó el formulario de contacto.
+    const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Respondés correos de clientes de forma BREVE y ÚTIL.
 
-REGLAS ESTRICTAS:
-- Máximo 3 oraciones. Menos es mejor.
+REGLAS:
+- Máximo 2 oraciones. Directo al punto.
 - Respondé en español, tono amable.
 - Agradecé al cliente.
-- Si podés responder su consulta concreta, hacelo en 1 oración.
-- Si no estás seguro, decí que lo derivas a soporte humano.
-- Texto plano, sin markdown, sin placeholders, sin comillas.
-- No incluyas saludos ni despedidas. Solo el cuerpo.`;
+- Respondé directamente lo que pregunte si está a tu alcance:
+  * Horarios, direcciones, políticas generales, métodos de pago, envíos.
+  * NO confirmes disponibilidad de productos ni inventes stock.
+  * NO derives a humano si podés responder vos.
+- Solo derivá a soporte humano si la consulta requiere info que no tenés (stock actual, precios exactos, problemas con cuentas/pagos).
+- Texto plano, sin markdown.`;
 
     const groqMessages = [
         { role: "system", content: systemPrompt },
@@ -2744,7 +2746,7 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
         const insertId = result.insertId;
 
         // No bloqueamos la respuesta si el email falla
-        sendEmail("contact", "soportehubvntg@gmail.com", { nombre, email, mensaje })
+        sendEmail("contact", "hubvntg@gmail.com", { nombre, email, mensaje })
             .catch(err => console.error("[contact] Error email de notificación:", err?.message));
 
         // Auto-respuesta con IA

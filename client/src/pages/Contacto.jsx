@@ -13,7 +13,7 @@ export default function Contacto() {
     // Función para copiar email
     const copiarEmail = () => {
         try {
-            navigator.clipboard.writeText('soportehubvntg@gmail.com');
+            navigator.clipboard.writeText('hubvntg@gmail.com');
             addToast({ title: 'Email' }, 'Copiado al portapapeles', 'success');
         } catch (err) {
             console.error('Error al copiar el email:', err);
@@ -87,7 +87,7 @@ export default function Contacto() {
                                 <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-1.5">
                                     Email <span className="text-[8px] text-brand-blue opacity-0 group-hover:opacity-100 transition-all duration-300 font-black uppercase tracking-normal">(Click para copiar)</span>
                                 </p>
-                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase break-all group-hover:text-brand-blue transition-colors">soportehubvntg@gmail.com</p>
+                                <p className="text-sm xs:text-base sm:text-xl font-black italic uppercase break-all group-hover:text-brand-blue transition-colors">hubvntg@gmail.com</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group cursor-pointer select-none" onClick={copiarWhatsApp}>
