@@ -20,7 +20,6 @@ function extractBody(payload) {
         if (decoded.length > 0) {
             if (payload.mimeType === 'text/plain') return decoded;
             if (payload.mimeType === 'text/html') {
-                // Strip HTML tags
                 return decoded.replace(/<[^>]*>/g, '').trim();
             }
         }
@@ -38,7 +37,8 @@ class EmailPoller {
     constructor() {
         this.gmail = null;
         this.interval = null;
-        this.seenIds = new Set();
+        this.watchedThreads = new Map(); // threadId -> { contactId, processedMsgIds: Set }
+        this.seenMsgIds = new Set();
     }
 
     async authenticate() {
@@ -65,166 +65,124 @@ class EmailPoller {
         }
     }
 
+    // Registrar un threadId para velar por nuevos mensajes
+    watchThread(threadId, contactId) {
+        if (!this.watchedThreads.has(threadId)) {
+            this.watchedThreads.set(threadId, {
+                contactId,
+                processedMsgIds: new Set(),
+            });
+            console.log(`[email-poller] Velando thread ${threadId} para contact #${contactId}`);
+        }
+    }
+
     connect() {
         return true;
     }
 
     async poll() {
-        console.log('[email-poller] Poll...');
         if (!this.gmail) {
             const ok = await this.authenticate();
             if (!ok) return;
         }
 
+        // Cargar threads activos desde la DB (los que tienen thread_id y source IS NULL)
         try {
-            // Usar labelIds ['INBOX'] es más confiable que q:'in:inbox'
-            const res = await this.gmail.users.messages.list({
-                userId: 'me',
-                labelIds: ['INBOX'],
-                maxResults: 20,
-            });
-
-            const messages = res.data.messages || [];
-            console.log(`[email-poller] Gmail devolvió ${messages.length} mensajes (labelIds: INBOX)`);
-
-            if (messages.length > 0) {
-                console.log(`[email-poller] IDs: ${messages.map(m => m.id).join(', ')}`);
-            }
-
-            // Filtrar mensajes ya procesados
-            const newMessages = messages.filter(m => !this.seenIds.has(m.id));
-            if (newMessages.length === 0) {
-                if (messages.length > 0) console.log(`[email-poller] 0 nuevos (${messages.length} ya vistos)`);
-                return;
-            }
-
-            console.log(`[email-poller] ${newMessages.length} mensajes nuevos (no vistos)`);
-
-            const processedIds = [];
-
-            for (const msg of newMessages) {
-                try {
-                    const detail = await this.gmail.users.messages.get({
-                        userId: 'me',
-                        id: msg.id,
-                        format: 'full',
+            const [rows] = await db.query(
+                "SELECT id, thread_id FROM support_messages WHERE thread_id IS NOT NULL AND thread_id != '' AND source IS NULL ORDER BY created_at DESC LIMIT 50"
+            );
+            for (const row of rows) {
+                if (row.thread_id && !this.watchedThreads.has(row.thread_id)) {
+                    this.watchedThreads.set(row.thread_id, {
+                        contactId: row.id,
+                        processedMsgIds: new Set(),
                     });
+                }
+            }
+        } catch (err) {
+            console.error('[email-poller] Error cargando threads:', err.message);
+        }
 
-                    const payload = detail.data.payload;
+        if (this.watchedThreads.size === 0) {
+            console.log('[email-poller] 0 threads activos para velar');
+            return;
+        }
+
+        console.log(`[email-poller] Velando ${this.watchedThreads.size} threads...`);
+
+        for (const [threadId, watch] of this.watchedThreads) {
+            try {
+                const thread = await this.gmail.users.threads.get({
+                    userId: 'me',
+                    id: threadId,
+                    format: 'full',
+                });
+
+                const messages = thread.data.messages || [];
+                if (messages.length <= 1) continue; // Solo el mensaje original
+
+                for (const msg of messages) {
+                    if (this.seenMsgIds.has(msg.id)) continue;
+                    if (watch.processedMsgIds.has(msg.id)) continue;
+
+                    const payload = msg.payload;
                     const headers = payload.headers || [];
-                    const gmailThreadId = detail.data.threadId || '';
-                    const labels = (detail.data.labelIds || []).join(',');
                     const fromHeader = getHeader(headers, 'from');
-                    const subject = getHeader(headers, 'subject') || '(sin asunto)';
                     const fromMatch = fromHeader.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
                     const fromEmail = fromMatch ? fromMatch[2] : fromHeader;
                     const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : fromHeader;
+                    const subject = getHeader(headers, 'subject') || '(sin asunto)';
                     const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
-                    const inReplyTo = getHeader(headers, 'in-reply-to') || '';
 
-                    console.log(`[email-poller] msg=${msg.id} from="${fromEmail}" subject="${subject}" threadId="${gmailThreadId}" labels=${labels} bodyLen=${bodyText.length}`);
-
-                    // Ignorar emails enviados desde hubvntg (auto-notificaciones)
+                    // Ignorar mensajes enviados por nosotros
                     if (fromEmail === 'hubvntg@gmail.com') {
-                        console.log(`[email-poller] Ignorando email de hubvntg msg=${msg.id}`);
-                        processedIds.push(msg.id);
+                        watch.processedMsgIds.add(msg.id);
+                        this.seenMsgIds.add(msg.id);
                         continue;
                     }
 
-                    // 1) Buscar por threadId de Gmail
-                    let contact = null;
-                    if (gmailThreadId) {
-                        const [rows] = await db.query(
-                            "SELECT id, nombre, email, thread_id FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
-                            [gmailThreadId]
-                        );
-                        if (rows.length > 0) contact = rows[0];
-                        console.log(`[email-poller] Busqueda por threadId=${gmailThreadId}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
-                    }
+                    console.log(`[email-poller] Nuevo mensaje en thread=${threadId} from="${fromEmail}" subject="${subject}"`);
 
-                    // 2) Fallback: buscar por In-Reply-To (patrón vntg-contact-{id} o vntg-ticket-{id})
-                    if (!contact) {
-                        const idMatch = inReplyTo.match(/vntg-(?:contact|ticket)-(\d+)/);
-                        if (idMatch) {
-                            const [rows] = await db.query(
-                                "SELECT id, nombre, email, thread_id FROM support_messages WHERE id = ? AND source IS NULL LIMIT 1",
-                                [parseInt(idMatch[1], 10)]
-                            );
-                            if (rows.length > 0) contact = rows[0];
-                            console.log(`[email-poller] Busqueda por In-Reply-To id=${idMatch[1]}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
-                        } else {
-                            console.log(`[email-poller] In-Reply-To no coincide con patrón vntg: "${inReplyTo.substring(0, 60)}"`);
-                        }
-                    }
+                    // Insertar reply del cliente
+                    await db.query(
+                        "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email_reply')",
+                        [fromName, fromEmail, bodyText, watch.contactId]
+                    );
 
-                    // 3) Fallback: buscar por email del remitente (cualquier contacto, incluso sin thread_id)
-                    if (!contact && fromEmail) {
-                        const [rows] = await db.query(
-                            "SELECT id, nombre, email, thread_id FROM support_messages WHERE email = ? AND source IS NULL ORDER BY created_at DESC LIMIT 1",
-                            [fromEmail]
-                        );
-                        if (rows.length > 0) contact = rows[0];
-                        console.log(`[email-poller] Busqueda por email ${fromEmail}: ${contact ? 'encontrado #'+contact.id : 'no encontrado'}`);
-                    }
+                    // Obtener historial
+                    const [history] = await db.query(
+                        "SELECT * FROM support_messages WHERE id = ? OR thread_id = ? ORDER BY created_at ASC",
+                        [watch.contactId, watch.contactId]
+                    );
 
-                    if (contact) {
-                        console.log(`[email-poller] Reply recibido para contact #${contact.id} de ${fromEmail} threadId=${contact.thread_id}`);
+                    // Generar respuesta IA
+                    const aiResponse = await this.generateResponse(history);
+                    if (aiResponse) {
+                        console.log(`[email-poller] Enviando reply IA a ${fromEmail} en thread=${threadId}`);
+                        await this.sendGmailReply(fromEmail, aiResponse, threadId);
 
                         await db.query(
-                            "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email_reply')",
-                            [fromName, fromEmail, bodyText, contact.id]
-                        );
+                            "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
+                            ['VNTG Bot', 'hubvntg@gmail.com', bodyText, aiResponse, watch.contactId]
+                        ).catch(err => console.error('[email-poller] Error guardando respuesta IA:', err.message));
 
-                        const [history] = await db.query(
-                            "SELECT * FROM support_messages WHERE id = ? OR thread_id = ? ORDER BY created_at ASC",
-                            [contact.id, contact.id]
-                        );
-
-                        console.log(`[email-poller] Generando respuesta IA para contact #${contact.id} (historial: ${history.length} mensajes)`);
-                        const aiResponse = await this.generateResponse(history);
-                        console.log(`[email-poller] Respuesta IA ${aiResponse ? 'generada ('+aiResponse.length+' chars)' : 'null'}`);
-                        if (aiResponse) {
-                            const replyThreadId = gmailThreadId || contact.thread_id;
-                            console.log(`[email-poller] Enviando reply threadId=${replyThreadId} a ${fromEmail}`);
-                            await this.sendGmailReply(fromEmail, aiResponse, replyThreadId);
-
-                            // Guardar la respuesta de la IA en el historial
-                            await db.query(
-                                "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
-                                ['VNTG Bot', 'hubvntg@gmail.com', bodyText, aiResponse, contact.id]
-                            ).catch(err => console.error('[email-poller] Error guardando respuesta IA:', err.message));
-
-                            console.log(`[email-poller] Auto-respuesta enviada y guardada para contact #${contact.id}`);
-                        } else {
-                            console.log(`[email-poller] No se generó respuesta IA para contact #${contact.id}`);
-                        }
+                        console.log(`[email-poller] Auto-respuesta enviada y guardada para contact #${watch.contactId}`);
                     } else {
-                        console.log(`[email-poller] No se encontró contacto para msg=${msg.id}`);
+                        console.log(`[email-poller] No se generó respuesta IA para contact #${watch.contactId}`);
                     }
 
-                    processedIds.push(msg.id);
-                } catch (err) {
-                    console.error('[email-poller] Error procesando mensaje:', err.message);
+                    watch.processedMsgIds.add(msg.id);
+                    this.seenMsgIds.add(msg.id);
+                }
+            } catch (err) {
+                if (err.code === 404) {
+                    // Thread ya no existe, lo removemos
+                    console.log(`[email-poller] Thread ${threadId} ya no existe, removiendo`);
+                    this.watchedThreads.delete(threadId);
+                } else {
+                    console.error(`[email-poller] Error velando thread ${threadId}:`, err.message);
                 }
             }
-
-            if (processedIds.length > 0) {
-                await this.gmail.users.messages.batchModify({
-                    userId: 'me',
-                    requestBody: {
-                        ids: processedIds,
-                        removeLabelIds: ['UNREAD'],
-                    },
-                });
-                console.log(`[email-poller] ${processedIds.length} email(s) procesado(s)`);
-            }
-
-            // Marcar como vistos para no reprocesar
-            for (const m of newMessages) {
-                this.seenIds.add(m.id);
-            }
-        } catch (err) {
-            console.error('[email-poller] Error en poll:', err.message);
         }
     }
 
