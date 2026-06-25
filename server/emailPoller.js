@@ -326,7 +326,7 @@ class EmailPoller {
                 if (!contactId) {
                     // Fallback: buscar por threadId
                     const [existing] = await db.query(
-                        "SELECT id FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
+                        "SELECT id FROM support_messages WHERE thread_id = ? AND (source IS NULL OR source = 'web') LIMIT 1",
                         [gmailThreadId]
                     );
                     if (existing.length) {
@@ -353,7 +353,7 @@ class EmailPoller {
 
                     // Obtener el threadId ORIGINAL del auto-reply (no el del reply del usuario, puede ser diferente)
                     const [orig] = await db.query(
-                        "SELECT thread_id FROM support_messages WHERE id = ? AND source IS NULL",
+                        "SELECT thread_id FROM support_messages WHERE id = ? AND (source IS NULL OR source = 'web')",
                         [contactId]
                     );
                     const replyThreadId = (orig.length && orig[0].thread_id) ? orig[0].thread_id : gmailThreadId;
@@ -420,9 +420,9 @@ class EmailPoller {
                 SELECT id, email, mensaje, created_at,
                     (SELECT MIN(id) FROM support_messages AS s2 
                      WHERE s2.email = s1.email AND LEFT(s2.mensaje, 200) = LEFT(s1.mensaje, 200) 
-                     AND s2.source IS NULL AND s2.created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)) AS keep_id
+                     AND (s2.source IS NULL OR s2.source = 'web') AND s2.created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)) AS keep_id
                 FROM support_messages s1
-                WHERE source IS NULL AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+                WHERE (source IS NULL OR source = 'web') AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
                 HAVING id != keep_id AND keep_id IS NOT NULL
             `);
             for (const dup of dups) {
