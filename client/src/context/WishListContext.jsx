@@ -1,21 +1,17 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from './ToastContext'; 
+import { useAuth } from './AuthContext';
 
 const WishListContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export function WishListProvider({ children }) {
     const { addToast } = useToast();
+    const { user, token } = useAuth();
     
     const [wishListItems, setWishListItems] = useState([]);
 
-    // Obtener usuario activo y token
-    const getActiveUser = () => JSON.parse(localStorage.getItem('vntg_user'));
-    const getToken = () => localStorage.getItem('vntg_token');
-
     useEffect(() => {
-        const user = getActiveUser();
-        const token = getToken();
         if (user && token) {
             fetch(`${API_URL}/api/wishlist/${user.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -23,13 +19,12 @@ export function WishListProvider({ children }) {
                 .then(res => res.json())
                 .then(data => setWishListItems(Array.isArray(data) ? data : []))
                 .catch(err => console.error("Error cargando wishlist:", err));
+        } else {
+            setWishListItems([]);
         }
-    }, []);
+    }, [user, token]);
 
     const addToWishList = useCallback(async (product) => {
-        const user = getActiveUser();
-        const token = getToken();
-
         if (!user || !token) {
             addToast(null, 'Debes iniciar sesión para guardar favoritos', 'error');
             return;
@@ -61,12 +56,9 @@ export function WishListProvider({ children }) {
             console.error("Error al guardar en wishlist:", error);
             addToast(null, 'Error de conexión con el servidor', 'error');
         }
-    }, [wishListItems, addToast]);
+    }, [wishListItems, addToast, user, token]);
 
     const removeFromWishList = useCallback(async (id) => {
-        const user = getActiveUser();
-        const token = getToken();
-        
         const productoEliminado = wishListItems.find(item => String(item.id) === String(id));
 
         if (user && token) {
@@ -80,24 +72,26 @@ export function WishListProvider({ children }) {
         if (productoEliminado) {
             addToast(productoEliminado, 'Eliminado de favoritos', 'info');
         }
-    }, [wishListItems, addToast]);
+    }, [wishListItems, addToast, user, token]);
 
     const clearWishList = useCallback(async () => {
-        const user = getActiveUser();
-        const token = getToken();
         if (user && token) {
             try {
                 await fetch(`${API_URL}/api/wishlist/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             } catch (e) { console.error(e); }
         }
         setWishListItems([]);
+    }, [user, token]);
+
+    const clearWishListState = useCallback(() => {
+        setWishListItems([]);
     }, []);
 
     const wishListCount = wishListItems.length;
 
     const value = useMemo(() => ({
-        wishListItems, addToWishList, removeFromWishList, clearWishList, wishListCount
-    }), [wishListItems, addToWishList, removeFromWishList, clearWishList]);
+        wishListItems, addToWishList, removeFromWishList, clearWishList, clearWishListState, wishListCount
+    }), [wishListItems, addToWishList, removeFromWishList, clearWishList, clearWishListState]);
 
     return (
         <WishListContext.Provider value={value}>

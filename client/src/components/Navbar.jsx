@@ -39,7 +39,7 @@ export default function Navbar() {
     
     // Conexión con el estado global de los sidebars
     const { openCart, openWishList, openCategory } = useSidebar();
-    const { wishListCount } = useWishList();
+    const { wishListCount, clearWishListState } = useWishList();
     const { cartCount, cart, syncCartToServer, clearCart } = useCart();
     const { currency, toggleCurrency, setCurrency } = useCurrency();
     const { addToast } = useToast();
@@ -128,6 +128,7 @@ export default function Navbar() {
         localStorage.removeItem('vntg_interests');
         authLogout();
         clearCart();
+        clearWishListState();
         addToast({ title: 'Sesión Cerrada' }, 'Hasta luego', 'info');
         setIsUserMenuOpen(false);
         navigate('/');
