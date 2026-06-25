@@ -32,16 +32,17 @@ function extractBody(payload) {
 
 function stripQuoted(text) {
     if (!text) return '';
-    let clean = text;
+    let clean = text.replace(/\r\n/g, '\n');
 
-    // Buscar marcadores de reply (estándar e inline)
+    // Buscar marcadores de reply (Gmail web y mobile)
+    // Usar [\s\S] en vez de . para matchear también newlines (el marcador puede tener saltos de línea)
     const markers = [
-        /\nOn .+? wrote:\s*\n/i,
-        /On .+? wrote:\s*\n/i,
-        /\nEl .+? escribió:\s*\n/i,
-        /El .+? escribió:\s*\n/i,
-        /\n-{3,} Forwarded message -{3,}\n/i,
-        /\n_{10,}\n/i,
+        /\nOn [\s\S]+? wrote:\s*\n?/i,
+        /(?:^|\s)On [\s\S]+? wrote:\s*\n?/i,
+        /\nEl [\s\S]+? escribió:\s*\n?/i,
+        /(?:^|\s)El [\s\S]+? escribió:\s*\n?/i,
+        /\n-{3,} Forwarded message -{3,}\n?/i,
+        /\n_{10,}\n?/i,
     ];
     for (const m of markers) {
         const idx = clean.search(m);
