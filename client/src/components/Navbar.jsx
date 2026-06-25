@@ -288,11 +288,6 @@ export default function Navbar() {
                                                 <Shield size={16} /> Panel Admin
                                             </Link>
                                         )}
-                                        {(user.role === 'support' || user.role === 'admin') && (
-                                            <Link to="/soporte" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl transition-all">
-                                                <Shield size={16} /> Panel Soporte
-                                            </Link>
-                                        )}
                                         <Link to="/mi-cuenta" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase italic text-zinc-700 dark:text-zinc-300 hover:bg-brand-orange hover:text-white rounded-xl transition-all">
                                             <Settings size={16} /> Mi Cuenta
                                         </Link>

@@ -65,6 +65,45 @@ export default function AdminPanel() {
     const [activeTab, setActiveTab] = useState('products');
     const [supportMessages, setSupportMessages] = useState([]);
     const [supportFilter, setSupportFilter] = useState('pending'); // pending, in_progress, resolved
+
+    const supportThreads = useMemo(() => {
+        const sorted = [...supportMessages].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+        const groups = new Map();
+        for(const m of sorted){
+            let key = m.thread_id || m.id;
+            const root = supportMessages.find(x => x.id == key);
+            if(root && root.thread_id) key = root.thread_id;
+            if(!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(m);
+        }
+        
+        return Array.from(groups.values()).map(msgs => {
+            const lastMsg = msgs[msgs.length - 1];
+            // Buscar el primer mensaje que sea de un cliente (no nuestro correo)
+            const firstUserMsg = msgs.find(m => m.email && m.email.toLowerCase() !== 'hubvntg@gmail.com');
+            
+            if (!firstUserMsg) return null; // Si no hay mensajes de clientes reales en el hilo, lo ignoramos
+
+            return {
+                id: firstUserMsg.id,
+                nombre: firstUserMsg.nombre,
+                email: firstUserMsg.email,
+                mensaje: firstUserMsg.mensaje,
+                motivo: firstUserMsg.motivo || 'No especificado',
+                status: lastMsg.status || 'pending',
+                fecha: lastMsg.created_at,
+                assignment: lastMsg.assignment || 'IA'
+            }
+        }).filter(Boolean).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+    }, [supportMessages]);
+
+    const supportCounts = useMemo(() => {
+        return supportThreads.reduce((acc, t) => {
+            acc[t.status] = (acc[t.status] || 0) + 1;
+            return acc;
+        }, { pending: 0, replied: 0, finished: 0 });
+    }, [supportThreads]);
+
     const navigate = useNavigate();
 
     // Estados para Modales
@@ -992,7 +1031,7 @@ export default function AdminPanel() {
                                                 onClick={() => setSupportFilter(f)}
                                                 className={`px-3 py-1.5 text-[9px] font-black uppercase italic rounded-lg border transition-all ${supportFilter === f ? 'bg-brand-orange text-white border-brand-orange shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange'}`}
                                             >
-                                                {f === 'pending' ? 'Sin Respuesta' : f === 'replied' ? 'En Progreso' : 'Resueltos'}
+                                                {f === 'pending' ? 'Sin Respuesta' : f === 'replied' ? 'En Progreso' : 'Resueltos'} ({supportCounts[f]})
                                             </button>
                                         ))}
                                     </div>
@@ -1008,36 +1047,7 @@ export default function AdminPanel() {
                                 ) : (
                                     <div className="space-y-4">
                                         {(() => {
-                                            // Agrupamos mensajes
-                                            const sorted = [...supportMessages].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-                                            const groups = new Map();
-                                            for(const m of sorted){
-                                                let key = m.thread_id || m.id;
-                                                const root = supportMessages.find(x => x.id == key);
-                                                if(root && root.thread_id) key = root.thread_id;
-                                                if(!groups.has(key)) groups.set(key, []);
-                                                groups.get(key).push(m);
-                                            }
-                                            
-                                            // Tomamos el status y assignment del último mensaje
-                                            const allThreads = Array.from(groups.values()).map(msgs => {
-                                                const lastMsg = msgs[msgs.length - 1];
-                                                // Buscar el primer mensaje que sea de un cliente (no nuestro correo)
-                                                const firstUserMsg = msgs.find(m => m.email && m.email.toLowerCase() !== 'hubvntg@gmail.com');
-                                                
-                                                if (!firstUserMsg) return null; // Si no hay mensajes de clientes reales en el hilo, lo ignoramos
-
-                                                return {
-                                                    id: firstUserMsg.id,
-                                                    nombre: firstUserMsg.nombre,
-                                                    email: firstUserMsg.email,
-                                                    mensaje: firstUserMsg.mensaje,
-                                                    motivo: firstUserMsg.motivo || 'No especificado',
-                                                    status: lastMsg.status || 'pending',
-                                                    fecha: lastMsg.created_at,
-                                                    assignment: lastMsg.assignment || 'IA'
-                                                }
-                                            }).filter(t => t && t.status === supportFilter);
+                                            const allThreads = supportThreads.filter(t => t.status === supportFilter);
 
                                             if(allThreads.length === 0) {
                                                 return (
