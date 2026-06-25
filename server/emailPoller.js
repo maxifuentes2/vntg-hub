@@ -163,26 +163,54 @@ class EmailPoller {
         if (!this.gmail && !(await this.auth())) return;
         const msgId = `<vntg-autoreply-${contactId}-${Date.now()}@hubvntg.com>`;
 
-        // Envolver en HTML como el auto-reply original
+        // Envolver en HTML con el MISMO diseño que el auto-reply original
         const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
         const htmlBody = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 10px">
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 16px">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
-<tr><td style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:30px 40px;text-align:center">
-<img src="https://vntg-hub.onrender.com/logo.svg" alt="VNTG Hub" height="48" style="margin-bottom:12px">
-<h1 style="color:#fff;font-size:20px;margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.5px">VNTG<span style="color:#f97316"> Hub</span></h1>
-<p style="color:#94a3b8;font-size:11px;margin:4px 0 0;text-transform:uppercase;letter-spacing:2px">Coleccionables Vintage</p>
+<table role="presentation" width="100%" style="max-width:520px;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+<tr><td>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px 16px 0 0;border-bottom:1px solid #eee">
+<tr><td align="center" style="padding:32px 24px 24px">
+<a href="https://vntg-hub.onrender.com" style="text-decoration:none">
+<img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+</a>
 </td></tr>
-<tr><td style="padding:30px 40px">
-<p style="font-size:14px;color:#333;line-height:1.6;margin:0 0 16px">${safe}</p>
-<p style="font-size:12px;color:#888;margin:24px 0 0;border-top:1px solid #eee;padding-top:16px">Si tenés más preguntas, respondé directamente a este correo. Un agente humano puede ayudarte si el tema es complejo.</p>
+</table>
 </td></tr>
-<tr><td style="background:#f8f8f8;padding:20px 40px;text-align:center;font-size:11px;color:#aaa">
-<a href="https://vntg-hub.onrender.com" style="color:#f97316;text-decoration:none;font-weight:700">vntg-hub.onrender.com</a>
+<tr><td style="padding:28px 32px 20px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
+<div style="background:#fff7ed;padding:16px 18px;border-radius:8px;margin:0 0 20px;border-left:4px solid #f97316">
+<p style="font-size:11px;color:#f97316;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">VNTG Hub responde</p>
+<p style="font-size:13px;color:#1a1a1a;margin:0;line-height:1.5;font-family:Arial,sans-serif">${safe}</p>
+</div>
+<p style="font-size:12px;color:#999;margin:0 0 20px;font-family:Arial,sans-serif">Si tenés más preguntas, respondé directamente a este correo.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto">
+<tr><td align="center" style="border-radius:8px;background:#f97316;padding:0">
+<a href="https://vntg-hub.onrender.com" target="_blank" style="display:inline-block;padding:14px 32px;background:#f97316;color:#ffffff;text-decoration:none;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.3px">Ir a VNTG Hub</a>
+</td></tr>
+<tr><td align="center" style="padding-top:10px">
+<a href="https://vntg-hub.onrender.com" target="_blank" style="color:#999;font-size:11px;font-family:Arial,sans-serif;text-decoration:underline">vntg-hub.onrender.com</a>
+</td></tr>
+</table>
+</td></tr>
+<tr><td>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:0 0 16px 16px;border-top:1px solid #eee">
+<tr><td align="center" style="padding:4px 24px 20px">
+<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto">
+<tr>
+<td style="padding:0 8px"><a href="https://instagram.com/vntg.hub" style="display:inline-block;text-decoration:none" target="_blank"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" fill="#E4405F"/><circle cx="12" cy="12" r="5" stroke="#fff" stroke-width="1.5" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff"/></svg></a></td>
+<td style="padding:0 8px"><a href="https://tiktok.com/@vntg.hub" style="display:inline-block;text-decoration:none" target="_blank"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" fill="#111"/><path d="M17 9.5a3.5 3.5 0 0 1-3.5-3.5H11v9.75a2.25 2.25 0 1 1-1.5-2.08V10.3a4.5 4.5 0 1 0 4.5 4.7V9.5H17z" fill="#fff"/></svg></a></td>
+<td style="padding:0 8px"><a href="https://wa.me/5491123456789" style="display:inline-block;text-decoration:none" target="_blank"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" fill="#25D366"/><path d="M17.5 6.5a7 7 0 0 1-11.05 8.65l-.7 2.6 2.7-.7A7 7 0 0 1 17.5 6.5z" stroke="#fff" stroke-width="1.3" fill="none"/><path d="M10 10.5c0-.3.3-.5.5-.5h.5c.3 0 .5.2.5.5v.5a2 2 0 0 1-2 2" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></a></td>
+<td style="padding:0 8px"><a href="https://vntg-hub.onrender.com" style="display:inline-block;text-decoration:none" target="_blank"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" fill="#f97316"/><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg></a></td>
+</tr>
+</table>
+<p style="color:#999;font-size:11px;margin:14px 0 0;font-family:Arial,sans-serif">VNTG Hub &mdash; Coleccionables Vintage</p>
+<p style="color:#bbb;font-size:10px;margin:4px 0 0;font-family:Arial,sans-serif">Este correo fue enviado automáticamente. No respondas a este mensaje.</p>
+</td></tr>
+</table>
 </td></tr>
 </table>
 </td></tr></table>
