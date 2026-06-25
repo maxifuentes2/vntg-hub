@@ -77,15 +77,15 @@ class EmailPoller {
         }
 
         try {
-            // Buscar en inbox completo (no solo unread, porque Gmail marca como leído al abrir)
+            // Usar labelIds ['INBOX'] es más confiable que q:'in:inbox'
             const res = await this.gmail.users.messages.list({
                 userId: 'me',
-                q: 'in:inbox -from:me',
+                labelIds: ['INBOX'],
                 maxResults: 20,
             });
 
             const messages = res.data.messages || [];
-            console.log(`[email-poller] Gmail devolvió ${messages.length} mensajes en inbox`);
+            console.log(`[email-poller] Gmail devolvió ${messages.length} mensajes (labelIds: INBOX)`);
 
             if (messages.length > 0) {
                 console.log(`[email-poller] IDs: ${messages.map(m => m.id).join(', ')}`);
@@ -113,6 +113,7 @@ class EmailPoller {
                     const payload = detail.data.payload;
                     const headers = payload.headers || [];
                     const gmailThreadId = detail.data.threadId || '';
+                    const labels = (detail.data.labelIds || []).join(',');
                     const fromHeader = getHeader(headers, 'from');
                     const subject = getHeader(headers, 'subject') || '(sin asunto)';
                     const fromMatch = fromHeader.match(/(?:"?([^"]*)"?\s*)?<([^>]+)>/);
@@ -121,7 +122,7 @@ class EmailPoller {
                     const bodyText = extractBody(payload).trim().substring(0, 2000) || '(sin contenido)';
                     const inReplyTo = getHeader(headers, 'in-reply-to') || '';
 
-                    console.log(`[email-poller] msg=${msg.id} from="${fromEmail}" subject="${subject}" threadId="${gmailThreadId}" inReplyTo="${inReplyTo}" bodyLen=${bodyText.length}`);
+                    console.log(`[email-poller] msg=${msg.id} from="${fromEmail}" subject="${subject}" threadId="${gmailThreadId}" labels=${labels} bodyLen=${bodyText.length}`);
 
                     // Ignorar emails enviados desde hubvntg (auto-notificaciones)
                     if (fromEmail === 'hubvntg@gmail.com') {
