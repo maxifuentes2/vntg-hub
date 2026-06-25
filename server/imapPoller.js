@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const db = require('./db');
 
-const TICKET_PATTERN = /<vntg-ticket-(\d+)@vntg-hub\.vercel\.app>/;
+const TICKET_PATTERN = /<vntg-ticket-(\d+)@vntg-hub\.onrender\.com>/;
 
 function decodeBase64(data) {
     if (!data) return '';

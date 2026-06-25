@@ -22,6 +22,7 @@ const nodemailer = require("nodemailer");
 const sgMail = require("@sendgrid/mail");
 if (process.env.SENDGRID_API_KEY) sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const GmailPoller = require("./imapPoller");
+const EmailPoller = require("./emailPoller");
 
 const shipping = require("./shipping");
 const multer = require("multer");
@@ -100,8 +101,8 @@ const HEADER = `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px 16px 0 0;border-bottom:1px solid #eee">
         <tr>
             <td align="center" style="padding:32px 24px 24px">
-                <a href="https://vntg-hub.vercel.app" style="text-decoration:none">
-                    <img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+                <a href="https://vntg-hub.onrender.com" style="text-decoration:none">
+                    <img src="https://vntg-hub.onrender.com/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
                 </a>
             </td>
         </tr>
@@ -126,7 +127,7 @@ const FOOTER_SOCIAL = `
                 </a>
             </td>
             <td style="padding:0 8px">
-                <a href="https://vntg-hub.vercel.app" style="display:inline-block;text-decoration:none" target="_blank">
+                <a href="https://vntg-hub.onrender.com" style="display:inline-block;text-decoration:none" target="_blank">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="#f97316"/><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
                 </a>
             </td>
@@ -184,7 +185,7 @@ const buildEmailHtml = (type, data) => {
                     <span style="font-size:36px;font-weight:bold;letter-spacing:12px;color:#1a1a1a;font-family:monospace">${data.code}</span>
                 </div>
                 <p style="font-size:12px;color:#999;margin:0 0 24px;font-family:Arial,sans-serif">Válido por 5 minutos. Si no solicitaste este código, ignorá este mensaje.</p>
-                ${BTN("Ir a la Tienda", "https://vntg-hub.vercel.app")}
+                ${BTN("Ir a la Tienda", "https://vntg-hub.onrender.com")}
             `);
 
         case "stock_alert":
@@ -195,7 +196,7 @@ const buildEmailHtml = (type, data) => {
                     <p style="font-size:15px;font-weight:bold;color:#15803d;margin:0;font-family:Arial,sans-serif">${data.productTitle}</p>
                 </div>
                 <p style="font-size:13px;color:#666;margin:0 0 24px;font-family:Arial,sans-serif">¡No esperes demasiado! Este producto suele agotarse rápido.</p>
-                ${BTN("Ver producto", `https://vntg-hub.vercel.app/producto/${data.productId}`)}
+                ${BTN("Ver producto", `https://vntg-hub.onrender.com/producto/${data.productId}`)}
             `);
 
         case "order_status":
@@ -204,7 +205,7 @@ const buildEmailHtml = (type, data) => {
                 <p style="font-size:14px;color:#333;margin:0 0 24px;line-height:1.6;font-family:Arial,sans-serif">${data.message}</p>
                 ${data.btnText && data.btnUrl ? `<div style="margin:0 0 16px">${BTN(data.btnText, data.btnUrl)}</div>` : ""}
                 <div style="border-top:1px solid #eee;margin:20px 0 0;padding-top:20px;text-align:center">
-                    <a href="https://vntg-hub.vercel.app" style="color:#f97316;font-size:13px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif">Ir a la Tienda →</a>
+                    <a href="https://vntg-hub.onrender.com" style="color:#f97316;font-size:13px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif">Ir a la Tienda →</a>
                 </div>
             `);
 
@@ -219,7 +220,7 @@ const buildEmailHtml = (type, data) => {
                     <p style="font-size:11px;color:#f97316;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">Nuestra respuesta</p>
                     <p style="font-size:13px;color:#1a1a1a;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.respuesta}</p>
                 </div>
-                ${BTN("Ir a mi cuenta", "https://vntg-hub.vercel.app/perfil")}
+                ${BTN("Ir a mi cuenta", "https://vntg-hub.onrender.com/perfil")}
             `);
 
         case "contact":
@@ -229,6 +230,21 @@ const buildEmailHtml = (type, data) => {
                 <div style="background:#f5f5f5;padding:16px 18px;border-radius:8px;margin:0 0 4px">
                     <p style="font-size:13px;color:#333;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.mensaje}</p>
                 </div>
+            `);
+
+        case "contact_autoreply":
+            return WRAP(`
+                <p style="font-size:14px;color:#1a1a1a;margin:0 0 18px;font-family:Arial,sans-serif">Hola ${data.nombre},</p>
+                <div style="background:#f5f5f5;padding:16px 18px;border-radius:8px;margin:0 0 14px">
+                    <p style="font-size:11px;color:#999;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">Tu mensaje</p>
+                    <p style="font-size:13px;color:#333;margin:0;font-family:Arial,sans-serif">${data.mensaje}</p>
+                </div>
+                <div style="background:#fff7ed;padding:16px 18px;border-radius:8px;margin:0 0 20px;border-left:4px solid #f97316">
+                    <p style="font-size:11px;color:#f97316;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">Respuesta automática</p>
+                    <p style="font-size:13px;color:#1a1a1a;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.respuesta}</p>
+                </div>
+                <p style="font-size:12px;color:#999;margin:0 0 20px;font-family:Arial,sans-serif">Si necesitás más ayuda, un agente humano te responderá a la brevedad.</p>
+                ${BTN("Ir a VNTG Hub", "https://vntg-hub.onrender.com")}
             `);
 
         case "chat_summary": {
@@ -255,7 +271,7 @@ const buildEmailHtml = (type, data) => {
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #eee;border-radius:12px;padding:16px">
                     ${chatHtml}
                 </table>
-                <div style="margin-top:20px">${BTN("Volver a VNTG Hub", "https://vntg-hub.vercel.app")}</div>
+                <div style="margin-top:20px">${BTN("Volver a VNTG Hub", "https://vntg-hub.onrender.com")}</div>
             `);
         }
 
@@ -276,8 +292,9 @@ const getEmailSubject = (type, data) => {
         "stock_alert":    `¡${data.productTitle} tiene stock! — VNTG Hub`,
         "order_status":   data.subject || "Estado de tu pedido — VNTG Hub",
         "support_reply":  "Respuesta de soporte — VNTG Hub",
-        "contact":        `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
-        "chat_summary":   "Transcripción de tu conversación — VNTG Hub",
+        "contact":          `Mensaje de contacto de ${data.nombre} — VNTG Hub`,
+        "contact_autoreply": "Recibimos tu mensaje — VNTG Hub",
+        "chat_summary":     "Transcripción de tu conversación — VNTG Hub",
         "reset_password": "Restablecer tu contraseña — VNTG Hub",
     };
     return subjects[type] || "Notificación — VNTG Hub";
@@ -309,7 +326,10 @@ const sendEmail = async (type, to, data) => {
 
     const mailOptions = { from, to, subject, html };
     if (type === "support_reply" && data.ticketId) {
-        mailOptions.messageId = `<vntg-ticket-${data.ticketId}@vntg-hub.vercel.app>`;
+        mailOptions.messageId = `<vntg-ticket-${data.ticketId}@vntg-hub.onrender.com>`;
+    }
+    if (type === "contact_autoreply" && data.contactId) {
+        mailOptions.messageId = `<vntg-contact-${data.contactId}@vntg-hub.onrender.com>`;
     }
     try {
         await transporter.sendMail(mailOptions);
@@ -371,7 +391,7 @@ const setAuthCookie = (res, token) => {
 
 app.use(
     cors({
-        origin: ["http://localhost:5173", "https://vntg-hub.vercel.app", /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/],
+        origin: ["http://localhost:5173", "https://vntg-hub.onrender.com", /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/],
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -1036,7 +1056,7 @@ app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
         );
 
         await sendEmail("reset_password", email, {
-            resetUrl: `https://vntg-hub.vercel.app/reset-password?email=${encodeURIComponent(email)}&token=${token}`,
+            resetUrl: `https://vntg-hub.onrender.com/reset-password?email=${encodeURIComponent(email)}&token=${token}`,
         });
 
         res.json({ message: "Si el email existe, recibirás un enlace" });
@@ -1197,7 +1217,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         // Si el descuento por puntos cubre el 100% de la orden, saltamos Mercado Pago
         if (totalFinal <= 0) {
             await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
-            return res.json({ init_point: `https://vntg-hub.vercel.app/pedido/${orderId}`, orderId, totalCero: true });
+            return res.json({ init_point: `https://vntg-hub.onrender.com/pedido/${orderId}`, orderId, totalCero: true });
         }
 
         // Para Mercado Pago prorrateamos los precios con el descuento aplicado
@@ -1227,9 +1247,9 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
                 notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
                 auto_return: "approved",
                 back_urls: {
-                    success: `https://vntg-hub.vercel.app/pedido/${orderId}`,
-                    failure: `https://vntg-hub.vercel.app/pedido/${orderId}`,
-                    pending: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                    success: `https://vntg-hub.onrender.com/pedido/${orderId}`,
+                    failure: `https://vntg-hub.onrender.com/pedido/${orderId}`,
+                    pending: `https://vntg-hub.onrender.com/pedido/${orderId}`,
                 },
                 external_reference: orderId,
                 binary_mode: true,
@@ -1610,7 +1630,7 @@ app.post("/api/orders/upload-proof", verifyToken, async (req, res) => {
                     title: "Comprobante Recibido",
                     message: `Hola ${userRow[0].name}, hemos recibido los datos de tu comprobante de pago para la orden #${orderId.slice(0, 8)}. Te avisaremos cuando el pago sea verificado por nuestro equipo.`,
                     btnText: "Ver mi pedido",
-                    btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                    btnUrl: `https://vntg-hub.onrender.com/pedido/${orderId}`,
                 });
             }
         } catch (e) {
@@ -1713,9 +1733,9 @@ app.post("/api/orders/:id/retry-payment", verifyToken, async (req, res) => {
                 notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
                 auto_return: "approved",
                 back_urls: {
-                    success: `https://vntg-hub.vercel.app/pedido/${id}`,
-                    failure: `https://vntg-hub.vercel.app/pedido/${id}`,
-                    pending: `https://vntg-hub.vercel.app/pedido/${id}`,
+                    success: `https://vntg-hub.onrender.com/pedido/${id}`,
+                    failure: `https://vntg-hub.onrender.com/pedido/${id}`,
+                    pending: `https://vntg-hub.onrender.com/pedido/${id}`,
                 },
                 external_reference: id,
                 binary_mode: true,
@@ -1855,7 +1875,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
                 title: "Compra Confirmada",
                 message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
                 btnText: "Ver mi pedido",
-                btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                btnUrl: `https://vntg-hub.onrender.com/pedido/${orderId}`,
             });
         }
 
@@ -1956,7 +1976,7 @@ app.put("/api/admin/orders/:id/verify-payment", verifyAdmin, async (req, res) =>
                     title: "Pago Confirmado",
                     message: `Hola ${userRow[0].name}, ¡tu pago por la orden #${id.slice(0, 8)} ha sido verificado y aprobado! Pronto comenzaremos con la preparación.`,
                     btnText: "Ver mi pedido",
-                    btnUrl: `https://vntg-hub.vercel.app/pedido/${id}`,
+                    btnUrl: `https://vntg-hub.onrender.com/pedido/${id}`,
                 });
             } catch (e) {
                 console.error("Error al enviar email:", e.message);
@@ -2246,35 +2266,35 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
                 title = "Compra Confirmada";
                 message = `Hola ${order.name}, ¡tu pago por la orden #${id.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
                 break;
             case "preparing":
                 subject = "Estamos preparando tu pedido";
                 title = "En Preparación";
                 message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0, 8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
                 break;
             case "ready":
                 subject = "¡Tu pedido está listo para retirar!";
                 title = "Listo para Retirar";
                 message = `Hola ${order.name}, tu pedido #${id.slice(0, 8)} ya está listo para que pases a retirarlo por nuestro local. ¡Te esperamos!`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
                 break;
             case "shipped":
                 subject = "¡Tu pedido va en camino!";
                 title = "Pedido Enviado";
                 message = `¡Tu colección está en viaje! Tu orden #${id.slice(0, 8)} ha sido despachada. ${trackingNumber ? `Puedes seguirlo con el código: <b>${trackingNumber}</b>` : ""}`;
                 btnText = "Seguir Envío";
-                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
                 break;
             case "delivered":
                 subject = "Tu pedido ha sido entregado";
                 title = "¡Entrega Exitosa!";
                 message = `Hola ${order.name}, según nuestros registros el pedido #${id.slice(0, 8)} ya está en tus manos. ¡Esperamos que disfrutes tus nuevas piezas!`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
+                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
                 break;
         }
 
@@ -2602,6 +2622,58 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
 });
 
 // --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
+const generateContactAutoreply = async (nombre, mensaje) => {
+    const systemPrompt = `Eres el agente de soporte automático de VNTG HUB. Generás una respuesta BREVÍSIMA (máximo 3 oraciones) para un cliente que usó el formulario de contacto.
+
+REGLAS ESTRICTAS:
+- Máximo 3 oraciones. Menos es mejor.
+- Respondé en español, tono amable.
+- Agradecé al cliente.
+- Si podés responder su consulta concreta, hacelo en 1 oración.
+- Si no estás seguro, decí que lo derivas a soporte humano.
+- Texto plano, sin markdown, sin placeholders, sin comillas.
+- No incluyas saludos ni despedidas. Solo el cuerpo.`;
+
+    const groqMessages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Nombre del cliente: ${nombre}\n\nMensaje del cliente:\n${mensaje}` },
+    ];
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${GROQ_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: groqMessages,
+                temperature: 0.7,
+                max_tokens: 512,
+            }),
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!groqRes.ok) {
+            const errText = await groqRes.text();
+            console.error("[contact-autoreply] Error Groq API:", groqRes.status, errText);
+            return null;
+        }
+
+        const groqData = await groqRes.json();
+        return groqData.choices?.[0]?.message?.content || null;
+    } catch (error) {
+        clearTimeout(timeout);
+        console.error("[contact-autoreply] Error:", error.message);
+        return null;
+    }
+};
+
 app.post("/api/contact", contactLimiter, async (req, res) => {
     const { nombre, email, mensaje } = req.body;
 
@@ -2612,16 +2684,29 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
     }
 
     try {
-        await db.query(
+        const [result] = await db.query(
             "INSERT INTO support_messages (nombre, email, mensaje) VALUES (?, ?, ?)",
             [nombre, email, mensaje]
         );
+        const insertId = result.insertId;
 
         // No bloqueamos la respuesta si el email falla
         sendEmail("contact", "soportehubvntg@gmail.com", { nombre, email, mensaje })
-            .catch(err => console.error("[contact] Error email:", err?.message));
+            .catch(err => console.error("[contact] Error email de notificación:", err?.message));
 
-        res.json({ message: "Mensaje recibido con éxito. Nos contactaremos pronto." });
+        // Auto-respuesta con IA
+        generateContactAutoreply(nombre, mensaje).then(respuestaIA => {
+            const payload = {
+                nombre,
+                mensaje,
+                respuesta: respuestaIA || "Gracias por contactarte con VNTG Hub. Hemos recibido tu mensaje y nuestro equipo de soporte lo revisará a la brevedad. Te responderemos pronto. ¡Gracias por tu paciencia!",
+                contactId: insertId,
+            };
+            sendEmail("contact_autoreply", email, payload)
+                .catch(err => console.error("[contact] Error auto-respuesta:", err?.message));
+        });
+
+        res.json({ message: "Mensaje recibido con éxito. Te enviamos una respuesta automática a tu correo." });
     } catch (error) {
         console.error("Error al enviar mensaje de contacto:", error);
         res.status(500).json({ error: "Error al enviar el mensaje" });
@@ -2735,6 +2820,9 @@ const PORT = process.env.PORT || 5000;
 // ─── Gmail API Poller ───
 const gmailPoller = new GmailPoller();
 
+// ─── Email Poller (IMAP) para auto-respuestas ───
+const emailPoller = new EmailPoller();
+
 app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 VNTG HUB activo en el puerto ${PORT}`);
 
@@ -2746,4 +2834,5 @@ app.listen(PORT, "0.0.0.0", async () => {
     }
 
     gmailPoller.start();
+    emailPoller.start();
 });
