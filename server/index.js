@@ -2760,9 +2760,6 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
             await db.query("UPDATE support_messages SET thread_id = ? WHERE id = ?", [emailResult.threadId, insertId]);
             console.log(`[contact] threadId=${emailResult.threadId} guardado para contact #${insertId}`);
 
-            // Registrar thread en el poller para velar por replies
-            emailPoller.watchThread(emailResult.threadId, insertId);
-
             // Guardar la auto-respuesta como registro del bot en el thread
             await db.query(
                 "INSERT INTO support_messages (nombre, email, mensaje, respuesta, status, thread_id, source) VALUES (?, ?, ?, ?, 'replied', ?, 'bot_reply')",
