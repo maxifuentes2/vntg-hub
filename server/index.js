@@ -2908,6 +2908,16 @@ app.listen(PORT, "0.0.0.0", async () => {
         }
     }
 
+    // Migración: agregar columna gmail_msg_id
+    try {
+        await db.query("ALTER TABLE support_messages ADD COLUMN gmail_msg_id VARCHAR(100) NULL");
+        console.log('[db] Migración gmail_msg_id OK');
+    } catch (e) {
+        if (!e.message.includes('Duplicate')) {
+            console.log('[db] Migración gmail_msg_id:', e.message);
+        }
+    }
+
     // Cargar configuración de envío (fallback a .env si la tabla no existe)
     try {
         await shipping.loadConfig(db);

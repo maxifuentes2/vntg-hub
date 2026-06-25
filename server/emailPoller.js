@@ -30,7 +30,31 @@ function extractBody(payload) {
     return '';
 }
 
-// Prompt para respuesta automática
+function stripQuoted(text) {
+    if (!text) return '';
+    // Buscar marcador de reply en español/inglés
+    const markers = [
+        /\nEl .+ escribió:\n/i,
+        /\nOn .+ wrote:\n/i,
+        /\n-{3,} Forwarded message -{3,}\n/i,
+        /\n_{10,}\n/i,
+    ];
+    let clean = text;
+    for (const marker of markers) {
+        const idx = clean.search(marker);
+        if (idx >= 0) {
+            clean = clean.substring(0, idx).trim();
+        }
+    }
+    // Sacar líneas citadas con >
+    const lines = clean.split('\n');
+    const filtered = lines.filter(l => !l.trim().startsWith('>'));
+    clean = filtered.join('\n').trim();
+    // Sacar URLs sueltas (las inline del HTML)
+    clean = clean.replace(/https?:\/\/\S+/g, '').trim();
+    return clean;
+}
+
 const SYSTEM_PROMPT = `Eres el asistente automático de VNTG HUB, una tienda argentina de coleccionismo vintage. Vendemos figuras, Funko Pops, cómics, manga, cartas, artículos de cine/películas, autos a escala, y más — de Marvel, DC, Star Wars, Disney, anime y cultura pop.
 
 REGLAS:
@@ -45,7 +69,6 @@ class EmailPoller {
     constructor() {
         this.gmail = null;
         this.interval = null;
-        this.seenIds = new Set();
     }
 
     async auth() {
@@ -65,7 +88,7 @@ class EmailPoller {
         }
     }
 
-    async callGroq(messages, system) {
+    async groq(messages, system) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
         try {
@@ -102,18 +125,15 @@ class EmailPoller {
     }
 
     async sendReply(to, text, threadId, inReplyTo) {
-        if (!this.gmail) await this.auth();
-        if (!this.gmail) return;
-
+        if (!this.gmail && !(await this.auth())) return;
         const msgId = `<vntg-auto-${Date.now()}@hubvntg.com>`;
-
         const lines = [
             'MIME-Version: 1.0',
             'Content-Type: text/plain; charset="UTF-8"',
             'Content-Transfer-Encoding: base64',
-            `From: VNTG Hub <hubvntg@gmail.com>`,
+            'From: VNTG Hub <hubvntg@gmail.com>',
             `To: ${to}`,
-            `Subject: =?UTF-8?B?${Buffer.from('Re: Tu consulta en VNTG Hub').toString('base64')}?=`,
+            'Subject: =?UTF-8?B?' + Buffer.from('Re: Tu consulta en VNTG Hub').toString('base64') + '?=',
             `Message-ID: ${msgId}`,
         ];
         if (inReplyTo) {
@@ -122,9 +142,7 @@ class EmailPoller {
         }
         lines.push('');
         lines.push(Buffer.from(text).toString('base64'));
-
         const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
-
         try {
             const res = await this.gmail.users.messages.send({
                 userId: 'me',
@@ -136,26 +154,33 @@ class EmailPoller {
         }
     }
 
+    async alreadyProcessed(gmailMsgId) {
+        const [rows] = await db.query(
+            "SELECT id FROM support_messages WHERE gmail_msg_id = ? LIMIT 1",
+            [gmailMsgId]
+        );
+        return rows.length > 0;
+    }
+
     async poll() {
         if (!this.gmail && !(await this.auth())) return;
 
         try {
+            const profile = await this.gmail.users.getProfile({ userId: 'me' });
+            const emailAddress = profile.data.emailAddress;
+
             const list = await this.gmail.users.messages.list({
                 userId: 'me',
                 maxResults: 20,
             });
 
             const messages = list.data.messages || [];
-            if (messages.length === 0) {
-                console.log('[email-poller] 0 mensajes en inbox');
-                return;
-            }
+            if (messages.length === 0) return;
 
-            console.log(`[email-poller] ${messages.length} mensajes en inbox`);
+            console.log(`[email-poller] ${messages.length} mensajes`);
 
             for (const msg of messages) {
-                if (this.seenIds.has(msg.id)) continue;
-                this.seenIds.add(msg.id);
+                if (await this.alreadyProcessed(msg.id)) continue;
 
                 let detail;
                 try {
@@ -165,7 +190,6 @@ class EmailPoller {
                         format: 'full',
                     });
                 } catch (e) {
-                    console.error(`[email-poller] Error get msg ${msg.id}:`, e.message);
                     continue;
                 }
 
@@ -177,35 +201,43 @@ class EmailPoller {
                 const fromName = fromMatch ? (fromMatch[1] || fromMatch[2]) : from;
                 const subject = getHeader(headers, 'subject');
                 const inReplyTo = getHeader(headers, 'in-reply-to');
-                const body = extractBody(payload).trim().substring(0, 2000);
+                const rawBody = extractBody(payload);
+                const body = stripQuoted(rawBody).substring(0, 2000);
                 const gmailThreadId = detail.data.threadId;
+                const dateStr = getHeader(headers, 'date');
 
                 // Ignorar nuestros propios mensajes
-                if (fromEmail === 'hubvntg@gmail.com') {
+                if (fromEmail === emailAddress || fromEmail === 'hubvntg@gmail.com') continue;
+
+                if (!body) {
+                    console.log(`[email-poller] Sin contenido de ${fromEmail}, salteando`);
                     continue;
                 }
 
-                console.log(`[email-poller] <<< De: ${fromEmail} Asunto: "${subject}" Thread: ${gmailThreadId}`);
+                console.log(`[email-poller] <<< ${fromEmail} "${subject?.substring(0, 60)}" thread=${gmailThreadId} body="${body?.substring(0, 80)}..."`);
 
-                // Buscar si ya tenemos un thread abierto para este thread de Gmail
+                // Marcar como procesado apenas lo vemos (evita reprocesar si falla)
+                await db.query(
+                    "UPDATE support_messages SET gmail_msg_id = ? WHERE gmail_msg_id = ?",
+                    [msg.id, msg.id]
+                ).catch(() => {});
+
+                // Buscar si ya tenemos un thread abierto
                 const [existing] = await db.query(
                     "SELECT id, thread_id FROM support_messages WHERE thread_id = ? AND source IS NULL LIMIT 1",
                     [gmailThreadId]
                 );
 
                 let contactId;
-
                 if (existing.length > 0) {
-                    // Reply en un thread existente
                     contactId = existing[0].id;
-                    console.log(`[email-poller] Reply en thread existente #${contactId}`);
+                    console.log(`[email-poller] Reply en thread #${contactId}`);
 
                     await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source) VALUES (?, ?, ?, 'pending', ?, 'email_reply')",
-                        [fromName, fromEmail, body, contactId]
+                        "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id, source, gmail_msg_id) VALUES (?, ?, ?, 'pending', ?, 'email_reply', ?)",
+                        [fromName, fromEmail, body, contactId, msg.id]
                     );
 
-                    // Obtener historial completo
                     const [history] = await db.query(
                         "SELECT * FROM support_messages WHERE id = ? OR thread_id = ? ORDER BY created_at ASC",
                         [contactId, contactId]
@@ -217,7 +249,7 @@ class EmailPoller {
                         return `${s}: ${t}`;
                     }).join('\n');
 
-                    const groqResp = await this.callGroq([
+                    const groqResp = await this.groq([
                         { role: 'user', content: `Historial:\n${conversation}\n\nRespondé al último mensaje del cliente.` }
                     ]);
 
@@ -230,16 +262,15 @@ class EmailPoller {
                         console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId}`);
                     }
                 } else {
-                    // Nuevo mensaje entrante (no es reply a un thread nuestro)
                     console.log(`[email-poller] Nuevo contacto de ${fromEmail}`);
 
                     const [result] = await db.query(
-                        "INSERT INTO support_messages (nombre, email, mensaje, status, thread_id) VALUES (?, ?, ?, 'pending', ?)",
-                        [fromName, fromEmail, body, gmailThreadId]
+                        "INSERT INTO support_messages (nombre, email, mensaje, status, gmail_msg_id) VALUES (?, ?, ?, 'pending', ?)",
+                        [fromName, fromEmail, body, msg.id]
                     );
                     contactId = result.insertId;
 
-                    const groqResp = await this.callGroq([
+                    const groqResp = await this.groq([
                         { role: 'user', content: `Un cliente escribió: "${body}". Respondé amablemente.` }
                     ]);
 
@@ -252,7 +283,6 @@ class EmailPoller {
                         console.log(`[email-poller] Nuevo contacto respondido: #${contactId}`);
                     }
 
-                    // Marcar thread en la DB
                     await db.query(
                         "UPDATE support_messages SET thread_id = ? WHERE id = ?",
                         [gmailThreadId, contactId]
@@ -260,7 +290,7 @@ class EmailPoller {
                 }
             }
         } catch (e) {
-            console.error('[email-poller] Error en poll:', e.message);
+            console.error('[email-poller] Error:', e.message);
         }
     }
 
