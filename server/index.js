@@ -102,8 +102,8 @@ const HEADER = `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px 16px 0 0;border-bottom:1px solid #eee">
         <tr>
             <td align="center" style="padding:32px 24px 24px">
-                <a href="https://vntg-hub.onrender.com" style="text-decoration:none">
-                    <img src="https://vntg-hub.onrender.com/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+                <a href="https://vntg-hub.vercel.app" style="text-decoration:none">
+                    <img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
                 </a>
             </td>
         </tr>
@@ -128,7 +128,7 @@ const FOOTER_SOCIAL = `
                 </a>
             </td>
             <td style="padding:0 8px">
-                <a href="https://vntg-hub.onrender.com" style="display:inline-block;text-decoration:none" target="_blank">
+                <a href="https://vntg-hub.vercel.app" style="display:inline-block;text-decoration:none" target="_blank">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" fill="#f97316"/><circle cx="12" cy="12" r="3" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
                 </a>
             </td>
@@ -186,7 +186,7 @@ const buildEmailHtml = (type, data) => {
                     <span style="font-size:36px;font-weight:bold;letter-spacing:12px;color:#1a1a1a;font-family:monospace">${data.code}</span>
                 </div>
                 <p style="font-size:12px;color:#999;margin:0 0 24px;font-family:Arial,sans-serif">Válido por 5 minutos. Si no solicitaste este código, ignorá este mensaje.</p>
-                ${BTN("Ir a la Tienda", "https://vntg-hub.onrender.com")}
+                ${BTN("Ir a la Tienda", "https://vntg-hub.vercel.app")}
             `);
 
         case "stock_alert":
@@ -197,7 +197,7 @@ const buildEmailHtml = (type, data) => {
                     <p style="font-size:15px;font-weight:bold;color:#15803d;margin:0;font-family:Arial,sans-serif">${data.productTitle}</p>
                 </div>
                 <p style="font-size:13px;color:#666;margin:0 0 24px;font-family:Arial,sans-serif">¡No esperes demasiado! Este producto suele agotarse rápido.</p>
-                ${BTN("Ver producto", `https://vntg-hub.onrender.com/producto/${data.productId}`)}
+                ${BTN("Ver producto", `https://vntg-hub.vercel.app/producto/${data.productId}`)}
             `);
 
         case "order_status":
@@ -206,7 +206,7 @@ const buildEmailHtml = (type, data) => {
                 <p style="font-size:14px;color:#333;margin:0 0 24px;line-height:1.6;font-family:Arial,sans-serif">${data.message}</p>
                 ${data.btnText && data.btnUrl ? `<div style="margin:0 0 16px">${BTN(data.btnText, data.btnUrl)}</div>` : ""}
                 <div style="border-top:1px solid #eee;margin:20px 0 0;padding-top:20px;text-align:center">
-                    <a href="https://vntg-hub.onrender.com" style="color:#f97316;font-size:13px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif">Ir a la Tienda →</a>
+                    <a href="https://vntg-hub.vercel.app" style="color:#f97316;font-size:13px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif">Ir a la Tienda →</a>
                 </div>
             `);
 
@@ -221,7 +221,7 @@ const buildEmailHtml = (type, data) => {
                     <p style="font-size:11px;color:#f97316;margin:0 0 6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold">Nuestra respuesta</p>
                     <p style="font-size:13px;color:#1a1a1a;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.respuesta}</p>
                 </div>
-                ${BTN("Ir a mi cuenta", "https://vntg-hub.onrender.com/perfil")}
+                ${BTN("Ir a mi cuenta", "https://vntg-hub.vercel.app/perfil")}
             `);
 
         case "contact":
@@ -245,7 +245,7 @@ const buildEmailHtml = (type, data) => {
                     <p style="font-size:13px;color:#1a1a1a;margin:0;line-height:1.5;font-family:Arial,sans-serif">${data.respuesta}</p>
                 </div>
                 <p style="font-size:12px;color:#999;margin:0 0 20px;font-family:Arial,sans-serif">Si necesitás más ayuda, un agente humano te responderá a la brevedad.</p>
-                ${BTN("Ir a VNTG Hub", "https://vntg-hub.onrender.com")}
+                ${BTN("Ir a VNTG Hub", "https://vntg-hub.vercel.app")}
             `);
 
         case "chat_summary": {
@@ -272,7 +272,7 @@ const buildEmailHtml = (type, data) => {
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #eee;border-radius:12px;padding:16px">
                     ${chatHtml}
                 </table>
-                <div style="margin-top:20px">${BTN("Volver a VNTG Hub", "https://vntg-hub.onrender.com")}</div>
+                <div style="margin-top:20px">${BTN("Volver a VNTG Hub", "https://vntg-hub.vercel.app")}</div>
             `);
         }
 
@@ -1270,7 +1270,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         // Si el descuento por puntos cubre el 100% de la orden, saltamos Mercado Pago
         if (totalFinal <= 0) {
             await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
-            return res.json({ init_point: `https://vntg-hub.onrender.com/pedido/${orderId}`, orderId, totalCero: true });
+            return res.json({ init_point: `https://vntg-hub.vercel.app/pedido/${orderId}`, orderId, totalCero: true });
         }
 
         // Para Mercado Pago prorrateamos los precios con el descuento aplicado
@@ -1300,9 +1300,9 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
                 notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
                 auto_return: "approved",
                 back_urls: {
-                    success: `https://vntg-hub.onrender.com/pedido/${orderId}`,
-                    failure: `https://vntg-hub.onrender.com/pedido/${orderId}`,
-                    pending: `https://vntg-hub.onrender.com/pedido/${orderId}`,
+                    success: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                    failure: `https://vntg-hub.vercel.app/pedido/${orderId}`,
+                    pending: `https://vntg-hub.vercel.app/pedido/${orderId}`,
                 },
                 external_reference: orderId,
                 binary_mode: true,
@@ -1683,7 +1683,7 @@ app.post("/api/orders/upload-proof", verifyToken, async (req, res) => {
                     title: "Comprobante Recibido",
                     message: `Hola ${userRow[0].name}, hemos recibido los datos de tu comprobante de pago para la orden #${orderId.slice(0, 8)}. Te avisaremos cuando el pago sea verificado por nuestro equipo.`,
                     btnText: "Ver mi pedido",
-                    btnUrl: `https://vntg-hub.onrender.com/pedido/${orderId}`,
+                    btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
                 });
             }
         } catch (e) {
@@ -1786,9 +1786,9 @@ app.post("/api/orders/:id/retry-payment", verifyToken, async (req, res) => {
                 notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
                 auto_return: "approved",
                 back_urls: {
-                    success: `https://vntg-hub.onrender.com/pedido/${id}`,
-                    failure: `https://vntg-hub.onrender.com/pedido/${id}`,
-                    pending: `https://vntg-hub.onrender.com/pedido/${id}`,
+                    success: `https://vntg-hub.vercel.app/pedido/${id}`,
+                    failure: `https://vntg-hub.vercel.app/pedido/${id}`,
+                    pending: `https://vntg-hub.vercel.app/pedido/${id}`,
                 },
                 external_reference: id,
                 binary_mode: true,
@@ -1928,7 +1928,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
                 title: "Compra Confirmada",
                 message: `Hola ${row.name}, ¡tu pago por la orden #${orderId.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`,
                 btnText: "Ver mi pedido",
-                btnUrl: `https://vntg-hub.onrender.com/pedido/${orderId}`,
+                btnUrl: `https://vntg-hub.vercel.app/pedido/${orderId}`,
             });
         }
 
@@ -2029,7 +2029,7 @@ app.put("/api/admin/orders/:id/verify-payment", verifyAdmin, async (req, res) =>
                     title: "Pago Confirmado",
                     message: `Hola ${userRow[0].name}, ¡tu pago por la orden #${id.slice(0, 8)} ha sido verificado y aprobado! Pronto comenzaremos con la preparación.`,
                     btnText: "Ver mi pedido",
-                    btnUrl: `https://vntg-hub.onrender.com/pedido/${id}`,
+                    btnUrl: `https://vntg-hub.vercel.app/pedido/${id}`,
                 });
             } catch (e) {
                 console.error("Error al enviar email:", e.message);
@@ -2319,35 +2319,35 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
                 title = "Compra Confirmada";
                 message = `Hola ${order.name}, ¡tu pago por la orden #${id.slice(0, 8)} ha sido aprobado con éxito! Pronto comenzaremos con la preparación de tus tesoros.`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case "preparing":
                 subject = "Estamos preparando tu pedido";
                 title = "En Preparación";
                 message = `¡Buenas noticias, ${order.name}! Tu pedido #${id.slice(0, 8)} ya está siendo cuidadosamente embalado por nuestro equipo.`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case "ready":
                 subject = "¡Tu pedido está listo para retirar!";
                 title = "Listo para Retirar";
                 message = `Hola ${order.name}, tu pedido #${id.slice(0, 8)} ya está listo para que pases a retirarlo por nuestro local. ¡Te esperamos!`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case "shipped":
                 subject = "¡Tu pedido va en camino!";
                 title = "Pedido Enviado";
                 message = `¡Tu colección está en viaje! Tu orden #${id.slice(0, 8)} ha sido despachada. ${trackingNumber ? `Puedes seguirlo con el código: <b>${trackingNumber}</b>` : ""}`;
                 btnText = "Seguir Envío";
-                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
             case "delivered":
                 subject = "Tu pedido ha sido entregado";
                 title = "¡Entrega Exitosa!";
                 message = `Hola ${order.name}, según nuestros registros el pedido #${id.slice(0, 8)} ya está en tus manos. ¡Esperamos que disfrutes tus nuevas piezas!`;
                 btnText = "Ver mi pedido";
-                btnUrl = `https://vntg-hub.onrender.com/pedido/${id}`;
+                btnUrl = `https://vntg-hub.vercel.app/pedido/${id}`;
                 break;
         }
 
