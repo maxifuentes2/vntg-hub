@@ -21,12 +21,12 @@ const CardImage = ({ item }) => {
     })();
     const hoverImg = gallery.find(img => img && img !== item.images);
     if (!hoverImg) {
-        return <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />;
+        return <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />;
     }
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <img src={item.images} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500" />
-            <img src={hoverImg} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <img src={item.images} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500 rounded-2xl" />
+            <img src={hoverImg} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
         </div>
     );
 };
@@ -183,7 +183,7 @@ const DetalleProducto = () => {
                                         const currentIndex = fotosUnicas.indexOf(imgPrincipal);
                                         setImgPrincipal(fotosUnicas[currentIndex - 1]);
                                     }}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 backdrop-blur-sm"
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:scale-110 backdrop-blur-sm"
                                 >
                                     <ChevronLeft size={24} />
                                 </button>
@@ -196,7 +196,7 @@ const DetalleProducto = () => {
                                         const currentIndex = fotosUnicas.indexOf(imgPrincipal);
                                         setImgPrincipal(fotosUnicas[currentIndex + 1]);
                                     }}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 backdrop-blur-sm"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-white p-3 rounded-full shadow-xl opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:scale-110 backdrop-blur-sm"
                                 >
                                     <ChevronRight size={24} />
                                 </button>
@@ -209,11 +209,13 @@ const DetalleProducto = () => {
                                     <button 
                                         key={fotoUrl}
                                         onClick={() => setImgPrincipal(fotoUrl)}
-                                        className={`aspect-square transition-all duration-300 rounded-2xl overflow-hidden ${imgPrincipal === fotoUrl ? 'ring-2 ring-brand-orange ring-offset-4 ring-offset-zinc-50 dark:ring-offset-[#111] scale-95' : 'opacity-40 hover:opacity-100 hover:scale-95'}`}
+                                        className={`aspect-square transition-all duration-300 flex items-center justify-center ${imgPrincipal === fotoUrl ? 'scale-95' : 'opacity-40 hover:opacity-100 hover:scale-95'}`}
                                     >
-                                        <div className="w-full h-full bg-transparent flex items-center justify-center">
-                                            <img src={fotoUrl} alt="Thumb" className="w-full h-full object-contain drop-shadow-md" />
-                                        </div>
+                                        <img 
+                                            src={fotoUrl} 
+                                            alt="Thumb" 
+                                            className={`max-w-full max-h-full object-contain drop-shadow-md rounded-2xl transition-all ${imgPrincipal === fotoUrl ? 'ring-2 ring-brand-orange ring-offset-4 ring-offset-zinc-50 dark:ring-offset-[#111]' : ''}`} 
+                                        />
                                     </button>
                                 ))}
                             </div>
@@ -407,7 +409,7 @@ const DetalleProducto = () => {
                         <img 
                             src={imgPrincipal} 
                             style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})` }} 
-                            className={`max-w-full max-h-full object-contain drop-shadow-2xl ${zoomLevel > 1 ? (isDraggingCursor ? 'cursor-grabbing' : 'cursor-grab') : ''} ${zoomLevel > 1 ? 'transition-none' : 'transition-transform duration-300'}`}
+                            className={`max-w-full max-h-full object-contain drop-shadow-2xl rounded-2xl ${zoomLevel > 1 ? (isDraggingCursor ? 'cursor-grabbing' : 'cursor-grab') : ''} ${zoomLevel > 1 ? 'transition-none' : 'transition-transform duration-300'}`}
                             alt="Zoom" 
                             onMouseDown={handleMouseDown}
                             onMouseMove={handleMouseMove}

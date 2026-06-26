@@ -23,7 +23,7 @@ const CardImage = ({ item }) => {
 
     if (!hoverImg) {
         return item.images
-            ? <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />
+            ? <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
             : <Box size={40} className="text-zinc-300 dark:text-white/5" />;
     }
 
@@ -32,12 +32,12 @@ const CardImage = ({ item }) => {
             <img
                 src={item.images}
                 alt={item.title}
-                className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500"
+                className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500 rounded-2xl"
             />
             <img
                 src={hoverImg}
                 alt={item.title}
-                className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
             />
         </div>
     );
@@ -469,7 +469,7 @@ export default function Inicio() {
                             </div>
                         </div>
                     ) : (
-                        <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden">
+                        <div className="relative w-full h-[200px] md:h-[300px] group overflow-hidden">
                             <img
                                 src={seccion.banner}
                                 onError={(e) => {

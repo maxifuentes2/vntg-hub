@@ -948,15 +948,15 @@ export default function AdminPanel() {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Precio</label>
-                                            <input type="number" placeholder="Precio" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.price || ''} onChange={e => setProductForm({ ...productForm, price: Number(e.target.value) })} />
+                                            <input type="number" placeholder="Precio" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.price === 0 ? 0 : productForm.price || ''} onChange={e => setProductForm({ ...productForm, price: e.target.value === '' ? '' : Number(e.target.value) })} />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Descuento (%)</label>
-                                            <input type="number" placeholder="Descuento (%)" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.discount_percentage || 0} onChange={e => setProductForm({ ...productForm, discount_percentage: Number(e.target.value) })} />
+                                            <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Descuento</label>
+                                            <input type="number" placeholder="Descuento (%)" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.discount_percentage === 0 ? 0 : productForm.discount_percentage || ''} onChange={e => setProductForm({ ...productForm, discount_percentage: e.target.value === '' ? '' : Number(e.target.value) })} />
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-zinc-500 mb-1 ml-2 uppercase tracking-wider">Stock</label>
-                                            <input type="number" placeholder="Stock" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.stock || ''} onChange={e => setProductForm({ ...productForm, stock: Number(e.target.value) })} />
+                                            <input type="number" placeholder="Stock" required className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm outline-none dark:text-white border border-transparent focus:border-brand-orange transition-all" value={productForm.stock === 0 ? 0 : productForm.stock || ''} onChange={e => setProductForm({ ...productForm, stock: e.target.value === '' ? '' : Number(e.target.value) })} />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">

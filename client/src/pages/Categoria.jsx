@@ -30,13 +30,13 @@ const CardImage = ({ item }) => {
     const hoverImg = gallery.find(img => img && img !== item.images);
 
     if (!hoverImg) {
-        return <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />;
+        return <img src={item.images} alt={item.title} className="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />;
     }
 
     return (
         <div className="relative w-full h-full flex items-center justify-center">
-            <img src={item.images} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500" />
-            <img src={hoverImg} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <img src={item.images} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-90 group-hover:opacity-0 transition-opacity duration-500 rounded-2xl" />
+            <img src={hoverImg} alt={item.title} className="absolute max-w-full max-h-full object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
         </div>
     );
 };
@@ -210,7 +210,7 @@ const Categoria = () => {
     return (
         <div className="w-full bg-transparent min-h-screen text-zinc-900 dark:text-white transition-colors duration-300 relative">
 
-            <section className="relative w-full h-[400px] md:h-[500px] group overflow-hidden border-b border-zinc-100 dark:border-zinc-800">
+            <section className="relative w-full h-[200px] md:h-[300px] group overflow-hidden border-b border-zinc-100 dark:border-zinc-800">
                 <img 
                     src={bannerImg} 
                     className="w-full h-full object-cover opacity-60 dark:opacity-40 transition-transform duration-[2000ms]" 

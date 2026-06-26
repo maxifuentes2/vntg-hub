@@ -2340,6 +2340,18 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
             return res.status(404).json({ error: "Orden no encontrada" });
         const order = orderData[0];
 
+        if (status === "cancelled" && order.status !== "cancelled") {
+            const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [id]);
+            for (const item of items) {
+                await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+            }
+            
+            // Revertir puntos usados (si los hubo)
+            if (order.points_used > 0 && order.email) {
+                await db.query("UPDATE users SET points = points + ? WHERE email = ?", [order.points_used, order.email]);
+            }
+        }
+
         await db.query("UPDATE orders SET status = ? WHERE id = ?", [
             status,
             id,
