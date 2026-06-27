@@ -16,7 +16,7 @@ Plataforma completa con catálogo, carrito, wishlist, autenticación, pagos (Mer
 - Filtros por categoría, franquicia, rango de precio y búsqueda por texto
 - Búsqueda semántica asistida por Gemini (Google Generative AI)
 - Ordenamiento por precio (menor/mayor), nombre y novedades
-- Vista de grilla con cards glassmorphism
+- Vista de grilla con cards animadas
 - Vista detalle con galería interactiva (hover swap + zoom modal con drag)
 - Especificaciones técnicas en acordeón
 - Productos relacionados
