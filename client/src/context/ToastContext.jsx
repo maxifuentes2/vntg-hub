@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { createContext, useState, useContext } from 'react';
 import { CircleCheck, X, CircleAlert, Info } from 'lucide-react';
 

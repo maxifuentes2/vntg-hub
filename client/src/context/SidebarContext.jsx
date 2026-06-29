@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { createContext, useState, useContext, useCallback, useMemo } from 'react';
 
 const SidebarContext = createContext();

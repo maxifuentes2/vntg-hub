@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     X, Tag, ChevronRight, LayoutGrid, CarFront, Film, 

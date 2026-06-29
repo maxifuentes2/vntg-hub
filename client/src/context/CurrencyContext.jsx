@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 const CurrencyContext = createContext();

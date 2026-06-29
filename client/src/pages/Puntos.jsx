@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { Star, ShoppingCart, Gift, TrendingUp, ShieldCheck } from 'lucide-react';
 
 export default function Puntos() {

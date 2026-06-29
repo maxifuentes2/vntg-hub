@@ -1,3 +1,4 @@
+// IMPORTACIONES
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -71,6 +72,7 @@ const CRYPTO_ADDRESSES = {
 
 // Tablas creadas manualmente en TiDB Cloud
 
+// INICIALIZACION DE EXPRESS Y MIDDLEWARES
 const app = express();
 app.set('trust proxy', 1);
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -81,7 +83,7 @@ const genAI = process.env.GEMINI_API_KEY
     ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
     : null;
 
-// --- Configuración de nodemailer (fallback directo) ---
+// Configuración de nodemailer (fallback directo) ---
 const createTransporter = (prefix) => {
     const host = process.env[`${prefix}HOST`] || "smtp.gmail.com";
     const port = parseInt(process.env[`${prefix}PORT`] || "587");
@@ -407,7 +409,7 @@ const sendEmail = async (type, to, data) => {
     }
 };
 
-// --- SEGURIDAD: Rate limiting ---
+// SEGURIDAD: Rate limiting ---
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
@@ -437,7 +439,7 @@ const lookupLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// --- Helper para cookie httpOnly JWT ---
+// Helper para cookie httpOnly JWT ---
 const isLocalhost = (origin) => origin && (origin.includes("localhost") || origin.includes("192.168.") || origin.includes("127.0.0.1"));
 const setAuthCookie = (res, token) => {
     if (!token) {
@@ -468,7 +470,7 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// --- SEGURIDAD: Cabeceras HTTP ---
+// SEGURIDAD: Cabeceras HTTP ---
 app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
@@ -491,7 +493,7 @@ const slugify = (text) => {
         .replace(/-+/g, "-");
 };
 
-// --- MIDDLEWARE: Verificación de JWT para usuarios autenticados ---
+// MIDDLEWARE: Verificación de JWT para usuarios autenticados ---
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.vntg_token || req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ error: "No autorizado" });
@@ -504,7 +506,7 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-// --- USUARIO ACTUAL (datos frescos) ---
+// USUARIO ACTUAL (datos frescos) ---
 app.get("/api/user", verifyToken, async (req, res) => {
     try {
         const [users] = await db.query(
@@ -519,7 +521,7 @@ app.get("/api/user", verifyToken, async (req, res) => {
     }
 });
 
-// --- PRODUCTOS ---
+// PRODUCTOS ---
 app.get("/api/products", async (req, res) => {
     const { categoryId, q, minPrice, maxPrice, franchise } = req.query;
     let sql = "SELECT p.* FROM products p LEFT JOIN categories c ON p.categoryId = c.id WHERE 1=1";
@@ -578,7 +580,7 @@ app.get("/api/products", async (req, res) => {
             }
         });
 
-        // --- EXPANSIÓN SEMÁNTICA CON IA (GEMINI) ---
+        // EXPANSIÓN SEMÁNTICA CON IA (GEMINI) ---
         // Se mantiene como capa extra de inteligencia
         if (normalizedQ.length > 3) {
             try {
@@ -702,7 +704,7 @@ app.get("/api/categories", async (req, res) => {
     }
 });
 
-// --- RUTAS DE WISHLIST (protegidas con JWT) ---
+// RUTAS DE WISHLIST (protegidas con JWT) ---
 app.get("/api/wishlist/:userId", verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -750,7 +752,7 @@ app.delete("/api/wishlist/:userId", verifyToken, async (req, res) => {
     }
 });
 
-// --- PERFIL DE USUARIO (protegido con JWT) ---
+// PERFIL DE USUARIO (protegido con JWT) ---
 app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
     const { field, value } = req.body;
     const allowedFields = ["address", "city", "province", "zip_code", "phone", "dni"];
@@ -787,7 +789,7 @@ app.put("/api/auth/update-profile", verifyToken, async (req, res) => {
     }
 });
 
-// --- INTERESES DE USUARIO (protegido con JWT) ---
+// INTERESES DE USUARIO (protegido con JWT) ---
 
 app.get("/api/auth/interests", verifyToken, async (req, res) => {
     try {
@@ -823,7 +825,7 @@ app.put("/api/auth/interests", verifyToken, async (req, res) => {
     }
 });
 
-// --- DIRECCIONES MÚLTIPLES (protegido con JWT) ---
+// DIRECCIONES MÚLTIPLES (protegido con JWT) ---
 
 app.get("/api/addresses", verifyToken, async (req, res) => {
     try {
@@ -924,7 +926,7 @@ app.delete("/api/addresses/:id", verifyToken, async (req, res) => {
     }
 });
 
-// --- AUTENTICACIÓN ---
+// AUTENTICACIÓN ---
 
 app.post("/api/auth/register", authLimiter, async (req, res) => {
     const { name, email, password, dni } = req.body;
@@ -968,7 +970,7 @@ app.post("/api/auth/login/local", authLimiter, async (req, res) => {
         const valid = await bcrypt.compare(password, users[0].password);
         if (!valid) return res.status(401).json({ error: "Mail y/o contraseña incorrecta" });
 
-        // --- LÓGICA DE DISPOSITIVO DE CONFIANZA ---
+        // LÓGICA DE DISPOSITIVO DE CONFIANZA ---
         if (deviceToken) {
             const [trusted] = await db.query(
                 "SELECT * FROM trusted_devices WHERE user_id = ? AND device_token = ? AND expires_at > NOW()",
@@ -1101,13 +1103,13 @@ app.post("/api/auth/google", authLimiter, async (req, res) => {
     }
 });
 
-// --- CERRAR SESIÓN (limpiar cookie) ---
+// CERRAR SESIÓN (limpiar cookie) ---
 app.post("/api/auth/logout", (req, res) => {
     setAuthCookie(res, null);
     res.json({ message: "Sesión cerrada" });
 });
 
-// --- RESTABLECER CONTRASEÑA ---
+// RESTABLECER CONTRASEÑA ---
 app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email requerido" });
@@ -1157,7 +1159,7 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
     }
 });
 
-// --- DETALLE DE ORDEN ESPECÍFICA (protegida con JWT) ---
+// DETALLE DE ORDEN ESPECÍFICA (protegida con JWT) ---
 app.get("/api/orders/detail/:id", verifyToken, async (req, res) => {
     const { id } = req.params;
     try {
@@ -1188,7 +1190,7 @@ app.get("/api/orders/detail/:id", verifyToken, async (req, res) => {
     }
 });
 
-// --- HISTORIAL DE ÓRDENES (Usuario normal, protegido con JWT) ---
+// HISTORIAL DE ÓRDENES (Usuario normal, protegido con JWT) ---
 app.get("/api/orders/:userId", verifyToken, async (req, res) => {
     try {
         // CORRECCIÓN APLICADA AQUÍ: Se añadieron todos los estados válidos
@@ -1211,7 +1213,7 @@ const generatePatenteId = () => {
     return `${rand(letters)}${rand(letters)}${rand(digits)}${rand(digits)}${rand(digits)}${rand(letters)}${rand(letters)}`;
 };
 
-// --- CHECKOUT (protegido con JWT) ---
+// CHECKOUT (protegido con JWT) ---
 app.post("/api/checkout", verifyToken, async (req, res) => {
     const { cart, shipping: shippingData, shippingType, puntosAUsar } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -1248,7 +1250,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         
         const totalPrevio = subtotal + shippingCost;
 
-        // --- LÓGICA DE CANJE DE PUNTOS ---
+        // LÓGICA DE CANJE DE PUNTOS ---
         let descuento = 0;
         let puntosARestar = 0;
 
@@ -1336,7 +1338,7 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
     }
 });
 
-// --- CONFIG DE ENVÍOS ---
+// CONFIG DE ENVÍOS ---
 app.get("/api/shipping/config", async (req, res) => {
     const cfg = await shipping.loadConfig(db);
     res.json({
@@ -1447,7 +1449,7 @@ const getCryptoPrices = async () => {
     }
 };
 
-// --- CHECKOUT CRYPTO ---
+// CHECKOUT CRYPTO ---
 app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
     const { cart, shipping: shippingData, shippingType, puntosAUsar, payCurrency } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -1582,7 +1584,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
     }
 });
 
-// --- CHECKOUT TRANSFERENCIA BANCARIA ---
+// CHECKOUT TRANSFERENCIA BANCARIA ---
 app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
     const { cart, shipping: shippingData, shippingType, puntosAUsar } = req.body;
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -1683,7 +1685,7 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
     }
 });
 
-// --- ENVIAR DATOS DE COMPROBANTE DE PAGO ---
+// ENVIAR DATOS DE COMPROBANTE DE PAGO ---
 app.post("/api/orders/upload-proof", verifyToken, async (req, res) => {
     const { orderId, titular, banco, nroOperacion } = req.body;
     if (!orderId) return res.status(400).json({ error: "Falta orderId" });
@@ -1730,9 +1732,7 @@ app.post("/api/orders/upload-proof", verifyToken, async (req, res) => {
     }
 });
 
-// ==========================================
-// --- CARRITO PERSISTIDO (protegido con JWT) ---
-// ==========================================
+// CARRITO PERSISTIDO (protegido con JWT) ---
 
 app.get("/api/cart/:userId", verifyToken, async (req, res) => {
     try {
@@ -1776,11 +1776,9 @@ app.post("/api/cart/sync", verifyToken, async (req, res) => {
     }
 });
 
-// ==========================================
-// --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
-// ==========================================
+// WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
 
-// --- REINTENTAR PAGO PARA ÓRDENES PENDIENTES ---
+// REINTENTAR PAGO PARA ÓRDENES PENDIENTES ---
 app.post("/api/orders/:id/retry-payment", verifyToken, async (req, res) => {
     const { id } = req.params;
     try {
@@ -1913,9 +1911,7 @@ app.post("/api/orders/:id/retry-crypto-payment", verifyToken, async (req, res) =
     }
 });
 
-// ==========================================
-// --- WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
-// ==========================================
+// WEBHOOK DE MERCADOPAGO (NOTIFICACIONES) ---
 
 app.post("/api/webhooks/mercadopago", async (req, res) => {
     try {
@@ -1974,7 +1970,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
 
 
 
-// --- CONSULTAR ESTADO PAGO CRYPTO / TRANSFER ---
+// CONSULTAR ESTADO PAGO CRYPTO / TRANSFER ---
 app.get("/api/order/payment-status/:orderId", verifyToken, async (req, res) => {
     const { orderId } = req.params;
     try {
@@ -1998,7 +1994,7 @@ app.get("/api/order/payment-status/:orderId", verifyToken, async (req, res) => {
     }
 });
 
-// --- TASA ARS/USD ---
+// TASA ARS/USD ---
 app.get("/api/tasa-usd", async (req, res) => {
     try {
         const tasa = await getTasaUsd();
@@ -2009,9 +2005,7 @@ app.get("/api/tasa-usd", async (req, res) => {
     }
 });
 
-// ==========================================
-// --- RUTAS DE ADMINISTRACIÓN (CRUD y Órdenes) ---
-// ==========================================
+// RUTAS DE ADMINISTRACIÓN (CRUD y Órdenes) ---
 
 const verifyAdmin = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -2032,7 +2026,7 @@ const verifyAdmin = (req, res, next) => {
     }
 };
 
-// --- VERIFICAR PAGO (admin) ---
+// VERIFICAR PAGO (admin) ---
 app.put("/api/admin/orders/:id/verify-payment", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
@@ -2357,7 +2351,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
             id,
         ]);
 
-        // --- LÓGICA DE ASIGNACIÓN DE PUNTOS ACUMULADOS ---
+        // LÓGICA DE ASIGNACIÓN DE PUNTOS ACUMULADOS ---
         const yaTeniaPuntos = ["approved", "delivered"].includes(order.status);
         const calificaParaPuntos = ["approved", "delivered"].includes(status);
 
@@ -2370,7 +2364,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
                 ]);
             }
         }
-        // ------------------------------------------------
+        //---------------------------------------------
 
         let subject = "",
             title = "",
@@ -2436,7 +2430,7 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
     }
 });
 
-// --- ELIMINACIÓN COMPLETA DE ORDEN (admin) ---
+// ELIMINACIÓN COMPLETA DE ORDEN (admin) ---
 app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
@@ -2475,9 +2469,8 @@ app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
     }
 });
 
-// ==========================================
 
-// --- SHIPPING CONFIG (admin) ---
+// SHIPPING CONFIG (admin) ---
 app.get("/api/admin/shipping-config", verifyAdmin, async (req, res) => {
     const cfg = await shipping.loadConfig(db);
     res.json(cfg);
@@ -2499,9 +2492,8 @@ app.put("/api/admin/shipping-config", verifyAdmin, async (req, res) => {
     }
 });
 
-// ==========================================
 
-// --- LOOKUP DE ORDEN POR ID (para chatbot / consulta pública) ---
+// LOOKUP DE ORDEN POR ID (para chatbot / consulta pública) ---
 app.post("/api/orders/lookup", lookupLimiter, async (req, res) => {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "Número de orden requerido" });
@@ -2524,7 +2516,7 @@ app.post("/api/orders/lookup", lookupLimiter, async (req, res) => {
     }
 });
 
-// --- CHATBOT IA (GROQ - LLAMA 3) ---
+// CHATBOT IA (GROQ - LLAMA 3) ---
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
@@ -2754,7 +2746,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
     }
 });
 
-// --- RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
+// RUTA DE CONTACTO (MODIFICADA PARA PERSISTENCIA) ---
 const generateContactAutoreply = async (nombre, mensaje, motivo) => {
     // Obtener catálogo y franquicias en tiempo real (igual que el chatbot)
     let catalogo = '';
@@ -2943,7 +2935,7 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
     }
 });
 
-// --- RUTAS DE PANEL DE SOPORTE ---
+// RUTAS DE PANEL DE SOPORTE ---
 app.get("/api/support/messages", verifySupport, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT * FROM support_messages ORDER BY created_at DESC");
@@ -3041,7 +3033,7 @@ app.post("/api/support/messages/bulk-delete", verifySupport, async (req, res) =>
     }
 });
 
-// --- PURGA AFK ---
+// PURGA AFK ---
 setInterval(async () => {
     try {
         const [expired] = await db.query(
@@ -3071,7 +3063,7 @@ setInterval(async () => {
     }
 }, 60000);
 
-// --- AUTO-CLOSE SUPPORT TICKETS ---
+// AUTO-CLOSE SUPPORT TICKETS ---
 // Cierra los tickets respondidos que tengan más de 48 horas sin respuesta del usuario
 setInterval(async () => {
     try {

@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { FileText } from 'lucide-react';
 
 export default function Terminos() {

@@ -1,3 +1,4 @@
+// IMPORTACIONES
 const { google } = require('googleapis');
 const db = require('./db');
 
@@ -27,6 +28,7 @@ function extractBody(payload) {
     return '';
 }
 
+// CLASE PRINCIPAL: GmailPoller
 class GmailPoller {
     constructor() {
         this.gmail = null;
@@ -34,6 +36,7 @@ class GmailPoller {
         this.seenIds = new Set();
     }
 
+    // METODO: Autenticacion con OAuth2 de Google
     async authenticate() {
         const clientId = process.env.GMAIL_CLIENT_ID;
         const clientSecret = process.env.GMAIL_CLIENT_SECRET;
@@ -59,6 +62,7 @@ class GmailPoller {
         }
     }
 
+    // METODO: Consultar respuestas a tickets de soporte
     async poll() {
         if (!this.gmail) {
             console.log('[gmail] Reautenticando...');
@@ -144,6 +148,7 @@ class GmailPoller {
         }
     }
 
+    // METODO: Iniciar temporizador de sondeo
     start() {
         this.authenticate().then((ok) => {
             if (ok) {

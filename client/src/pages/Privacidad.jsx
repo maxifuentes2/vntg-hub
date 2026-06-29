@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { Shield } from 'lucide-react';
 
 export default function Privacidad() {

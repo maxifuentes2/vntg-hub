@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck } from 'lucide-react';

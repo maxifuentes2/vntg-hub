@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { ShieldCheck, Search, Award, FileText } from 'lucide-react';
 
 export default function GuiaAutenticidad() {

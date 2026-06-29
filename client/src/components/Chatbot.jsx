@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Minus, Send, Headset, Package, MessageSquare, ChevronDown } from 'lucide-react';

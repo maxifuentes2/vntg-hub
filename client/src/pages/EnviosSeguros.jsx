@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { Package, Truck, Shield, Clock } from 'lucide-react';
 
 export default function EnviosSeguros() {

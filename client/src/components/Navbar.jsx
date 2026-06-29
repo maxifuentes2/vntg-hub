@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { slugify } from '../utils/slugify';

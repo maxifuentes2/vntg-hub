@@ -1,3 +1,4 @@
+// IMPORTACIONES
 export const formatArgTime = (dateString, includeTime = true) => {
     if (!dateString) return '';
     // MySQL devuelve fechas sin indicador de zona (ej: "2026-06-25 19:00:00").

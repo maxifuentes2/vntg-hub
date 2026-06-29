@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Play, Info, Pause, Maximize, Minimize, RotateCcw, RotateCw, Loader2 } from 'lucide-react';
 

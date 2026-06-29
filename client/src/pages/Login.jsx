@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
@@ -24,7 +25,7 @@ export default function Login() {
     const [capsLock, setCapsLock] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // --- NUEVO ESTADO PARA RECORDAR DISPOSITIVO ---
+    // NUEVO ESTADO PARA RECORDAR DISPOSITIVO ---
     const [rememberDevice, setRememberDevice] = useState(false);
 
     const checkCapsLock = (e) => {

@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from './ToastContext'; 
 import { useAuth } from './AuthContext';

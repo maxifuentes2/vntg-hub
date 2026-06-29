@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect, useRef } from 'react';
 
 const TypewriterText = ({ phrases: _phrases, speed = 50, deleteSpeed = 25, pause = 2000 }) => {

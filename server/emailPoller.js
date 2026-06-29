@@ -1,3 +1,4 @@
+// IMPORTACIONES
 const { google } = require('googleapis');
 const db = require('./db');
 
@@ -106,6 +107,7 @@ function extractContactIdFromRef(refs) {
 
 const slugify = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
+// CLASE PRINCIPAL: EmailPoller
 class EmailPoller {
     constructor() {
         this.gmail = null;
@@ -113,6 +115,7 @@ class EmailPoller {
         this.polling = false;
     }
 
+    // METODO: Autenticacion con OAuth2 de Google
     async auth() {
         const { GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } = process.env;
         if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN) return false;
@@ -343,6 +346,7 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
         return false;
     }
 
+    // METODO: Consultar correo y procesar bandeja
     async poll() {
         if (this.polling) return;
         this.polling = true;
@@ -512,6 +516,7 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
         }
     }
 
+    // METODO: Iniciar temporizador de sondeo de emails
     start() {
         console.log('[email-poller] Iniciando...');
         this.auth().catch(() => {});

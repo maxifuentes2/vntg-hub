@@ -1,3 +1,4 @@
+// IMPORTACIONES
 /**
  * Convierte un texto en un slug URL-friendly.
  * Ej: "Series y Películas" → "series-y-peliculas"

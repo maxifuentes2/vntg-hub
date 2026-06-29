@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect } from 'react';
 import { Heart, HeartCrack, Trash2, ShoppingCart } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';

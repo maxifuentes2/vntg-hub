@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect } from 'react';
 import { ChevronUp } from 'lucide-react';
 

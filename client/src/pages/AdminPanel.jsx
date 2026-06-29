@@ -1,3 +1,4 @@
+// IMPORTACIONES
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Package, RefreshCw, Plus, Pen, Trash2, X, Tag, ClipboardList, ChevronDown, TriangleAlert, MessageSquare, House, Truck, Save, Loader, Landmark, CircleCheck, Eye, Download, Bitcoin, LayoutDashboard, ShieldCheck, Box, List, FileText, Settings, Settings2, Users, Clock } from 'lucide-react';
@@ -202,7 +203,7 @@ export default function AdminPanel() {
         }
     };
 
-    // --- MANEJO DE PRODUCTOS ---
+    // MANEJO DE PRODUCTOS ---
     const handleOpenProductModal = (product = null) => {
         if (product) {
             setEditingItem(product);
@@ -275,7 +276,7 @@ export default function AdminPanel() {
         setSavingShipping(false);
     };
 
-    // --- MANEJO DE ELIMINACIÓN ESTÉTICA ---
+    // MANEJO DE ELIMINACIÓN ESTÉTICA ---
     const openConfirmDelete = (id, title, type) => {
         setConfirmDelete({ isOpen: true, id, ids: null, title, type });
     };
@@ -329,7 +330,7 @@ export default function AdminPanel() {
         }
     };
 
-    // --- MANEJO DE CATEGORÍAS ---
+    // MANEJO DE CATEGORÍAS ---
     const handleOpenCategoryModal = (category = null) => {
         if (category) {
             setCategoryForm({ id: category.id, name: category.name || category.id, banner_url: category.banner_url || '' });
@@ -392,7 +393,7 @@ export default function AdminPanel() {
         }
     };
 
-    // --- MANEJO DE ÓRDENES ---
+    // MANEJO DE ÓRDENES ---
     // Estados para búsqueda y filtros en órdenes
     const [orderSearch, setOrderSearch] = useState('');
     const [orderFilter, setOrderFilter] = useState('all');
