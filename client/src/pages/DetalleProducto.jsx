@@ -90,6 +90,15 @@ const DetalleProducto = () => {
 
     // NUEVO: Escuchar la tecla ESC para cerrar el modal
     useEffect(() => {
+        if (isModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isModalOpen]);
+
+    useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && isModalOpen) {
                 setIsModalOpen(false);

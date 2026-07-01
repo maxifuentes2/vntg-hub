@@ -71,6 +71,15 @@ const Categoria = () => {
     const franquiciaParam = queryParams.get('franquicia') || '';
 
     useEffect(() => {
+        if (isFilterOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isFilterOpen]);
+
+    useEffect(() => {
         setListaFranquicias([]);
         if (franquiciaParam) {
             const franquicias = franquiciaParam.split(',').map(f => f.trim()).filter(f => f);

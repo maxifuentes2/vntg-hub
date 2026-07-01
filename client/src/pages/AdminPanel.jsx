@@ -138,6 +138,15 @@ export default function AdminPanel() {
     const [categoryForm, setCategoryForm] = useState({ id: '', name: '', banner_url: '' });
 
     useEffect(() => {
+        if (isProductModalOpen || isCategoryModalOpen || isCategoryProductsOpen || confirmDelete.isOpen || viewProofModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isProductModalOpen, isCategoryModalOpen, isCategoryProductsOpen, confirmDelete.isOpen, viewProofModal]);
+
+    useEffect(() => {
         const storedUser = localStorage.getItem('vntg_user');
         if (!storedUser) {
             navigate('/login');
