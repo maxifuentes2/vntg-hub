@@ -927,12 +927,38 @@ app.delete("/api/addresses/:id", verifyToken, async (req, res) => {
     }
 });
 
+const verifyCaptcha = async (token) => {
+    if (!token) return false;
+    try {
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        if (!secretKey) {
+            console.warn("RECAPTCHA_SECRET_KEY not set. Bypassing captcha for dev.");
+            return true;
+        }
+        const response = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `secret=${secretKey}&response=${token}`
+        });
+        const data = await response.json();
+        return data.success;
+    } catch (err) {
+        console.error("Captcha verification error:", err);
+        return false;
+    }
+};
+
 // AUTENTICACIÓN ---
 
 app.post("/api/auth/register", authLimiter, async (req, res) => {
-    const { name, email, password, dni } = req.body;
+    const { name, email, password, dni, captchaToken } = req.body;
 
     try {
+        const isValidCaptcha = await verifyCaptcha(captchaToken);
+        if (!isValidCaptcha) {
+            return res.status(400).json({ error: "Captcha inválido" });
+        }
+
         const [existingUsers] = await db.query(
             "SELECT * FROM users WHERE email = ?",
             [email],
@@ -961,21 +987,48 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
 });
 
 app.post("/api/auth/login/local", authLimiter, async (req, res) => {
-    const { email, password, deviceToken } = req.body;
+    const { email, password, deviceToken, captchaToken } = req.body;
     try {
+        const isValidCaptcha = await verifyCaptcha(captchaToken);
+        if (!isValidCaptcha) {
+            return res.status(400).json({ error: "Captcha inválido" });
+        }
+
         const [users] = await db.query("SELECT * FROM users WHERE email = ?", [
             email,
         ]);
         if (!users[0] || !users[0].password)
             return res.status(401).json({ error: "Mail y/o contraseña incorrecta" });
-        const valid = await bcrypt.compare(password, users[0].password);
-        if (!valid) return res.status(401).json({ error: "Mail y/o contraseña incorrecta" });
+            
+        const user = users[0];
+
+        if (user.locked_until && new Date(user.locked_until) > new Date()) {
+            return res.status(429).json({ error: "Cuenta bloqueada por demasiados intentos fallidos. Intenta en 15 minutos." });
+        }
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) {
+            await db.query("UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1 WHERE id = ?", [user.id]);
+            const [updatedUsers] = await db.query("SELECT failed_login_attempts FROM users WHERE id = ?", [user.id]);
+            const currentAttempts = updatedUsers[0].failed_login_attempts;
+
+            if (currentAttempts >= 3) {
+                await db.query("UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = ?", [user.id]);
+                return res.status(429).json({ error: "Has alcanzado el límite de intentos. Tu cuenta ha sido bloqueada por 15 minutos." });
+            } else {
+                return res.status(401).json({ error: "Mail y/o contraseña incorrecta" });
+            }
+        }
+
+        if (user.failed_login_attempts > 0 || user.locked_until) {
+            await db.query("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", [user.id]);
+        }
 
         // LÓGICA DE DISPOSITIVO DE CONFIANZA ---
         if (deviceToken) {
             const [trusted] = await db.query(
                 "SELECT * FROM trusted_devices WHERE user_id = ? AND device_token = ? AND expires_at > NOW()",
-                [users[0].id, deviceToken],
+                [user.id, deviceToken],
             );
 
             if (trusted.length > 0) {
@@ -985,9 +1038,9 @@ app.post("/api/auth/login/local", authLimiter, async (req, res) => {
                     verification_code,
                     verification_expires,
                     ...userSinPass
-                } = users[0];
+                } = user;
                 const token = jwt.sign(
-                    { id: users[0].id, email: users[0].email, role: users[0].role || 'user' },
+                    { id: user.id, email: user.email, role: user.role || 'user' },
                     JWT_SECRET,
                     { expiresIn: JWT_EXPIRES },
                 );
@@ -1005,12 +1058,13 @@ app.post("/api/auth/login/local", authLimiter, async (req, res) => {
         const code = crypto.randomInt(100000, 999999).toString();
         await db.query(
             "UPDATE users SET verification_code = ?, verification_expires = DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id = ?",
-            [code, users[0].id],
+            [code, user.id],
         );
 
         await sendEmail("2fa_code", email, { code });
         res.json({ message: "Código enviado", requireCode: true, email });
     } catch (error) {
+        console.error("Login error:", error);
         res.status(500).json({ error: "Error" });
     }
 });
@@ -1018,14 +1072,33 @@ app.post("/api/auth/login/local", authLimiter, async (req, res) => {
 app.post("/api/auth/verify-code", authLimiter, async (req, res) => {
     const { email, code, rememberDevice } = req.body;
     try {
-        const [rows] = await db.query(
-            "SELECT * FROM users WHERE email = ? AND verification_code = ? AND verification_expires > NOW()",
-            [email, code],
-        );
-        if (rows.length === 0)
-            return res.status(401).json({ error: "Inválido" });
+        const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        if (users.length === 0) return res.status(401).json({ error: "Inválido" });
+        
+        const user = users[0];
 
-        const user = rows[0];
+        if (user.code_locked_until && new Date(user.code_locked_until) > new Date()) {
+            return res.status(429).json({ error: "Código bloqueado por demasiados intentos fallidos. Intenta en 15 minutos." });
+        }
+
+        const [rows] = await db.query(
+            "SELECT * FROM users WHERE id = ? AND verification_code = ? AND verification_expires > NOW()",
+            [user.id, code],
+        );
+
+        if (rows.length === 0) {
+            await db.query("UPDATE users SET failed_code_attempts = COALESCE(failed_code_attempts, 0) + 1 WHERE id = ?", [user.id]);
+            const [updatedUsers] = await db.query("SELECT failed_code_attempts FROM users WHERE id = ?", [user.id]);
+            const currentAttempts = updatedUsers[0].failed_code_attempts;
+
+            if (currentAttempts >= 3) {
+                await db.query("UPDATE users SET code_locked_until = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = ?", [user.id]);
+                return res.status(429).json({ error: "Has alcanzado el límite de intentos. El ingreso de código ha sido bloqueado por 15 minutos." });
+            } else {
+                return res.status(401).json({ error: "Código inválido o expirado" });
+            }
+        }
+
         let newToken = null;
 
         if (rememberDevice) {
@@ -1037,7 +1110,7 @@ app.post("/api/auth/verify-code", authLimiter, async (req, res) => {
         }
 
         await db.query(
-            "UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?",
+            "UPDATE users SET verification_code = NULL, verification_expires = NULL, failed_code_attempts = 0, code_locked_until = NULL WHERE id = ?",
             [user.id],
         );
         const {
@@ -1052,14 +1125,14 @@ app.post("/api/auth/verify-code", authLimiter, async (req, res) => {
             { expiresIn: JWT_EXPIRES },
         );
         setAuthCookie(res, token);
-
         res.json({
-            message: "Éxito",
+            message: "Verificado",
             user: userSinPass,
-            deviceToken: newToken,
             token,
+            deviceToken: newToken,
         });
     } catch (error) {
+        console.error("Verify code error:", error);
         res.status(500).json({ error: "Error" });
     }
 });

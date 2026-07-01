@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import ReCAPTCHA from "react-google-recaptcha";
 import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -18,6 +19,7 @@ export default function Registro() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [capsLock, setCapsLock] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState(null);
 
     const checkCapsLock = (e) => {
         setCapsLock(e.getModifierState('CapsLock'));
@@ -27,11 +29,16 @@ export default function Registro() {
         e.preventDefault();
         setError('');
 
+        if (!captchaToken) {
+            setError("Por favor, completa el captcha");
+            return;
+        }
+
         try {
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, dni })
+                body: JSON.stringify({ name, email, password, dni, captchaToken })
             });
 
             const data = await response.json();
@@ -117,6 +124,14 @@ export default function Registro() {
                         <label htmlFor="terms" className="text-[10px] text-zinc-500 font-bold uppercase italic leading-tight">
                             Acepto los <Link to="/terminos" className="text-brand-blue hover:underline">Términos</Link> y <Link to="/privacidad" className="text-brand-blue hover:underline">Privacidad</Link>.
                         </label>
+                    </div>
+                    
+                    <div className="flex justify-center my-4 overflow-hidden rounded-xl">
+                        <ReCAPTCHA
+                            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                            onChange={(token) => setCaptchaToken(token)}
+                            theme="light"
+                        />
                     </div>
                     
                     <button type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all mt-4 flex items-center justify-center gap-2 rounded-2xl shadow-lg active:scale-95">

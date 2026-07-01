@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
+import ReCAPTCHA from "react-google-recaptcha";
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -24,6 +25,7 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [capsLock, setCapsLock] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState(null);
 
     // NUEVO ESTADO PARA RECORDAR DISPOSITIVO ---
     const [rememberDevice, setRememberDevice] = useState(false);
@@ -52,6 +54,11 @@ export default function Login() {
         e.preventDefault();
         
         if (isLoading) return; 
+
+        if (!captchaToken) {
+            setError("Por favor, completa el captcha");
+            return;
+        }
         
         setIsLoading(true);
         setError('');
@@ -67,7 +74,8 @@ export default function Login() {
                 body: JSON.stringify({ 
                     email, 
                     password, 
-                    deviceToken: storedToken 
+                    deviceToken: storedToken,
+                    captchaToken
                 })
             });
             const data = await response.json();
@@ -205,6 +213,14 @@ export default function Login() {
                                 <label htmlFor="remember" className="text-[10px] font-bold uppercase italic text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
                                     Recordar este dispositivo
                                 </label>
+                            </div>
+
+                            <div className="flex justify-center my-4 overflow-hidden rounded-xl">
+                                <ReCAPTCHA
+                                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                                    onChange={(token) => setCaptchaToken(token)}
+                                    theme="light"
+                                />
                             </div>
 
                             <button 
