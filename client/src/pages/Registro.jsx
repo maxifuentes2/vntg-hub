@@ -1,5 +1,5 @@
 // IMPORTACIONES
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import ReCAPTCHA from "react-google-recaptcha";
@@ -20,6 +20,7 @@ export default function Registro() {
     const [showPassword, setShowPassword] = useState(false);
     const [capsLock, setCapsLock] = useState(false);
     const [captchaToken, setCaptchaToken] = useState(null);
+    const recaptchaRef = useRef(null);
 
     const checkCapsLock = (e) => {
         setCapsLock(e.getModifierState('CapsLock'));
@@ -49,11 +50,15 @@ export default function Registro() {
             } else {
                 setError(data.error || "Error al crear la cuenta");
                 addToast({ title: 'Registro' }, data.error || 'Error al crear la cuenta', 'error');
+                if (recaptchaRef.current) recaptchaRef.current.reset();
+                setCaptchaToken(null);
             }
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
             addToast({ title: 'Registro' }, 'Error de conexión. Inténtalo más tarde.', 'error');
+            if (recaptchaRef.current) recaptchaRef.current.reset();
+            setCaptchaToken(null);
         }
     };
 
@@ -126,12 +131,15 @@ export default function Registro() {
                         </label>
                     </div>
                     
-                    <div className="flex justify-center my-4 overflow-hidden rounded-xl">
-                        <ReCAPTCHA
-                            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
-                            onChange={(token) => setCaptchaToken(token)}
-                            theme="light"
-                        />
+                    <div className="my-4 mx-auto w-[258px] min-[360px]:w-[304px] h-[66px] min-[360px]:h-[78px]">
+                        <div className="scale-[0.85] min-[360px]:scale-100 origin-top-left transition-transform">
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                                onChange={(token) => setCaptchaToken(token)}
+                                theme="light"
+                            />
+                        </div>
                     </div>
                     
                     <button type="submit" className="w-full bg-brand-orange text-white py-4 font-black uppercase italic tracking-widest hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-brand-dark transition-all mt-4 flex items-center justify-center gap-2 rounded-2xl shadow-lg active:scale-95">

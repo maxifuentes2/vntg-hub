@@ -969,6 +969,18 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
                 .json({ error: "El correo ya está registrado" });
         }
 
+        if (dni && dni.trim() !== "") {
+            const [existingDni] = await db.query(
+                "SELECT * FROM users WHERE dni = ?",
+                [dni]
+            );
+            if (existingDni.length > 0) {
+                return res
+                    .status(400)
+                    .json({ error: "El DNI ya está registrado en otra cuenta" });
+            }
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -1004,6 +1016,10 @@ app.post("/api/auth/login/local", authLimiter, async (req, res) => {
 
         if (user.locked_until && new Date(user.locked_until) > new Date()) {
             return res.status(429).json({ error: "Cuenta bloqueada por demasiados intentos fallidos. Intenta en 15 minutos." });
+        }
+
+        if (user.code_locked_until && new Date(user.code_locked_until) > new Date()) {
+            return res.status(429).json({ error: "El ingreso por 2FA está bloqueado por demasiados intentos fallidos. Intenta en 15 minutos." });
         }
 
         const valid = await bcrypt.compare(password, user.password);

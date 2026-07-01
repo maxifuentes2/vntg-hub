@@ -1,5 +1,5 @@
 // IMPORTACIONES
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 import ReCAPTCHA from "react-google-recaptcha";
@@ -26,6 +26,7 @@ export default function Login() {
     const [capsLock, setCapsLock] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [captchaToken, setCaptchaToken] = useState(null);
+    const recaptchaRef = useRef(null);
 
     // NUEVO ESTADO PARA RECORDAR DISPOSITIVO ---
     const [rememberDevice, setRememberDevice] = useState(false);
@@ -93,11 +94,15 @@ export default function Login() {
             } else {
                 setError(data.error || "Error al iniciar sesión");
                 addToast({ title: 'Iniciar Sesión' }, data.error || 'Error al iniciar sesión', 'error');
+                if (recaptchaRef.current) recaptchaRef.current.reset();
+                setCaptchaToken(null);
             }
         } catch (error) {
             console.error("Error de red:", error);
             setError("Error de conexión. Inténtalo más tarde.");
             addToast({ title: 'Iniciar Sesión' }, 'Error de conexión. Inténtalo más tarde.', 'error');
+            if (recaptchaRef.current) recaptchaRef.current.reset();
+            setCaptchaToken(null);
         } finally {
             setIsLoading(false);
         }
@@ -215,12 +220,15 @@ export default function Login() {
                                 </label>
                             </div>
 
-                            <div className="flex justify-center my-4 overflow-hidden rounded-xl">
-                                <ReCAPTCHA
-                                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
-                                    onChange={(token) => setCaptchaToken(token)}
-                                    theme="light"
-                                />
+                            <div className="my-4 mx-auto w-[258px] min-[360px]:w-[304px] h-[66px] min-[360px]:h-[78px]">
+                                <div className="scale-[0.85] min-[360px]:scale-100 origin-top-left transition-transform">
+                                    <ReCAPTCHA
+                                        ref={recaptchaRef}
+                                        sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                                        onChange={(token) => setCaptchaToken(token)}
+                                        theme="light"
+                                    />
+                                </div>
                             </div>
 
                             <button 
