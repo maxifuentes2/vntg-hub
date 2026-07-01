@@ -23,6 +23,7 @@ export default function AdminPanel() {
     
     // NUEVO: Estado de carga copiado del panel de soporte
     const [loading, setLoading] = useState(true);
+    const [viewProofModal, setViewProofModal] = useState(null);
 
     const getOrderShippingType = (order) => {
         try {
@@ -760,7 +761,7 @@ export default function AdminPanel() {
                                                                         if (cryptoInfo.proofUrl) {
                                                                             window.open(cryptoInfo.proofUrl, '_blank');
                                                                         } else {
-                                                                            addToast({ title: 'Datos de Transferencia' }, `Titular: ${cryptoInfo.proofData.titular} | Banco: ${cryptoInfo.proofData.banco} | Operación: ${cryptoInfo.proofData.nroOperacion}`, 'info');
+                                                                            setViewProofModal(cryptoInfo.proofData);
                                                                         }
                                                                     }}
                                                                     className="text-[10px] flex items-center gap-1 font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:underline text-left"
@@ -1100,6 +1101,40 @@ export default function AdminPanel() {
                                 Eliminar
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL DE DATOS DE COMPROBANTE --- */}
+            {viewProofModal && (
+                <div className="fixed inset-0 bg-black/80 z-[1000] flex justify-center items-center p-4">
+                    <div className="bg-white dark:bg-zinc-950 border border-brand-orange/30 p-8 max-w-sm w-full shadow-2xl relative overflow-hidden rounded-3xl text-left">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange to-transparent opacity-50"></div>
+                        <button onClick={() => setViewProofModal(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-brand-orange transition-colors"><X size={24} /></button>
+                        
+                        <div className="bg-brand-orange/10 p-4 rounded-full w-fit mb-4">
+                            <ClipboardList className="text-brand-orange" size={32} />
+                        </div>
+                        <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-6 dark:text-white">Datos de Transferencia</h3>
+                        
+                        <div className="space-y-4 mb-8">
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Titular</p>
+                                <p className="font-medium dark:text-white text-lg">{viewProofModal.titular}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Banco</p>
+                                <p className="font-medium dark:text-white text-lg">{viewProofModal.banco}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Nro. de Operación</p>
+                                <p className="font-medium text-brand-orange font-mono text-xl tracking-wider">{viewProofModal.nroOperacion}</p>
+                            </div>
+                        </div>
+
+                        <button onClick={() => setViewProofModal(null)} className="w-full px-4 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black uppercase italic text-xs tracking-widest hover:opacity-90 transition-all rounded-xl">
+                            Cerrar
+                        </button>
                     </div>
                 </div>
             )}
