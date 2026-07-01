@@ -1311,20 +1311,36 @@ app.post("/api/reserve-stock", verifyToken, async (req, res) => {
     }
 
     const conn = await db.getConnection();
+    const lockName = `res_stock_${req.user.id}`;
     try {
+        const [lock] = await conn.query("SELECT GET_LOCK(?, 5) as acquired", [lockName]);
+        if (!lock[0].acquired) {
+            return res.status(429).json({ error: "Procesando otra solicitud. Por favor, espere." });
+        }
+
         await conn.beginTransaction();
 
-        // Limpiar reservas expiradas previas
-        await conn.query("DELETE FROM stock_reservations WHERE expires_at <= NOW()");
+        // 1. Restaurar stock de reservas expiradas de cualquier usuario (limpieza global)
+        const [expired] = await conn.query("SELECT id, product_id, quantity FROM stock_reservations WHERE expires_at <= NOW() ORDER BY product_id ASC");
+        for (let r of expired) {
+            const [del] = await conn.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+            if (del.affectedRows > 0) {
+                await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [r.quantity, r.product_id]);
+            }
+        }
 
-        // Chequear si el usuario ya tiene una reserva activa
-        const [existing] = await conn.query("SELECT id FROM stock_reservations WHERE user_id = ? AND expires_at > NOW()", [req.user.id]);
-        if (existing.length > 0) {
-            await conn.query("DELETE FROM stock_reservations WHERE user_id = ?", [req.user.id]);
+        // 2. Restaurar stock de cualquier reserva previa (activa o expirada) de ESTE usuario, para renovarla
+        const [existing] = await conn.query("SELECT id, product_id, quantity FROM stock_reservations WHERE user_id = ? ORDER BY product_id ASC", [req.user.id]);
+        for (let r of existing) {
+            const [del] = await conn.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+            if (del.affectedRows > 0) {
+                await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [r.quantity, r.product_id]);
+            }
         }
 
         // Validar y descontar stock
-        for (let item of cart) {
+        const sortedCart = [...cart].sort((a, b) => a.id - b.id);
+        for (let item of sortedCart) {
             const qty = item.cantidad || 1;
             const [prod] = await conn.query("SELECT stock FROM products WHERE id = ? FOR UPDATE", [item.id]);
             if (!prod[0] || prod[0].stock < qty) {
@@ -1340,26 +1356,36 @@ app.post("/api/reserve-stock", verifyToken, async (req, res) => {
 
         await conn.commit();
         
-        const [resInfo] = await db.query("SELECT MAX(expires_at) as expires_at FROM stock_reservations WHERE user_id = ?", [req.user.id]);
-        res.json({ reserved: true, expires_at: resInfo[0].expires_at });
+        // Retornamos el tiempo calculado en Node.js como ISO string con timezone explícito (Z) para que el navegador lo parsee perfecto
+        const expiresAt = new Date(Date.now() + 10 * 60000);
+        res.json({ reserved: true, expires_at: expiresAt.toISOString() });
     } catch (e) {
         await conn.rollback();
         console.error("Error reservando stock:", e);
         res.status(500).json({ error: "Error al reservar stock" });
     } finally {
+        await conn.query("SELECT RELEASE_LOCK(?)", [lockName]);
         conn.release();
     }
 });
 
 app.post("/api/release-stock", verifyToken, async (req, res) => {
     const conn = await db.getConnection();
+    const lockName = `res_stock_${req.user.id}`;
     try {
+        const [lock] = await conn.query("SELECT GET_LOCK(?, 5) as acquired", [lockName]);
+        if (!lock[0].acquired) {
+            return res.status(429).json({ error: "Procesando otra solicitud. Por favor, espere." });
+        }
+
         await conn.beginTransaction();
-        const [reservations] = await conn.query("SELECT id, product_id, quantity FROM stock_reservations WHERE user_id = ?", [req.user.id]);
+        const [reservations] = await conn.query("SELECT id, product_id, quantity FROM stock_reservations WHERE user_id = ? ORDER BY product_id ASC", [req.user.id]);
         
         for (let r of reservations) {
-            await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [r.quantity, r.product_id]);
-            await conn.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+            const [del] = await conn.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+            if (del.affectedRows > 0) {
+                await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [r.quantity, r.product_id]);
+            }
         }
         
         await conn.commit();
@@ -1369,6 +1395,7 @@ app.post("/api/release-stock", verifyToken, async (req, res) => {
         console.error("Error liberando stock:", e);
         res.status(500).json({ error: "Error al liberar stock" });
     } finally {
+        await conn.query("SELECT RELEASE_LOCK(?)", [lockName]);
         conn.release();
     }
 });
@@ -3132,14 +3159,16 @@ setInterval(async () => {
     try {
         // 1. Purga de reservas de stock expiradas
         const [expiredReservations] = await db.query(
-            "SELECT id, product_id, quantity FROM stock_reservations WHERE expires_at <= NOW()"
+            "SELECT id, product_id, quantity FROM stock_reservations WHERE expires_at <= NOW() ORDER BY product_id ASC"
         );
         for (let r of expiredReservations) {
-            await db.query(
-                "UPDATE products SET stock = stock + ? WHERE id = ?",
-                [r.quantity, r.product_id]
-            );
-            await db.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+            const [del] = await db.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+            if (del.affectedRows > 0) {
+                await db.query(
+                    "UPDATE products SET stock = stock + ? WHERE id = ?",
+                    [r.quantity, r.product_id]
+                );
+            }
         }
 
         // 2. Purga de órdenes pendientes expiradas
@@ -3195,7 +3224,6 @@ app.listen(PORT, "0.0.0.0", async () => {
     // Migración: agrandar columna thread_id para Gmail threadIds
     try {
         await db.query("ALTER TABLE support_messages MODIFY COLUMN thread_id VARCHAR(100)");
-        console.log('[db] Migración thread_id OK');
     } catch (e) {
         if (e.code !== 'ER_DUP_FIELDNAME' && !e.message.includes('Duplicate')) {
             console.log('[db] Migración thread_id:', e.message);
@@ -3205,7 +3233,6 @@ app.listen(PORT, "0.0.0.0", async () => {
     // Migración: agregar columna gmail_msg_id
     try {
         await db.query("ALTER TABLE support_messages ADD COLUMN gmail_msg_id VARCHAR(100) NULL");
-        console.log('[db] Migración gmail_msg_id OK');
     } catch (e) {
         if (!e.message.includes('Duplicate')) {
             console.log('[db] Migración gmail_msg_id:', e.message);

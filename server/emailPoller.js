@@ -280,7 +280,7 @@ class EmailPoller {
             const messages = list.data.messages || [];
             if (!messages.length) return;
 
-            console.log(`[email-poller] ${messages.length} mensajes`);
+
 
             for (const msg of messages) {
                 let detail;
@@ -306,7 +306,6 @@ class EmailPoller {
                 // Ignorar correos enviados por el sistema de notificaciones a nosotros mismos
                 if (fromEmail === emailAddress || fromEmail === 'hubvntg@gmail.com' || fromEmail.includes('vntg')) {
                     if (subject.includes('Mensaje de contacto de') || subject.includes('Respuesta de soporte')) {
-                        console.log(`[email-poller] Ignorando email de notificacion interno: ${subject}`);
                         continue;
                     }
                 }
@@ -315,9 +314,9 @@ class EmailPoller {
                 if (await this.alreadyProcessed(msg.id, fromEmail, body)) continue;
 
                 if (fromEmail === emailAddress || fromEmail === 'hubvntg@gmail.com') continue;
-                if (!body) { console.log(`[email-poller] Sin cuerpo de ${fromEmail}`); continue; }
+                if (!body) { continue; }
 
-                console.log(`[email-poller] <<< ${fromEmail} "${(subject || '').substring(0, 60)}" thread=${gmailThreadId} body="${body.substring(0, 80)}..."`);
+
 
                 // Buscar contacto por In-Reply-To (confiable, no depende de threading de Gmail)
                 let contactId = extractContactIdFromRef(inReplyTo);
@@ -405,7 +404,6 @@ class EmailPoller {
                     console.log(`[email-poller] Respondido a ${fromEmail} en thread #${contactId} usando replyThreadId=${replyThreadId}`);
                 } else {
                     // Ignorar correos fríos que no son respuesta a un formulario web
-                    console.log(`[email-poller] Ignorando correo frío (no es respuesta a un ticket web): ${fromEmail}`);
                 }
             }
         } catch (e) {

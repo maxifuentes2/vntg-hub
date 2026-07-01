@@ -198,8 +198,8 @@ export const CartProvider = ({ children }) => {
         cart, addToCart, removeFromCart, updateQuantity, clearCart,
         cartTotal, shippingType, setShippingType, finalTotal, getShippingCost,
         FREE_SHIPPING_THRESHOLD, COSTO_NORMAL, COSTO_PRIO, cartCount: cart.length, refreshCartPrices,
-        syncCartToServer
-    }), [cart, shippingType, shippingConfig, addToast]);
+        syncCartToServer, serverCartReady
+    }), [cart, shippingType, shippingConfig, addToast, serverCartReady]);
 
     return (
         <CartContext.Provider value={value}>

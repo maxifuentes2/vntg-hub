@@ -82,7 +82,7 @@ class GmailPoller {
             // Filtrar mensajes ya vistos
             const newMessages = messages.filter(m => !this.seenIds.has(m.id));
             if (newMessages.length === 0) {
-                if (messages.length > 0) console.log(`[gmail] 0 nuevos (${messages.length} ya vistos)`);
+                return;
                 return;
             }
 

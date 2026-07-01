@@ -33,7 +33,7 @@ const formatCrypto = (amount, coin) => {
 };
 
 export default function Checkout() {
-    const { cart, finalTotal, shippingType, setShippingType, getShippingCost, COSTO_NORMAL, COSTO_PRIO, clearCart, refreshCartPrices, cartTotal, FREE_SHIPPING_THRESHOLD } = useCart();
+    const { cart, finalTotal, shippingType, setShippingType, getShippingCost, COSTO_NORMAL, COSTO_PRIO, clearCart, refreshCartPrices, cartTotal, FREE_SHIPPING_THRESHOLD, serverCartReady } = useCart();
     const navigate = useNavigate();
     const { addToast } = useToast();
     const { formatPrice, currency, tasaUSD } = useCurrency();
@@ -83,10 +83,8 @@ export default function Checkout() {
             dni: parsed.dni || ''
         });
 
-        if (cart.length === 0 && !checkoutSent) navigate('/');
-
         refreshCartPrices(API_URL);
-    }, [cart.length, navigate, checkoutSent]);
+    }, [navigate, checkoutSent, serverCartReady]);
 
     useEffect(() => {
         const token = localStorage.getItem('vntg_token');
@@ -522,10 +520,22 @@ export default function Checkout() {
         }
     };
 
-    if (!user) {
+    if (!user || !serverCartReady) {
         return (
             <div className="min-h-screen flex items-center justify-center dark:bg-brand-dark">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-orange"></div>
+            </div>
+        );
+    }
+
+    if (serverCartReady && cart.length === 0 && !checkoutSent) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center dark:bg-brand-dark p-4 text-center">
+                <h1 className="text-3xl font-black italic uppercase text-zinc-900 dark:text-white mb-4">Tu carrito está vacío</h1>
+                <p className="text-zinc-500 mb-8 font-bold text-sm">Agregá productos antes de ir al checkout.</p>
+                <Link to="/" className="bg-brand-orange text-white px-8 py-4 rounded-xl font-black uppercase italic hover:bg-brand-blue transition-colors">
+                    Volver a la tienda
+                </Link>
             </div>
         );
     }
