@@ -1408,7 +1408,13 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
     }
 
     const conn = await db.getConnection();
+    const lockName = `res_stock_${req.user.id}`;
     try {
+        const [lock] = await conn.query("SELECT GET_LOCK(?, 10) as acquired", [lockName]);
+        if (!lock[0].acquired) {
+            return res.status(429).json({ error: "Procesando otra solicitud. Por favor, espere." });
+        }
+
         await conn.beginTransaction();
 
         let orderId = generatePatenteId();
@@ -1429,7 +1435,8 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         }
 
         let subtotal = 0;
-        for (let item of cart) {
+        const sortedCart = [...cart].sort((a, b) => a.id - b.id);
+        for (let item of sortedCart) {
             const qty = item.cantidad || 1;
             const [prod] = await conn.query(
                 "SELECT stock, price, discount_percentage FROM products WHERE id = ? FOR UPDATE",
@@ -1548,10 +1555,11 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         });
         res.json({ init_point: response.init_point, preferenceId: response.id, orderId });
     } catch (error) {
-        try { await conn.rollback(); } catch (_) {}
+        await conn.rollback();
         console.error("Error en checkout:", error);
-        res.status(500).json({ error: "Error al procesar el pago" });
+        res.status(500).json({ error: "Error interno del servidor" });
     } finally {
+        await conn.query("SELECT RELEASE_LOCK(?)", [lockName]);
         conn.release();
     }
 });
