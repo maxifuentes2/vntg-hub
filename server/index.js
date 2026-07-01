@@ -1219,42 +1219,74 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
+
+    const conn = await db.getConnection();
     try {
-        // Generar ID único estilo número de orden (evitar colisiones)
+        await conn.beginTransaction();
+
         let orderId = generatePatenteId();
         let exists = true;
         while (exists) {
-            const [dup] = await db.query("SELECT id FROM orders WHERE id = ?", [orderId]);
+            const [dup] = await conn.query("SELECT id FROM orders WHERE id = ?", [orderId]);
             if (dup.length === 0) exists = false;
             else orderId = generatePatenteId();
         }
+
+        const [reservations] = await conn.query(
+            "SELECT product_id, quantity FROM stock_reservations WHERE user_id = ? AND expires_at > NOW()",
+            [req.user.id]
+        );
+        const reservationMap = {};
+        for (const r of reservations) {
+            reservationMap[r.product_id] = r.quantity;
+        }
+
         let subtotal = 0;
         for (let item of cart) {
-            const [prod] = await db.query(
-                "SELECT stock, price, discount_percentage FROM products WHERE id = ?",
-                [item.id],
+            const qty = item.cantidad || 1;
+            const [prod] = await conn.query(
+                "SELECT stock, price, discount_percentage FROM products WHERE id = ? FOR UPDATE",
+                [item.id]
             );
-            if (!prod[0] || prod[0].stock < item.cantidad)
-                return res.status(400).json({ error: "Sin stock" });
-            const realPrice = prod[0].discount_percentage > 0 
-                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+            if (!prod[0]) {
+                await conn.rollback();
+                return res.status(400).json({ error: "Producto no encontrado" });
+            }
+
+            const reservedQty = reservationMap[item.id] || 0;
+            const additionalNeeded = qty - reservedQty;
+
+            if (additionalNeeded > 0) {
+                if (prod[0].stock < additionalNeeded) {
+                    await conn.rollback();
+                    return res.status(400).json({ error: "Sin stock" });
+                }
+                await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [additionalNeeded, item.id]);
+            } else if (additionalNeeded < 0) {
+                await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [Math.abs(additionalNeeded), item.id]);
+            }
+
+            const realPrice = prod[0].discount_percentage > 0
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100)
                 : prod[0].price;
-            subtotal += realPrice * item.cantidad;
+            subtotal += Number(realPrice) * qty;
         }
+
+        await conn.query("DELETE FROM stock_reservations WHERE user_id = ?", [req.user.id]);
+
         let shippingCost = 0;
-        const cfg = await shipping.loadConfig(db);
+        const cfg = await shipping.loadConfig(conn);
         if (subtotal < cfg.ENVIO_GRATIS_DESDE) {
             if (shippingType === "normal") shippingCost = cfg.COSTO_NORMAL;
             else if (shippingType === "prioritario") shippingCost = cfg.COSTO_PRIORITARIO;
         }
-        
+
         const totalPrevio = subtotal + shippingCost;
 
-        // LÓGICA DE CANJE DE PUNTOS ---
         let descuento = 0;
         let puntosARestar = 0;
 
-        const [userRes] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
+        const [userRes] = await conn.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
         const puntosDisponibles = userRes[0]?.points || 0;
 
         if (puntosAUsar > 0 && puntosDisponibles > 0) {
@@ -1267,36 +1299,32 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         const totalFinal = totalPrevio - descuento;
 
         if (puntosARestar > 0) {
-            await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
+            await conn.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
         }
 
-        await db.query(
+        await conn.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, points_used) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 'mercadopago', ?)",
             [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), puntosARestar],
         );
         for (let item of cart) {
-            const [prodInfo] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
+            const [prodInfo] = await conn.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
             const realPrice = (prodInfo[0] && prodInfo[0].discount_percentage > 0) 
                 ? prodInfo[0].price * (1 - prodInfo[0].discount_percentage / 100) 
                 : (prodInfo[0]?.price || item.price);
             
-            await db.query(
+            await conn.query(
                 "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)",
                 [orderId, item.id, item.cantidad, realPrice],
             );
-            await db.query(
-                "UPDATE products SET stock = stock - ? WHERE id = ?",
-                [item.cantidad, item.id],
-            );
         }
 
-        // Si el descuento por puntos cubre el 100% de la orden, saltamos Mercado Pago
+        await conn.commit();
+
         if (totalFinal <= 0) {
             await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
             return res.json({ init_point: `https://vntg-hub.vercel.app/pedido/${orderId}`, orderId, totalCero: true });
         }
 
-        // Para Mercado Pago prorrateamos los precios con el descuento aplicado
         const ratio = totalFinal / totalPrevio;
 
         const preference = new Preference(mpClient);
@@ -1333,8 +1361,11 @@ app.post("/api/checkout", verifyToken, async (req, res) => {
         });
         res.json({ init_point: response.init_point, preferenceId: response.id, orderId });
     } catch (error) {
+        try { await conn.rollback(); } catch (_) {}
         console.error("Error en checkout:", error);
         res.status(500).json({ error: "Error al procesar el pago" });
+    } finally {
+        conn.release();
     }
 });
 
@@ -1455,28 +1486,64 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
+
+    const conn = await db.getConnection();
     try {
+        await conn.beginTransaction();
+
         let orderId = generatePatenteId();
         let exists = true;
         while (exists) {
-            const [dup] = await db.query("SELECT id FROM orders WHERE id = ?", [orderId]);
+            const [dup] = await conn.query("SELECT id FROM orders WHERE id = ?", [orderId]);
             if (dup.length === 0) exists = false;
             else orderId = generatePatenteId();
         }
 
+        const [reservations] = await conn.query(
+            "SELECT product_id, quantity FROM stock_reservations WHERE user_id = ? AND expires_at > NOW()",
+            [req.user.id]
+        );
+        const reservationMap = {};
+        for (const r of reservations) {
+            reservationMap[r.product_id] = r.quantity;
+        }
+
         let subtotal = 0;
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
-            if (prod.length === 0) continue;
-            const realPrice = prod[0].discount_percentage > 0 
-                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+            const qty = item.cantidad || 1;
+            const [prod] = await conn.query(
+                "SELECT stock, price, discount_percentage FROM products WHERE id = ? FOR UPDATE",
+                [item.id]
+            );
+            if (!prod[0]) {
+                await conn.rollback();
+                return res.status(400).json({ error: "Producto no encontrado" });
+            }
+
+            const reservedQty = reservationMap[item.id] || 0;
+            const additionalNeeded = qty - reservedQty;
+
+            if (additionalNeeded > 0) {
+                if (prod[0].stock < additionalNeeded) {
+                    await conn.rollback();
+                    return res.status(400).json({ error: "Sin stock" });
+                }
+                await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [additionalNeeded, item.id]);
+            } else if (additionalNeeded < 0) {
+                await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [Math.abs(additionalNeeded), item.id]);
+            }
+
+            const realPrice = prod[0].discount_percentage > 0
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100)
                 : prod[0].price;
-            subtotal += Number(realPrice) * (item.cantidad || 1);
+            subtotal += Number(realPrice) * qty;
         }
+
+        await conn.query("DELETE FROM stock_reservations WHERE user_id = ?", [req.user.id]);
 
         let shippingCost = 0;
         if (shippingType && shippingType !== "retiro") {
-            const cfg = await shipping.loadConfig(db);
+            const cfg = await shipping.loadConfig(conn);
             if (subtotal < cfg.ENVIO_GRATIS_DESDE) {
                 if (shippingType === "normal") shippingCost = cfg.COSTO_NORMAL;
                 else if (shippingType === "prioritario") shippingCost = cfg.COSTO_PRIORITARIO;
@@ -1486,7 +1553,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         let descuento = 0;
         let puntosARestar = 0;
         if (puntosAUsar > 0) {
-            const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
+            const [userRow] = await conn.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
             const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
             const valorPorPunto = 10;
             const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil((subtotal + shippingCost) / valorPorPunto));
@@ -1499,21 +1566,23 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         const totalConComision = totalFinal + comision;
 
         if (puntosARestar > 0) {
-            await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
+            await conn.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
         }
 
-        await db.query(
+        await conn.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, points_used) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'crypto', ?)",
-            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shippingData, shippingType }), puntosARestar],
+            [orderId, req.user.id, totalConComision, JSON.stringify({ ...shippingData, shippingType }), puntosARestar]
         );
+
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
-            const realPrice = (prod[0] && prod[0].discount_percentage > 0) 
-                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
-                : (prod[0]?.price || 0);
-            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, realPrice]);
-            await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad || 1, item.id]);
+            const [prodInfo] = await conn.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
+            const realPrice = (prodInfo[0] && prodInfo[0].discount_percentage > 0)
+                ? prodInfo[0].price * (1 - prodInfo[0].discount_percentage / 100)
+                : (prodInfo[0]?.price || 0);
+            await conn.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, realPrice]);
         }
+
+        await conn.commit();
 
         if (totalConComision <= 0) {
             await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
@@ -1522,12 +1591,8 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         }
 
         const coinAliases = {
-            usdttrc20: "USDT (TRC20)",
-            usdc: "USDC",
-            btc: "Bitcoin",
-            eth: "Ethereum",
-            ltc: "Litecoin",
-            sol: "Solana",
+            usdttrc20: "USDT (TRC20)", usdc: "USDC", btc: "Bitcoin",
+            eth: "Ethereum", ltc: "Litecoin", sol: "Solana",
         };
         const cryptoAddress = CRYPTO_ADDRESSES[coin] || CRYPTO_ADDRESSES.usdttrc20;
 
@@ -1544,43 +1609,33 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         }
 
         const cryptoInfo = JSON.stringify({
-            method: "crypto",
-            coin,
+            method: "crypto", coin,
             coinName: coinAliases[coin] || coin.toUpperCase(),
-            address: cryptoAddress,
-            monto: totalConComision,
-            subtotal: totalFinal,
-            comision,
-            cryptoAmount,
-            cryptoSubtotal,
-            cryptoComision,
-            precioUsd,
-            created_at: new Date().toISOString(),
+            address: cryptoAddress, monto: totalConComision,
+            subtotal: totalFinal, comision,
+            cryptoAmount, cryptoSubtotal, cryptoComision,
+            precioUsd, created_at: new Date().toISOString(),
         });
 
         await db.query("UPDATE orders SET expires_at = DATE_ADD(NOW(), INTERVAL 48 HOUR), crypto_info = ? WHERE id = ?", [cryptoInfo, orderId]);
-
         const [orderRow] = await db.query("SELECT expires_at FROM orders WHERE id = ?", [orderId]);
 
         res.json({
             orderId,
             cryptoPayment: {
-                coin,
-                coinName: coinAliases[coin] || coin.toUpperCase(),
-                address: cryptoAddress,
-                monto: totalConComision,
-                subtotal: totalFinal,
-                comision,
-                cryptoAmount,
-                cryptoSubtotal,
-                cryptoComision,
-                precioUsd,
-                expires_at: orderRow[0]?.expires_at,
+                coin, coinName: coinAliases[coin] || coin.toUpperCase(),
+                address: cryptoAddress, monto: totalConComision,
+                subtotal: totalFinal, comision,
+                cryptoAmount, cryptoSubtotal, cryptoComision,
+                precioUsd, expires_at: orderRow[0]?.expires_at,
             },
         });
     } catch (error) {
+        try { await conn.rollback(); } catch (_) {}
         console.error("Error en checkout crypto:", error);
         res.status(500).json({ error: "Error al procesar pago crypto" });
+    } finally {
+        conn.release();
     }
 });
 
@@ -1590,28 +1645,64 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: "Carrito vacío" });
     }
+
+    const conn = await db.getConnection();
     try {
+        await conn.beginTransaction();
+
         let orderId = generatePatenteId();
         let exists = true;
         while (exists) {
-            const [dup] = await db.query("SELECT id FROM orders WHERE id = ?", [orderId]);
+            const [dup] = await conn.query("SELECT id FROM orders WHERE id = ?", [orderId]);
             if (dup.length === 0) exists = false;
             else orderId = generatePatenteId();
         }
 
+        const [reservations] = await conn.query(
+            "SELECT product_id, quantity FROM stock_reservations WHERE user_id = ? AND expires_at > NOW()",
+            [req.user.id]
+        );
+        const reservationMap = {};
+        for (const r of reservations) {
+            reservationMap[r.product_id] = r.quantity;
+        }
+
         let subtotal = 0;
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
-            if (prod.length === 0) continue;
-            const realPrice = prod[0].discount_percentage > 0 
-                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
+            const qty = item.cantidad || 1;
+            const [prod] = await conn.query(
+                "SELECT stock, price, discount_percentage FROM products WHERE id = ? FOR UPDATE",
+                [item.id]
+            );
+            if (!prod[0]) {
+                await conn.rollback();
+                return res.status(400).json({ error: "Producto no encontrado" });
+            }
+
+            const reservedQty = reservationMap[item.id] || 0;
+            const additionalNeeded = qty - reservedQty;
+
+            if (additionalNeeded > 0) {
+                if (prod[0].stock < additionalNeeded) {
+                    await conn.rollback();
+                    return res.status(400).json({ error: "Sin stock" });
+                }
+                await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [additionalNeeded, item.id]);
+            } else if (additionalNeeded < 0) {
+                await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [Math.abs(additionalNeeded), item.id]);
+            }
+
+            const realPrice = prod[0].discount_percentage > 0
+                ? prod[0].price * (1 - prod[0].discount_percentage / 100)
                 : prod[0].price;
-            subtotal += Number(realPrice) * (item.cantidad || 1);
+            subtotal += Number(realPrice) * qty;
         }
+
+        await conn.query("DELETE FROM stock_reservations WHERE user_id = ?", [req.user.id]);
 
         let shippingCost = 0;
         if (shippingType && shippingType !== "retiro") {
-            const cfg = await shipping.loadConfig(db);
+            const cfg = await shipping.loadConfig(conn);
             if (subtotal < cfg.ENVIO_GRATIS_DESDE) {
                 if (shippingType === "normal") shippingCost = cfg.COSTO_NORMAL;
                 else if (shippingType === "prioritario") shippingCost = cfg.COSTO_PRIORITARIO;
@@ -1619,13 +1710,11 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         }
 
         const subtotalConEnvio = subtotal + shippingCost;
-
-        // 10% de descuento por pago por transferencia (sobre productos)
         const descuentoTransfer = Math.round(subtotal * 0.10);
         let descuentoPuntos = 0;
         let puntosARestar = 0;
         if (puntosAUsar > 0) {
-            const [userRow] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
+            const [userRow] = await conn.query("SELECT points FROM users WHERE id = ?", [req.user.id]);
             const puntosDisponibles = userRow.length > 0 ? Number(userRow[0].points) : 0;
             const valorPorPunto = 10;
             const puntosValidos = Math.min(puntosAUsar, puntosDisponibles, Math.ceil((subtotalConEnvio - descuentoTransfer) / valorPorPunto));
@@ -1635,32 +1724,30 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         const totalFinal = subtotalConEnvio - descuentoTransfer - descuentoPuntos;
 
         if (puntosARestar > 0) {
-            await db.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
+            await conn.query("UPDATE users SET points = points - ? WHERE id = ?", [puntosARestar, req.user.id]);
         }
 
         const paymentInfo = JSON.stringify({
-            method: 'transfer',
-            descuentoTransfer,
-            bank: BANK_ACCOUNT.bank,
-            holder: BANK_ACCOUNT.holder,
-            cuit: BANK_ACCOUNT.cuit,
-            alias: BANK_ACCOUNT.alias,
-            cbu: BANK_ACCOUNT.cbu,
-            montoTransferir: totalFinal,
+            method: 'transfer', descuentoTransfer,
+            bank: BANK_ACCOUNT.bank, holder: BANK_ACCOUNT.holder,
+            cuit: BANK_ACCOUNT.cuit, alias: BANK_ACCOUNT.alias,
+            cbu: BANK_ACCOUNT.cbu, montoTransferir: totalFinal,
         });
 
-        await db.query(
+        await conn.query(
             "INSERT INTO orders (id, user_id, total, status, shipping_info, expires_at, payment_method, crypto_info, points_used) VALUES (?, ?, ?, 'pending', ?, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'transfer', ?, ?)",
-            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), paymentInfo, puntosARestar],
+            [orderId, req.user.id, totalFinal, JSON.stringify({ ...shippingData, shippingType }), paymentInfo, puntosARestar]
         );
+
         for (let item of cart) {
-            const [prod] = await db.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
-            const realPrice = (prod[0] && prod[0].discount_percentage > 0) 
-                ? prod[0].price * (1 - prod[0].discount_percentage / 100) 
-                : (prod[0]?.price || 0);
-            await db.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, realPrice]);
-            await db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [item.cantidad || 1, item.id]);
+            const [prodInfo] = await conn.query("SELECT price, discount_percentage FROM products WHERE id = ?", [item.id]);
+            const realPrice = (prodInfo[0] && prodInfo[0].discount_percentage > 0)
+                ? prodInfo[0].price * (1 - prodInfo[0].discount_percentage / 100)
+                : (prodInfo[0]?.price || 0);
+            await conn.query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)", [orderId, item.id, item.cantidad || 1, realPrice]);
         }
+
+        await conn.commit();
 
         if (totalFinal <= 0) {
             await db.query("UPDATE orders SET status = 'approved' WHERE id = ?", [orderId]);
@@ -1670,20 +1757,20 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         res.json({
             orderId,
             transfer: {
-                bank: BANK_ACCOUNT.bank,
-                holder: BANK_ACCOUNT.holder,
-                cuit: BANK_ACCOUNT.cuit,
-                alias: BANK_ACCOUNT.alias,
-                cbu: BANK_ACCOUNT.cbu,
-                monto: totalFinal,
-                descuentoTransfer,
+                bank: BANK_ACCOUNT.bank, holder: BANK_ACCOUNT.holder,
+                cuit: BANK_ACCOUNT.cuit, alias: BANK_ACCOUNT.alias,
+                cbu: BANK_ACCOUNT.cbu, monto: totalFinal, descuentoTransfer,
             },
         });
     } catch (error) {
+        try { await conn.rollback(); } catch (_) {}
         console.error("Error en checkout transfer:", error);
         res.status(500).json({ error: "Error al procesar pago por transferencia" });
+    } finally {
+        conn.release();
     }
 });
+
 
 // ENVIAR DATOS DE COMPROBANTE DE PAGO ---
 app.post("/api/orders/upload-proof", verifyToken, async (req, res) => {
@@ -3036,6 +3123,19 @@ app.post("/api/support/messages/bulk-delete", verifySupport, async (req, res) =>
 // PURGA AFK ---
 setInterval(async () => {
     try {
+        // 1. Purga de reservas de stock expiradas
+        const [expiredReservations] = await db.query(
+            "SELECT id, product_id, quantity FROM stock_reservations WHERE expires_at <= NOW()"
+        );
+        for (let r of expiredReservations) {
+            await db.query(
+                "UPDATE products SET stock = stock + ? WHERE id = ?",
+                [r.quantity, r.product_id]
+            );
+            await db.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+        }
+
+        // 2. Purga de órdenes pendientes expiradas
         const [expired] = await db.query(
             "SELECT id, user_id, points_used FROM orders WHERE status = 'pending' AND expires_at <= NOW()",
         );

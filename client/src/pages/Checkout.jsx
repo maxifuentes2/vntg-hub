@@ -145,6 +145,81 @@ export default function Checkout() {
             .catch(console.error);
     }, []);
 
+    // --- RESERVA TEMPORAL DE STOCK ---
+    const [reservationTimeLeft, setReservationTimeLeft] = useState(null);
+    const [isReserved, setIsReserved] = useState(false);
+    const reservationTimerRef = useRef(null);
+    const hasBoughtRef = useRef(false);
+
+    useEffect(() => {
+        if (cart.length === 0 || isReserved || checkoutSent) return;
+
+        const token = localStorage.getItem('vntg_token');
+        if (!token) return;
+
+        const reserveStock = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/reserve-stock`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ cart })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.reserved) {
+                    setIsReserved(true);
+                    const expiresAt = new Date(data.expires_at).getTime();
+                    
+                    const tick = () => {
+                        const now = Date.now();
+                        const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
+                        setReservationTimeLeft(diff);
+                        if (diff <= 0) {
+                            clearInterval(reservationTimerRef.current);
+                            addToast({}, 'Tu reserva expiró. El stock ha sido liberado.', 'error');
+                            navigate('/');
+                        }
+                    };
+                    tick();
+                    reservationTimerRef.current = setInterval(tick, 1000);
+                } else {
+                    addToast({}, data.error || 'Error al reservar stock', 'error');
+                    navigate('/');
+                }
+            } catch (err) {
+                console.error("Error reserving stock:", err);
+            }
+        };
+
+        reserveStock();
+
+        return () => {
+            clearInterval(reservationTimerRef.current);
+        };
+    }, [cart, isReserved, checkoutSent, navigate, addToast]);
+
+    // Cleanup on unmount or tab close
+    useEffect(() => {
+        const token = localStorage.getItem('vntg_token');
+        const releaseStock = () => {
+            if (hasBoughtRef.current || !isReserved || !token) return;
+            fetch(`${API_URL}/api/release-stock`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                keepalive: true
+            }).catch(console.error);
+        };
+
+        const handleBeforeUnload = () => { releaseStock(); };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            releaseStock();
+        };
+    }, [isReserved]);
+    // ----------------------------------
+
     const [timeLeft, setTimeLeft] = useState(null);
     const timerRef = useRef(null);
     const [expired, setExpired] = useState(false);
@@ -394,6 +469,7 @@ export default function Checkout() {
             const data = await res.json();
 
             if (res.ok) {
+                hasBoughtRef.current = true;
                 if (puntosARestar > 0) {
                     const updatedUser = { ...user, points: Math.max(0, puntosDisponibles - puntosARestar) };
                     localStorage.setItem('vntg_user', JSON.stringify(sanitizeUser(updatedUser)));
@@ -472,6 +548,24 @@ export default function Checkout() {
 
     return (
         <div className="bg-white dark:bg-brand-dark min-h-screen pt-24 xs:pt-32 pb-12 xs:pb-20 px-3 xs:px-4 font-sans text-zinc-900 dark:text-white">
+            
+            {isReserved && reservationTimeLeft !== null && (
+                <div className="max-w-[1200px] mx-auto mb-6 bg-brand-orange/10 border border-brand-orange/20 rounded-xl p-4 flex items-center justify-between text-brand-orange animate-fade-in">
+                    <div className="flex items-center gap-3">
+                        <Clock size={24} className="animate-pulse" />
+                        <div>
+                            <p className="font-bold text-sm">Reserva temporal activa</p>
+                            <p className="text-xs opacity-80">Nadie más puede comprar estos artículos por ahora.</p>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className="font-black text-2xl font-mono">
+                            {Math.floor(reservationTimeLeft / 60)}:{(reservationTimeLeft % 60).toString().padStart(2, '0')}
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 xs:gap-12">
                 <div>
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 mb-6 text-xs font-bold uppercase italic"><ArrowLeft size={16} /> Volver</button>
