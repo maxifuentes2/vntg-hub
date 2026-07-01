@@ -760,7 +760,7 @@ export default function AdminPanel() {
                                                                         if (cryptoInfo.proofUrl) {
                                                                             window.open(cryptoInfo.proofUrl, '_blank');
                                                                         } else {
-                                                                            alert(`Datos del Comprobante:\n\nTitular: ${cryptoInfo.proofData.titular}\nBanco: ${cryptoInfo.proofData.banco}\nOperación: ${cryptoInfo.proofData.nroOperacion}`);
+                                                                            addToast({ title: 'Datos de Transferencia' }, `Titular: ${cryptoInfo.proofData.titular} | Banco: ${cryptoInfo.proofData.banco} | Operación: ${cryptoInfo.proofData.nroOperacion}`, 'info');
                                                                         }
                                                                     }}
                                                                     className="text-[10px] flex items-center gap-1 font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:underline text-left"
