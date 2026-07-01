@@ -1683,7 +1683,13 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
     }
 
     const conn = await db.getConnection();
+    const lockName = `res_stock_${req.user.id}`;
     try {
+        const [lock] = await conn.query("SELECT GET_LOCK(?, 10) as acquired", [lockName]);
+        if (!lock[0].acquired) {
+            return res.status(429).json({ error: "Procesando otra solicitud. Por favor, espere." });
+        }
+
         await conn.beginTransaction();
 
         let orderId = generatePatenteId();
@@ -1704,7 +1710,8 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         }
 
         let subtotal = 0;
-        for (let item of cart) {
+        const sortedCart = [...cart].sort((a, b) => a.id - b.id);
+        for (let item of sortedCart) {
             const qty = item.cantidad || 1;
             const [prod] = await conn.query(
                 "SELECT stock, price, discount_percentage FROM products WHERE id = ? FOR UPDATE",
@@ -1830,6 +1837,7 @@ app.post("/api/checkout-crypto", verifyToken, async (req, res) => {
         console.error("Error en checkout crypto:", error);
         res.status(500).json({ error: "Error al procesar pago crypto" });
     } finally {
+        await conn.query("SELECT RELEASE_LOCK(?)", [lockName]);
         conn.release();
     }
 });
@@ -1842,7 +1850,13 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
     }
 
     const conn = await db.getConnection();
+    const lockName = `res_stock_${req.user.id}`;
     try {
+        const [lock] = await conn.query("SELECT GET_LOCK(?, 10) as acquired", [lockName]);
+        if (!lock[0].acquired) {
+            return res.status(429).json({ error: "Procesando otra solicitud. Por favor, espere." });
+        }
+
         await conn.beginTransaction();
 
         let orderId = generatePatenteId();
@@ -1863,7 +1877,8 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         }
 
         let subtotal = 0;
-        for (let item of cart) {
+        const sortedCart = [...cart].sort((a, b) => a.id - b.id);
+        for (let item of sortedCart) {
             const qty = item.cantidad || 1;
             const [prod] = await conn.query(
                 "SELECT stock, price, discount_percentage FROM products WHERE id = ? FOR UPDATE",
@@ -1962,6 +1977,7 @@ app.post("/api/checkout-transfer", verifyToken, async (req, res) => {
         console.error("Error en checkout transfer:", error);
         res.status(500).json({ error: "Error al procesar pago por transferencia" });
     } finally {
+        await conn.query("SELECT RELEASE_LOCK(?)", [lockName]);
         conn.release();
     }
 });
@@ -2216,16 +2232,16 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             "SELECT o.status, o.total, o.user_id, u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?", [orderId]
         );
         
-        await db.query("UPDATE orders SET status = ?, payment_id = ? WHERE id = ?", [dbStatus, data.id, orderId]);
+        const [updateRes] = await db.query("UPDATE orders SET status = ?, payment_id = ? WHERE id = ? AND status = ?", [dbStatus, data.id, orderId, orderCheck[0].status]);
         
-        if (orderCheck.length > 0 && orderCheck[0].status !== "cancelled" && dbStatus === "cancelled") {
+        if (updateRes.affectedRows > 0 && orderCheck.length > 0 && orderCheck[0].status !== "cancelled" && dbStatus === "cancelled") {
             const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [orderId]);
             for (const item of items) {
                 await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
             }
         }
         
-        if (orderCheck.length > 0 && orderCheck[0].status !== "approved" && dbStatus === "approved") {
+        if (updateRes.affectedRows > 0 && orderCheck.length > 0 && orderCheck[0].status !== "approved" && dbStatus === "approved") {
             const row = orderCheck[0];
             const puntosACalcular = Math.floor(parseFloat(row.total) / 1000);
             if (puntosACalcular > 0) {
@@ -2617,21 +2633,21 @@ app.put("/api/admin/orders/:id/status", verifyAdmin, async (req, res) => {
         const order = orderData[0];
 
         if (status === "cancelled" && order.status !== "cancelled") {
-            const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [id]);
-            for (const item of items) {
-                await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+            const [updateRes] = await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ? AND status != 'cancelled'", [id]);
+            if (updateRes.affectedRows > 0) {
+                const [items] = await db.query("SELECT product_id, quantity FROM order_items WHERE order_id = ?", [id]);
+                for (const item of items) {
+                    await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+                }
+                
+                // Revertir puntos usados (si los hubo)
+                if (order.points_used > 0 && order.email) {
+                    await db.query("UPDATE users SET points = points + ? WHERE email = ?", [order.points_used, order.email]);
+                }
             }
-            
-            // Revertir puntos usados (si los hubo)
-            if (order.points_used > 0 && order.email) {
-                await db.query("UPDATE users SET points = points + ? WHERE email = ?", [order.points_used, order.email]);
-            }
+        } else {
+            await db.query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
         }
-
-        await db.query("UPDATE orders SET status = ? WHERE id = ?", [
-            status,
-            id,
-        ]);
 
         // LÓGICA DE ASIGNACIÓN DE PUNTOS ACUMULADOS ---
         const yaTeniaPuntos = ["approved", "delivered"].includes(order.status);
@@ -2726,9 +2742,12 @@ app.delete("/api/admin/orders/:id", verifyAdmin, async (req, res) => {
 
         // 1. Restaurar stock de cada producto (solo si no estaba cancelada ya)
         if (order.status !== 'cancelled') {
-            const [items] = await db.query("SELECT * FROM order_items WHERE order_id = ?", [id]);
-            for (const item of items) {
-                await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+            const [updateRes] = await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ? AND status != 'cancelled'", [id]);
+            if (updateRes.affectedRows > 0) {
+                const [items] = await db.query("SELECT * FROM order_items WHERE order_id = ?", [id]);
+                for (const item of items) {
+                    await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+                }
             }
         }
 
@@ -3184,23 +3203,19 @@ setInterval(async () => {
             "SELECT id, user_id, points_used FROM orders WHERE status = 'pending' AND expires_at <= NOW()",
         );
         for (let order of expired) {
-            // Restaurar stock
-            const [items] = await db.query(
-                "SELECT * FROM order_items WHERE order_id = ?",
-                [order.id],
-            );
-            for (let item of items) {
-                await db.query(
-                    "UPDATE products SET stock = stock + ? WHERE id = ?",
-                    [item.quantity, item.product_id],
-                );
+            // Cambiar a cancelada SOLO si sigue pending
+            const [updateRes] = await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ? AND status = 'pending'", [order.id]);
+            if (updateRes.affectedRows > 0) {
+                // Restaurar stock
+                const [items] = await db.query("SELECT * FROM order_items WHERE order_id = ?", [order.id]);
+                for (let item of items) {
+                    await db.query("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.product_id]);
+                }
+                // Devolver puntos usados si aplica
+                if (order.points_used > 0) {
+                    await db.query("UPDATE users SET points = points + ? WHERE id = ?", [order.points_used, order.user_id]);
+                }
             }
-            // Devolver puntos usados si aplica
-            if (order.points_used > 0) {
-                await db.query("UPDATE users SET points = points + ? WHERE id = ?", [order.points_used, order.user_id]);
-            }
-            // Cambiar a cancelada (manteniendo el historial)
-            await db.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [order.id]);
         }
     } catch (e) {
         console.error("Error purga", e);
