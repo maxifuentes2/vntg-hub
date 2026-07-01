@@ -1213,6 +1213,76 @@ const generatePatenteId = () => {
     return `${rand(letters)}${rand(letters)}${rand(digits)}${rand(digits)}${rand(digits)}${rand(letters)}${rand(letters)}`;
 };
 
+// RESERVA TEMPORAL DE STOCK ---
+app.post("/api/reserve-stock", verifyToken, async (req, res) => {
+    const { cart } = req.body;
+    if (!Array.isArray(cart) || cart.length === 0) {
+        return res.status(400).json({ error: "Carrito vacío" });
+    }
+
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // Limpiar reservas expiradas previas
+        await conn.query("DELETE FROM stock_reservations WHERE expires_at <= NOW()");
+
+        // Chequear si el usuario ya tiene una reserva activa
+        const [existing] = await conn.query("SELECT id FROM stock_reservations WHERE user_id = ? AND expires_at > NOW()", [req.user.id]);
+        if (existing.length > 0) {
+            await conn.query("DELETE FROM stock_reservations WHERE user_id = ?", [req.user.id]);
+        }
+
+        // Validar y descontar stock
+        for (let item of cart) {
+            const qty = item.cantidad || 1;
+            const [prod] = await conn.query("SELECT stock FROM products WHERE id = ? FOR UPDATE", [item.id]);
+            if (!prod[0] || prod[0].stock < qty) {
+                await conn.rollback();
+                return res.status(400).json({ error: "Sin stock suficiente para " + (item.title || "un producto") });
+            }
+            await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [qty, item.id]);
+            await conn.query(
+                "INSERT INTO stock_reservations (user_id, product_id, quantity, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+                [req.user.id, item.id, qty]
+            );
+        }
+
+        await conn.commit();
+        
+        const [resInfo] = await db.query("SELECT MAX(expires_at) as expires_at FROM stock_reservations WHERE user_id = ?", [req.user.id]);
+        res.json({ reserved: true, expires_at: resInfo[0].expires_at });
+    } catch (e) {
+        await conn.rollback();
+        console.error("Error reservando stock:", e);
+        res.status(500).json({ error: "Error al reservar stock" });
+    } finally {
+        conn.release();
+    }
+});
+
+app.post("/api/release-stock", verifyToken, async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [reservations] = await conn.query("SELECT id, product_id, quantity FROM stock_reservations WHERE user_id = ?", [req.user.id]);
+        
+        for (let r of reservations) {
+            await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [r.quantity, r.product_id]);
+            await conn.query("DELETE FROM stock_reservations WHERE id = ?", [r.id]);
+        }
+        
+        await conn.commit();
+        res.json({ released: true });
+    } catch (e) {
+        await conn.rollback();
+        console.error("Error liberando stock:", e);
+        res.status(500).json({ error: "Error al liberar stock" });
+    } finally {
+        conn.release();
+    }
+});
+
 // CHECKOUT (protegido con JWT) ---
 app.post("/api/checkout", verifyToken, async (req, res) => {
     const { cart, shipping: shippingData, shippingType, puntosAUsar } = req.body;
@@ -3217,6 +3287,24 @@ app.listen(PORT, "0.0.0.0", async () => {
         `);
     } catch (e) {
         console.log('[db] Error creando tabla shipping_config:', e.message);
+    }
+    
+    // Crear tabla de reservas de stock temporal
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS stock_reservations (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                product_id INT NOT NULL,
+                quantity INT NOT NULL,
+                expires_at DATETIME NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+            )
+        `);
+    } catch (e) {
+        console.log('[db] Error creando tabla stock_reservations:', e.message);
     }
     try {
         await shipping.loadConfig(db);
