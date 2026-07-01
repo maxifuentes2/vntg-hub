@@ -748,21 +748,25 @@ export default function AdminPanel() {
                                                                 onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
                                                                 className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg text-xs font-bold uppercase outline-none focus:border-brand-orange transition-all cursor-pointer"
                                                             >
-                                                                <option value="pending">Pendiente de pago</option>
+                                <option value="pending">Pendiente de pago</option>
                                                                 <option value="approved">Aprobado / Pagado</option>
                                                                 <option value="preparing">En preparación</option>
                                                                 <option value="shipped">Enviado</option>
                                                                 <option value="delivered">Entregado</option>
                                                             </select>
                                                             {cryptoInfo.proofData && (
-                                                                <a 
-                                                                    href={cryptoInfo.proofUrl || '#'} 
-                                                                    target="_blank" 
-                                                                    rel="noreferrer"
-                                                                    className="text-[10px] flex items-center gap-1 font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:underline"
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        if (cryptoInfo.proofUrl) {
+                                                                            window.open(cryptoInfo.proofUrl, '_blank');
+                                                                        } else {
+                                                                            alert(`Datos del Comprobante:\n\nTitular: ${cryptoInfo.proofData.titular}\nBanco: ${cryptoInfo.proofData.banco}\nOperación: ${cryptoInfo.proofData.nroOperacion}`);
+                                                                        }
+                                                                    }}
+                                                                    className="text-[10px] flex items-center gap-1 font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:underline text-left"
                                                                 >
                                                                     <Eye size={12}/> Ver Comprobante
-                                                                </a>
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </td>
