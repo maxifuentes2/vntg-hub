@@ -364,6 +364,7 @@ export default function Inicio() {
                 <div className="absolute inset-0 w-full h-full">
                     <img
                         src="/wallpaper.webp"
+                        fetchPriority="high"
                         className="w-full h-full object-cover opacity-20 scale-110"
                         style={{
                             maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',

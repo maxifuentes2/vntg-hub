@@ -16,13 +16,13 @@ const getBaseSystemPrompt = (productos, orderContext = "", isEmail = false) => {
             const price = p.discount_percentage > 0 
                 ? (p.price * (1 - p.discount_percentage/100)).toFixed(2) + ` (Precio original: $${p.price} con ${p.discount_percentage}% de descuento)` 
                 : p.price;
-            return `- ${p.title} (Franquicia: ${p.franchise || 'N/A'}): $${price} - URL: https://vntg-hub.vercel.app/producto/${slugify(p.title)}`;
+            return `- ${p.title} (Franquicia: ${p.franchise || 'N/A'}): $${price} - URL: ${isEmail ? 'https://vntg-hub.vercel.app' : ''}/producto/${slugify(p.title)}`;
         })
         .join("\n");
 
     const unicasFranquicias = [...new Set(productos.map(p => p.franchise).filter(f => f))];
     const enlacesFranquicias = unicasFranquicias
-        .map(f => `- ${f}: https://vntg-hub.vercel.app/categoria/all?franquicia=${encodeURIComponent(f)}`)
+        .map(f => `- ${f}: ${isEmail ? 'https://vntg-hub.vercel.app' : ''}/categoria/all?franquicia=${encodeURIComponent(f)}`)
         .join("\n");
 
     return `Eres el agente de soporte oficial de VNTG HUB, una tienda argentina de coleccionables y artículos de colección vintage. Tu tono es amable, profesional y resolutivo. Respuestas cortas y directas. Siempre respondes en español.
