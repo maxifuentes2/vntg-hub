@@ -105,7 +105,7 @@ const HEADER = `
         <tr>
             <td align="center" style="padding:32px 24px 24px">
                 <a href="https://vntg-hub.vercel.app" style="text-decoration:none">
-                    <img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+                    <img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px;border-radius:12px;">
                 </a>
             </td>
         </tr>

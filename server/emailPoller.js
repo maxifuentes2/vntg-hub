@@ -265,7 +265,7 @@ REGLA PRINCIPAL: Responde correos de clientes de forma breve (máximo 3 oracione
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px 16px 0 0;border-bottom:1px solid #eee">
 <tr><td align="center" style="padding:32px 24px 24px">
 <a href="https://vntg-hub.vercel.app" style="text-decoration:none">
-<img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px">
+<img src="https://vntg-hub.vercel.app/logo_promocional.webp" alt="VNTG Hub" width="160" height="auto" style="display:block;border:0;max-width:160px;border-radius:12px;">
 </a>
 </td></tr>
 </table>
